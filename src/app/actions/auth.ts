@@ -131,3 +131,39 @@ export async function deleteAccountAction() {
     return { success: false, error: message };
   }
 }
+
+
+/**
+ * Updates the user's custom tracker title in Supabase Auth user metadata
+ * so that it persists across all devices (phone, laptop, desktop, etc.)
+ */
+export async function updateCustomNameAction(customName: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'Authentication required to save title.' };
+    }
+
+    const clean = customName.trim().slice(0, 18);
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        custom_name: clean,
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/');
+    return { success: true, customName: clean, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to save title across devices.';
+    return { success: false, error: message };
+  }
+}

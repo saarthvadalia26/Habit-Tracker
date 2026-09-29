@@ -36,17 +36,20 @@ import {
 } from '@/app/actions/habits';
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
+import { updateCustomNameAction } from '@/app/actions/auth';
 
 interface SmartTrackerDashboardProps {
   initialHabits: HabitWithLogs[];
   isGuestMode?: boolean;
   userEmail?: string | null;
+  initialCustomName?: string;
 }
 
 export function SmartTrackerDashboard({
   initialHabits,
   isGuestMode = false,
   userEmail,
+  initialCustomName = '',
 }: SmartTrackerDashboardProps) {
   const { isDark } = useTheme();
   const currentDate = new Date();
@@ -57,23 +60,39 @@ export function SmartTrackerDashboard({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
-  const [customName, setCustomName] = useState<string>('');
+  const [customName, setCustomName] = useState<string>(() => initialCustomName || '');
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [tempName, setTempName] = useState<string>('');
   const [shakingCellKey, setShakingCellKey] = useState<string | null>(null);
 
   useEffect(() => {
+    // Priority 1: Supabase account metadata (cross-device source of truth)
+    if (initialCustomName) {
+      setCustomName(initialCustomName);
+      localStorage.setItem('habit_tracker_custom_name', initialCustomName);
+      return;
+    }
+
+    // Priority 2: Local storage on this device
     const saved = localStorage.getItem('habit_tracker_custom_name');
-    if (saved !== null) {
+    if (saved !== null && saved.trim() !== '') {
       setCustomName(saved);
-    } else if (userEmail) {
+      // Auto-sync this device's existing title up to Supabase cloud account!
+      if (!isGuestMode) {
+        updateCustomNameAction(saved);
+      }
+      return;
+    }
+
+    // Priority 3: Fallback extracted from user email
+    if (userEmail) {
       const extracted = userEmail.split('@')[0].replace(/[0-9_.-]/g, '');
       if (extracted && extracted.length >= 2) {
         const capitalized = extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase();
         setCustomName(capitalized);
       }
     }
-  }, [userEmail]);
+  }, [initialCustomName, userEmail, isGuestMode]);
 
   const formattedName = useMemo(() => {
     const trimmed = customName.trim();
@@ -106,20 +125,33 @@ export function SmartTrackerDashboard({
     setIsEditingName(true);
   };
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (isGuestMode) {
       setIsEditingName(false);
       setIsAuthModalOpen(true);
       return;
     }
-    const clean = tempName.trim();
+    const clean = tempName.trim().slice(0, 18);
     setCustomName(clean);
     localStorage.setItem('habit_tracker_custom_name', clean);
     setIsEditingName(false);
+
     if (clean) {
-      toast.success(`Personalized as "${clean}'s Tracker"!`);
+      toast.success(`Personalized as "${clean}'s Tracker"!`, {
+        description: 'Syncing title across all your devices...',
+      });
     } else {
       toast.info('Reset to default Habit Tracker');
+    }
+
+    // Persist across devices in Supabase Auth user metadata
+    try {
+      const res = await updateCustomNameAction(clean);
+      if (res?.error) {
+        toast.error('Failed to sync across devices', { description: res.error });
+      }
+    } catch {
+      // Local state and localStorage already updated
     }
   };
 
@@ -487,7 +519,7 @@ export function SmartTrackerDashboard({
               </span>
             </div>
             <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-              Checkmarks ({habits.length} habits × {days.length}d)
+              Checkmarks ({habits.length} habits × {days.length}d)
             </span>
             <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
               <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
