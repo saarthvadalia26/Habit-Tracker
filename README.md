@@ -11,12 +11,15 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-[Features](#-key-features) • [Tech Stack](#-tech-stack) • [Database Architecture](#-database-architecture) • [Getting Started](#-getting-started) • [Project Structure](#-project-structure)
+<br />
+
+[Features](#features) • [Tech Stack](#tech-stack) • [Database Architecture](#database-architecture) • [Getting Started](#getting-started) • [Project Structure](#project-structure) • [Integrity Rules](#integrity-rules)
 
 </div>
 
 ---
 
+<a id="overview"></a>
 ## 🌟 Overview
 
 **Habit Tracker** is a full-stack, cloud-synchronized web application crafted to turn daily routines into lasting streaks. It combines high-density habit visualization with gamified consistency analytics, real-time wave and donut metrics, custom color aesthetics, and strict habit-integrity rules.
@@ -25,6 +28,7 @@ Whether managing fitness routines, reading targets, or deep work sessions, Habit
 
 ---
 
+<a id="features"></a>
 ## ✨ Key Features
 
 ### 📅 High-Density Monthly Habit Matrix
@@ -62,6 +66,7 @@ Whether managing fitness routines, reading targets, or deep work sessions, Habit
 
 ---
 
+<a id="tech-stack"></a>
 ## 🛠️ Tech Stack
 
 | Layer | Technologies |
@@ -76,6 +81,7 @@ Whether managing fitness routines, reading targets, or deep work sessions, Habit
 
 ---
 
+<a id="database-architecture"></a>
 ## 🗄️ Database Architecture
 
 The backend runs on PostgreSQL via Supabase with **Row Level Security (RLS)** strictly enforcing data isolation between authenticated users.
@@ -110,6 +116,7 @@ erDiagram
 
 ---
 
+<a id="getting-started"></a>
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
@@ -154,6 +161,7 @@ npm run start
 
 ---
 
+<a id="project-structure"></a>
 ## 📁 Project Structure
 
 ```plaintext
@@ -197,6 +205,7 @@ habit-tracker/
 
 ---
 
+<a id="integrity-rules"></a>
 ## 🔒 Business Rules & Integrity Guarantees
 
 | Rule | Enforcement | Behavior |
@@ -209,6 +218,7 @@ habit-tracker/
 
 ---
 
+<a id="contributing"></a>
 ## 🤝 Contributing
 
 Contributions, feedback, and suggestions are welcome!
@@ -221,6 +231,7 @@ Contributions, feedback, and suggestions are welcome!
 
 ---
 
+<a id="license"></a>
 ## 📄 License
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
