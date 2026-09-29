@@ -1,32 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- Vibrant Outer Flame Gradient -->
-    <linearGradient id="outerFlame" x1="0.1" y1="1" x2="0.9" y2="0">
-      <stop offset="0%" stop-color="#E11D48"/>
-      <stop offset="30%" stop-color="#F97316"/>
-      <stop offset="70%" stop-color="#FBBF24"/>
-      <stop offset="100%" stop-color="#FDE047"/>
+    <!-- Background Gradient (Deep Cosmic Indigo to Slate) -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B4B"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
     </linearGradient>
 
-    <!-- Radiant Inner Core Gradient -->
-    <linearGradient id="innerCore" x1="0.5" y1="1" x2="0.5" y2="0">
-      <stop offset="0%" stop-color="#EA580C"/>
-      <stop offset="45%" stop-color="#FACC15"/>
+    <!-- Outer Border Glow Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="40%" stop-color="#F43F5E"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+
+    <!-- Vibrant Outer Flame Gradient -->
+    <linearGradient id="outerFlame" x1="10%" y1="100%" x2="90%" y2="0%">
+      <stop offset="0%" stop-color="#E11D48"/>
+      <stop offset="25%" stop-color="#EA580C"/>
+      <stop offset="55%" stop-color="#F97316"/>
+      <stop offset="85%" stop-color="#FBBF24"/>
       <stop offset="100%" stop-color="#FEF08A"/>
     </linearGradient>
 
-    <!-- Warm Atmospheric Glow -->
-    <filter id="flameGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#EA580C" flood-opacity="0.45"/>
-    </filter>
+    <!-- Radiant Inner Core Gradient -->
+    <linearGradient id="innerCore" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="40%" stop-color="#FACC15"/>
+      <stop offset="85%" stop-color="#FEF9C3"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+
+    <!-- Radial Core Glow -->
+    <radialGradient id="centerGlow" cx="50%" cy="65%" r="50%">
+      <stop offset="0%" stop-color="#F43F5E" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#1E1B4B" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
+  <!-- Squircle Base for 100% visibility on both Light & Dark tabs -->
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle Inner Ambient Glow -->
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="url(#centerGlow)"/>
+
+  <!-- Glowing Border -->
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="none" stroke="url(#borderGrad)" stroke-width="18" stroke-opacity="0.85"/>
+
   <!-- Outer Streak Flame -->
-  <path d="M32 4C32 4 39.5 16.5 39.5 23.5C39.5 25.2 39 26.8 38.2 28C41.6 25 43.8 21 44.5 17C49.5 23 52 30.5 52 38C52 49 43 58 32 58C21 58 12 49 12 38C12 28.5 17 20.5 24 16C23.5 19.2 24.2 22.5 25.8 25C26.8 19.5 28.8 11.5 32 4Z" 
-        fill="url(#outerFlame)" 
-        filter="url(#flameGlow)"/>
+  <path d="M256 80 C256 80 318 175 318 230 C318 244 314 257 308 266 C334 242 350 209 356 178 C395 225 414 284 414 342 C414 428 344 448 256 448 C168 448 98 428 98 342 C98 268 136 205 191 170 C187 195 192 221 204 240 C212 198 228 138 256 80 Z" 
+        fill="url(#outerFlame)"/>
 
   <!-- Inner Energy Core -->
-  <path d="M32 29C32 29 35.5 34.5 35.5 38C35.5 39 35.2 39.8 34.8 40.5C36.2 39 37.2 37 37.5 35C39.5 38.2 40.5 41.2 40.5 44C40.5 48.7 36.7 52.5 32 52.5C27.3 52.5 23.5 48.7 23.5 44C23.5 39.5 26 36 28.5 34C28.2 35.5 28.5 37 29.5 38.2C30 35.5 31 32 32 29Z" 
+  <path d="M256 270 C256 270 284 312 284 338 C284 345 281 352 278 358 C289 346 296 331 298 316 C314 340 322 364 322 385 C322 421 292 432 256 432 C220 432 190 421 190 385 C190 351 209 324 229 308 C226 320 229 330 236 339 C241 318 248 292 256 270 Z" 
         fill="url(#innerCore)"/>
+
+  <!-- Discipline Spark at Top -->
+  <circle cx="256" cy="74" r="10" fill="#FEF08A"/>
 </svg>
