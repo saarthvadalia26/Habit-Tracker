@@ -164,6 +164,32 @@ export async function toggleHabitLogAction(
       };
     }
 
+    // Business Rules:
+    // 1. Cannot tick upcoming/future dates
+    // 2. Cannot edit after 72 hours (3 days)
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(y, m - 1, d);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return {
+        data: null,
+        error: 'Cannot log habits for future dates. Please wait until the day arrives.',
+      };
+    }
+
+    if (diffDays > 3) {
+      return {
+        data: null,
+        error: '72-hour edit window expired: Habit logs older than 3 days cannot be modified.',
+      };
+    }
+
     // Upsert into habit_logs using unique constraint (habit_id, date)
     const { data, error } = await supabase
       .from('habit_logs')

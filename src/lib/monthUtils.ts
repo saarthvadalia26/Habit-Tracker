@@ -9,6 +9,9 @@ export interface MonthDay {
   dayOfWeekName: string;    // Mon, Tue, etc.
   weekIndex: number;        // 0-4 (Week 1 to Week 5)
   isToday: boolean;
+  isUpcoming: boolean;      // Future dates cannot be checked
+  isExpired: boolean;       // Past dates > 72 hours (3 days) cannot be edited
+  isEditable: boolean;      // Today and last 3 days
 }
 
 export interface WeekGroup {
@@ -84,8 +87,7 @@ export const MONTH_NAMES = [
 export function getDaysForMonth(year: number, month: number): MonthDay[] {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = new Date();
-  const isCurrentYearMonth = today.getFullYear() === year && today.getMonth() === month;
-  const currentDay = today.getDate();
+  today.setHours(0, 0, 0, 0);
 
   const days: MonthDay[] = [];
   const weekdayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sunday = 0
@@ -93,6 +95,8 @@ export function getDaysForMonth(year: number, month: number): MonthDay[] {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const d = new Date(year, month, day);
+    d.setHours(0, 0, 0, 0);
+
     const dayOfWeek = d.getDay();
     const mm = String(month + 1).padStart(2, '0');
     const dd = String(day).padStart(2, '0');
@@ -101,13 +105,25 @@ export function getDaysForMonth(year: number, month: number): MonthDay[] {
     // Group into 7-day chunks (Week 1 = days 1-7, Week 2 = 8-14, etc.)
     const weekIndex = Math.min(4, Math.floor((day - 1) / 7));
 
+    // Calculate days difference: today - day
+    const diffMs = today.getTime() - d.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    const isToday = diffDays === 0;
+    const isUpcoming = diffDays < 0; // In the future
+    const isExpired = diffDays > 3;  // Beyond 72 hours (3 days)
+    const isEditable = !isUpcoming && !isExpired;
+
     days.push({
       dayNumber: day,
       dateString,
       dayOfWeekInitial: weekdayLetters[dayOfWeek],
       dayOfWeekName: weekdayNames[dayOfWeek],
       weekIndex,
-      isToday: isCurrentYearMonth && day === currentDay,
+      isToday,
+      isUpcoming,
+      isExpired,
+      isEditable,
     });
   }
 

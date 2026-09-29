@@ -121,7 +121,7 @@ export function SmartTrackerDashboard({
   );
 
   // Optimistic Toggle Handler across any month (past, present, future)
-  const handleToggleCell = async (habitId: string, date: string) => {
+  const handleToggleCell = async (habitId: string, date: string, day?: MonthDay) => {
     // Unauthenticated visitors cannot modify or tick boxes
     if (isGuestMode) {
       toast.info('Sign in required to track habits', {
@@ -132,6 +132,22 @@ export function SmartTrackerDashboard({
         },
       });
       setIsAuthModalOpen(true);
+      return;
+    }
+
+    // Rule 1: Cannot tick upcoming/future days
+    if (day?.isUpcoming) {
+      toast.warning('Future Date Locked', {
+        description: `Day ${day.dayNumber} hasn't arrived yet! You cannot tick off habits for upcoming days in advance.`,
+      });
+      return;
+    }
+
+    // Rule 2: Cannot edit box after 72 hours (3 days)
+    if (day?.isExpired) {
+      toast.error('72-Hour Edit Window Expired', {
+        description: `Day ${day.dayNumber} is older than 72 hours (3 days). Past records are permanently locked to preserve habit consistency.`,
+      });
       return;
     }
 
@@ -452,6 +468,10 @@ export function SmartTrackerDashboard({
             <span className="px-2.5 py-0.5 text-[10px] font-bold bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 rounded-full shadow-xs">
               {habits.length} Habits
             </span>
+            <span className="hidden sm:inline-flex px-2.5 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 rounded-full shadow-xs items-center gap-1 font-mono" title="Habits can be logged for today and up to 72 hours (3 days) ago. Future dates cannot be checked in advance.">
+              <Lock className="w-2.5 h-2.5 text-indigo-500" />
+              <span>72h Edit Window</span>
+            </span>
             {isGuestMode && (
               <span className="px-2.5 py-0.5 text-[10px] font-bold bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400 rounded-full shadow-xs flex items-center gap-1 font-mono">
                 <Lock className="w-2.5 h-2.5" />
@@ -525,16 +545,35 @@ export function SmartTrackerDashboard({
                       className={`p-1 border-r border-slate-200/80 dark:border-slate-800/80 ${
                         day.isToday
                           ? 'bg-indigo-100 dark:bg-indigo-950/90 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-500/50'
-                          : 'bg-slate-50/80 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400'
+                          : day.isUpcoming
+                          ? 'bg-slate-50/30 dark:bg-slate-950/30 text-slate-400/60 dark:text-slate-600'
+                          : day.isExpired
+                          ? 'bg-slate-50/60 dark:bg-slate-950/50 text-slate-500/80 dark:text-slate-500'
+                          : 'bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300'
                       } transition-colors`}
                       style={{ width: '28px', minWidth: '28px' }}
+                      title={
+                        day.isToday
+                          ? 'Today (Editable)'
+                          : day.isUpcoming
+                          ? 'Upcoming Day (Locked until date arrives)'
+                          : day.isExpired
+                          ? 'Locked (72h edit window expired)'
+                          : 'Within 72h window (Editable)'
+                      }
                     >
-                      <div className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-500">
+                      <div className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500">
                         {day.dayOfWeekInitial}
                       </div>
                       <div
                         className={`text-[10px] font-extrabold mt-0.5 ${
-                          day.isToday ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-700 dark:text-slate-300'
+                          day.isToday
+                            ? 'text-indigo-600 dark:text-indigo-400 font-black'
+                            : day.isUpcoming
+                            ? 'text-slate-400 dark:text-slate-600 font-normal'
+                            : day.isExpired
+                            ? 'text-slate-500 dark:text-slate-400 font-normal'
+                            : 'text-slate-800 dark:text-slate-200 font-black'
                         }`}
                       >
                         {day.dayNumber}
