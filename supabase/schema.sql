@@ -5,7 +5,7 @@
 -- 1. Create habits table
 CREATE TABLE IF NOT EXISTS public.habits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     color_theme TEXT NOT NULL DEFAULT '#6366F1', -- Indigo / custom hex or color token
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -139,3 +139,14 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
+
+
+-- 8. Explicit Role Permissions (Fixes "permission denied for table habits")
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.habits TO authenticated, service_role;
+GRANT ALL ON TABLE public.habit_logs TO authenticated, service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, service_role;
+
+-- Ensure future tables and sequences automatically grant permissions to authenticated users
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated, service_role;
