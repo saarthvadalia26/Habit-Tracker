@@ -89,7 +89,28 @@ export function SmartTrackerDashboard({
     return `${upper}'S`;
   }, [customName]);
 
+  const handleTitleClick = () => {
+    if (isGuestMode) {
+      toast.info('Sign in required to personalize title', {
+        description: 'Create an account or sign in to set your custom name and track your personal habit matrix.',
+        action: {
+          label: 'Sign In',
+          onClick: () => setIsAuthModalOpen(true),
+        },
+      });
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setTempName(customName);
+    setIsEditingName(true);
+  };
+
   const handleSaveName = () => {
+    if (isGuestMode) {
+      setIsEditingName(false);
+      setIsAuthModalOpen(true);
+      return;
+    }
     const clean = tempName.trim();
     setCustomName(clean);
     localStorage.setItem('habit_tracker_custom_name', clean);
@@ -339,24 +360,25 @@ export function SmartTrackerDashboard({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    setTempName(customName);
-                    setIsEditingName(true);
-                  }}
+                  onClick={handleTitleClick}
                   className="w-full flex flex-col items-center justify-center cursor-pointer outline-none group/title py-0.5"
-                  title="Click to enter your name"
+                  title={isGuestMode ? "Sign in to personalize title" : "Click to enter your name"}
                 >
                   <div className="flex items-center justify-center gap-1.5 w-full">
                     <h2 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
-                      {formattedName}{' '}
+                      {isGuestMode ? 'HABIT' : formattedName}{' '}
                       <span className="text-rose-500 dark:text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]">
                         TRACKER
                       </span>
                     </h2>
-                    <Pencil className="w-3.5 h-3.5 text-slate-400 group-hover/title:text-rose-500 transition-colors shrink-0" />
+                    {isGuestMode ? (
+                      <Lock className="w-3 h-3 text-slate-400 opacity-60 group-hover/title:opacity-100 group-hover/title:text-indigo-400 transition-colors shrink-0" />
+                    ) : (
+                      <Pencil className="w-3.5 h-3.5 text-slate-400 group-hover/title:text-rose-500 transition-colors shrink-0" />
+                    )}
                   </div>
                   <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 opacity-60 group-hover/title:opacity-100 transition-opacity">
-                    Click to personalize title
+                    {isGuestMode ? "Sign in to customize title" : "Click to personalize title"}
                   </span>
                 </button>
               )}
