@@ -636,11 +636,11 @@ export function SmartTrackerDashboard({
                           : 'Within 72h window (Editable)'
                       }
                     >
-                      <div className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
                         {day.dayOfWeekInitial}
                       </div>
                       <div
-                        className={`text-[10px] font-extrabold mt-0.5 ${
+                        className={`text-xs font-black mt-0.5 ${
                           day.isToday
                             ? 'text-indigo-600 dark:text-indigo-400 font-black'
                             : day.isUpcoming
@@ -939,7 +939,7 @@ export function SmartTrackerDashboard({
                       label={`WEEK ${week.weekNumber}`}
                       showTickMarks={false}
                     />
-                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 mt-1">
+                    <span className="text-xs font-mono text-slate-600 dark:text-slate-300 font-semibold mt-1">
                       {metric.completed}/{metric.possible}
                     </span>
                   </div>
@@ -948,15 +948,22 @@ export function SmartTrackerDashboard({
             </div>
 
             {/* Day Breakdown Rows (Completed & Incomplete counts per day) */}
-            <div className="overflow-x-auto mt-2">
-              <table className="w-full text-center border-collapse text-[10px] font-mono">
+            <div className="overflow-x-auto mt-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <table className="w-full text-center border-collapse text-xs sm:text-[13px] font-mono">
                 <thead>
-                  <tr className="bg-slate-50/90 dark:bg-slate-950/80 text-slate-500 border-y border-slate-200 dark:border-slate-800">
-                    <th className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-bold text-slate-600 dark:text-slate-400 min-w-[130px] bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
+                  <tr className="bg-slate-50 dark:bg-slate-950/90 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
+                    <th className="sticky left-0 z-20 p-2 sm:p-2.5 px-3 text-left font-sans font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 min-w-[135px] bg-slate-50 dark:bg-slate-950 backdrop-blur-md shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)]">
                       Daily Breakdown
                     </th>
                     {days.map((d) => (
-                      <th key={d.dateString} className="p-1 px-0.5 w-6 text-slate-600 dark:text-slate-400">
+                      <th
+                        key={d.dateString}
+                        className={`p-1.5 sm:p-2 px-1 min-w-[28px] text-xs sm:text-[13px] font-bold ${
+                          d.isToday
+                            ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/30'
+                            : 'text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
                         {d.dayNumber}
                       </th>
                     ))}
@@ -965,15 +972,18 @@ export function SmartTrackerDashboard({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {/* Completed row */}
                   <tr>
-                    <td className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50/95 dark:bg-emerald-950/90 backdrop-blur-md flex items-center gap-1 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
-                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Completed
+                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-3 text-left font-sans font-bold text-xs sm:text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-50/95 dark:bg-emerald-950/90 backdrop-blur-md shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.75] text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>Completed</span>
+                      </div>
                     </td>
                     {days.map((d) => {
                       const count = analytics.dayMetrics[d.dateString]?.completedCount || 0;
                       return (
                         <td
                           key={d.dateString}
-                          className="p-1 text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50/40 dark:bg-emerald-950/10"
+                          className="p-1.5 sm:p-2 text-xs sm:text-[13px] text-emerald-700 dark:text-emerald-300 font-extrabold bg-emerald-50/40 dark:bg-emerald-950/15"
                         >
                           {count}
                         </td>
@@ -983,15 +993,18 @@ export function SmartTrackerDashboard({
 
                   {/* Incomplete row */}
                   <tr>
-                    <td className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/95 dark:bg-rose-950/90 backdrop-blur-md flex items-center gap-1 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
-                      <CloseIcon className="w-3 h-3 text-rose-600 dark:text-rose-400" /> Incomplete
+                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-3 text-left font-sans font-bold text-xs sm:text-sm text-rose-700 dark:text-rose-400 bg-rose-50/95 dark:bg-rose-950/90 backdrop-blur-md shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center gap-1.5">
+                        <CloseIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.75] text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span>Incomplete</span>
+                      </div>
                     </td>
                     {days.map((d) => {
                       const count = analytics.dayMetrics[d.dateString]?.incompleteCount || 0;
                       return (
                         <td
                           key={d.dateString}
-                          className="p-1 text-slate-500 font-semibold bg-rose-50/40 dark:bg-rose-950/10"
+                          className="p-1.5 sm:p-2 text-xs sm:text-[13px] text-slate-700 dark:text-slate-200 font-bold bg-rose-50/30 dark:bg-rose-950/15"
                         >
                           {count}
                         </td>
