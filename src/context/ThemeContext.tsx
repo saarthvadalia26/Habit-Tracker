@@ -28,7 +28,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setThemeState(saved);
       applyTheme(saved);
     } else {
-      // Default to dark mode
       applyTheme('dark');
     }
     setMounted(true);
@@ -48,9 +47,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setTheme = (nextTheme: Theme) => {
-    setThemeState(nextTheme);
-    localStorage.setItem('habit_tracker_theme', nextTheme);
-    applyTheme(nextTheme);
+    // Check for native browser View Transition API
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition(() => {
+        setThemeState(nextTheme);
+        localStorage.setItem('habit_tracker_theme', nextTheme);
+        applyTheme(nextTheme);
+      });
+    } else {
+      setThemeState(nextTheme);
+      localStorage.setItem('habit_tracker_theme', nextTheme);
+      applyTheme(nextTheme);
+    }
   };
 
   const toggleTheme = () => {
@@ -58,7 +66,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(next);
   };
 
-  // Avoid hydration mismatch by rendering default or current theme
   return (
     <ThemeContext.Provider
       value={{

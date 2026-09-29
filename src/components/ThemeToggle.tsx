@@ -26,7 +26,7 @@ export function ThemeToggle() {
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       onClick={toggleTheme}
-      className={`relative w-[62px] h-[34px] rounded-full border-2 p-[3px] flex items-center cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 transition-all duration-300 ease-out ${
+      className={`relative w-[62px] h-[34px] [view-transition-name:theme-toggle] rounded-full border-2 p-[3px] flex items-center cursor-pointer select-none outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 transition-all duration-300 ease-out ${
         isDark
           ? 'bg-slate-950 border-indigo-400/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_0_12px_rgba(99,102,241,0.3)] ring-1 ring-indigo-400/30'
           : 'bg-slate-100 border-slate-300 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1),0_0_10px_rgba(0,0,0,0.05)]'
