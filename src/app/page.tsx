@@ -32,6 +32,7 @@ export default async function HomePage() {
         <SmartTrackerDashboard
           initialHabits={initialHabits}
           isGuestMode={isGuestMode}
+          userEmail={user?.email}
         />
       </main>
 

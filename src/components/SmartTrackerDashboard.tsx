@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   Lock,
+  Pencil,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
 import {
@@ -39,11 +40,13 @@ import { useTheme } from '@/context/ThemeContext';
 interface SmartTrackerDashboardProps {
   initialHabits: HabitWithLogs[];
   isGuestMode?: boolean;
+  userEmail?: string | null;
 }
 
 export function SmartTrackerDashboard({
   initialHabits,
   isGuestMode = false,
+  userEmail,
 }: SmartTrackerDashboardProps) {
   const { isDark } = useTheme();
   const currentDate = new Date();
@@ -53,6 +56,50 @@ export function SmartTrackerDashboard({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [, startTransition] = useTransition();
+
+  const [customName, setCustomName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState<boolean>(false);
+  const [tempName, setTempName] = useState<string>('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('habit_tracker_custom_name');
+    if (saved !== null) {
+      setCustomName(saved);
+    } else if (userEmail) {
+      const extracted = userEmail.split('@')[0].replace(/[0-9_.-]/g, '');
+      if (extracted && extracted.length >= 2) {
+        const capitalized = extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase();
+        setCustomName(capitalized);
+      }
+    }
+  }, [userEmail]);
+
+  const formattedName = useMemo(() => {
+    const trimmed = customName.trim();
+    if (!trimmed || trimmed.toUpperCase() === 'HABIT') {
+      return 'HABIT';
+    }
+    const upper = trimmed.toUpperCase();
+    if (upper.endsWith("'S") || upper.endsWith("’S")) {
+      return upper;
+    }
+    if (upper.endsWith('S')) {
+      return `${upper}'`;
+    }
+    return `${upper}'S`;
+  }, [customName]);
+
+  const handleSaveName = () => {
+    const clean = tempName.trim();
+    setCustomName(clean);
+    localStorage.setItem('habit_tracker_custom_name', clean);
+    setIsEditingName(false);
+    if (clean) {
+      toast.success(`Personalized as "${clean}'s Tracker"!`);
+    } else {
+      toast.info('Reset to default Habit Tracker');
+    }
+  };
 
   // Keep habits synchronized with initialHabits
   useEffect(() => {
