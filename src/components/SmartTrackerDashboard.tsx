@@ -60,6 +60,7 @@ export function SmartTrackerDashboard({
   const [customName, setCustomName] = useState<string>('');
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [tempName, setTempName] = useState<string>('');
+  const [shakingCellKey, setShakingCellKey] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('habit_tracker_custom_name');
@@ -80,7 +81,7 @@ export function SmartTrackerDashboard({
       return 'HABIT';
     }
     const upper = trimmed.toUpperCase();
-    if (upper.endsWith("'S") || upper.endsWith("’S")) {
+    if (upper.endsWith("'S") || upper.endsWith('’S')) {
       return upper;
     }
     if (upper.endsWith('S')) {
@@ -156,18 +157,37 @@ export function SmartTrackerDashboard({
       return;
     }
 
+    const cellKey = `${habitId}-${date}`;
+    const targetDay = day || days.find((d) => d.dateString === date);
+
+    // Calculate difference from today as defensive fallback
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(y, m - 1, d);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    const isUpcoming = targetDay ? targetDay.isUpcoming : diffDays < 0;
+    const isExpired = targetDay ? targetDay.isExpired : diffDays > 3;
+
     // Rule 1: Cannot tick upcoming/future days
-    if (day?.isUpcoming) {
+    if (isUpcoming) {
+      setShakingCellKey(cellKey);
+      setTimeout(() => setShakingCellKey((prev) => (prev === cellKey ? null : prev)), 400);
       toast.warning('Future Date Locked', {
-        description: `Day ${day.dayNumber} hasn't arrived yet! You cannot tick off habits for upcoming days in advance.`,
+        description: `Day ${targetDay?.dayNumber ?? d} hasn't arrived yet! You cannot tick off habits in advance.`,
       });
       return;
     }
 
     // Rule 2: Cannot edit box after 72 hours (3 days)
-    if (day?.isExpired) {
+    if (isExpired) {
+      setShakingCellKey(cellKey);
+      setTimeout(() => setShakingCellKey((prev) => (prev === cellKey ? null : prev)), 400);
       toast.error('72-Hour Edit Window Expired', {
-        description: `Day ${day.dayNumber} is older than 72 hours (3 days). Past records are permanently locked to preserve habit consistency.`,
+        description: `Day ${targetDay?.dayNumber ?? d} is older than 72 hours (3 days). Past records are permanently locked to preserve habit consistency.`,
       });
       return;
     }
@@ -467,7 +487,7 @@ export function SmartTrackerDashboard({
               </span>
             </div>
             <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-              Checkmarks ({habits.length} habits × {days.length}d)
+              Checkmarks ({habits.length} habits × {days.length}d)
             </span>
             <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
               <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
@@ -708,6 +728,9 @@ export function SmartTrackerDashboard({
                     {days.map((day) => {
                       const isCompleted = Boolean(habit.logs[day.dateString]);
                       const week = weeks[day.weekIndex] || weeks[0];
+                      const cellKey = `${habit.id}-${day.dateString}`;
+                      const isShaking = shakingCellKey === cellKey;
+                      const isLocked = Boolean(day.isUpcoming || day.isExpired);
 
                       return (
                         <td
@@ -718,29 +741,57 @@ export function SmartTrackerDashboard({
                         >
                           <button
                             type="button"
-                            onClick={() => handleToggleCell(habit.id, day.dateString)}
-                            className="w-full h-8 sm:h-8.5 flex items-center justify-center cursor-pointer transition-transform duration-100 active:scale-80 outline-none group/cell touch-manipulation"
+                            onClick={() => handleToggleCell(habit.id, day.dateString, day)}
+                            className={`w-full h-8 sm:h-8.5 flex items-center justify-center outline-none group/cell touch-manipulation transition-transform duration-100 ${
+                              isLocked
+                                ? 'cursor-not-allowed'
+                                : 'cursor-pointer active:scale-80'
+                            }`}
                             title={
                               isGuestMode
                                 ? `Sign in to check off ${habit.title}`
+                                : day.isUpcoming
+                                ? `Day ${day.dayNumber} (${day.dayOfWeekName}) - Future date (Locked)`
+                                : day.isExpired
+                                ? `Day ${day.dayNumber} (${day.dayOfWeekName}) - ${isCompleted ? 'Completed (Locked after 72h)' : 'Expired (>72h locked)'}`
                                 : `${habit.title} on Day ${day.dayNumber} (${day.dayOfWeekName})`
                             }
                           >
                             <motion.div
-                              whileHover={{ scale: 1.15 }}
-                              whileTap={{ scale: 0.85 }}
+                              whileHover={isLocked ? {} : { scale: 1.15 }}
+                              whileTap={isLocked ? {} : { scale: 0.85 }}
+                              animate={
+                                isShaking
+                                  ? { x: [-4, 4, -3, 3, -1, 1, 0] }
+                                  : { x: 0 }
+                              }
+                              transition={{ duration: 0.35 }}
                               style={{
-                                borderColor: isCompleted ? week.color.accent : isDark ? '#334155' : '#CBD5E1',
-                                backgroundColor: isCompleted ? week.color.accent : 'transparent',
+                                borderColor: isCompleted
+                                  ? week.color.accent
+                                  : day.isUpcoming
+                                  ? (isDark ? '#1e293b' : '#e2e8f0')
+                                  : day.isExpired
+                                  ? (isDark ? '#334155' : '#cbd5e1')
+                                  : isDark
+                                  ? '#334155'
+                                  : '#CBD5E1',
+                                backgroundColor: isCompleted
+                                  ? week.color.accent
+                                  : 'transparent',
                                 boxShadow: isCompleted ? `0 0 10px ${week.color.accent}70` : 'none',
                               }}
-                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors duration-150 ${
+                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all duration-150 ${
                                 isCompleted
-                                  ? 'text-white'
+                                  ? `text-white ${day.isExpired ? 'opacity-85' : ''}`
+                                  : day.isUpcoming
+                                  ? 'opacity-30 dark:opacity-20 border-dashed'
+                                  : day.isExpired
+                                  ? 'opacity-35 dark:opacity-25'
                                   : 'hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                               }`}
                             >
-                              {isCompleted && (
+                              {isCompleted ? (
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
@@ -752,7 +803,9 @@ export function SmartTrackerDashboard({
                                 >
                                   <Check className="w-3 h-3 stroke-[3]" />
                                 </motion.div>
-                              )}
+                              ) : day.isExpired ? (
+                                <span className="w-1.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600 block" />
+                              ) : null}
                             </motion.div>
                           </button>
                         </td>
