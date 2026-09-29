@@ -286,10 +286,64 @@ export function SmartTrackerDashboard({
         {/* Top-Left: Brand & Date Controls */}
         <div className="md:col-span-1 lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
           <div>
-            <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2.5 text-center bg-slate-50/90 dark:bg-slate-950/70 mb-4 shadow-xs dark:shadow-inner">
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono">
-                HABIT <span className="text-rose-500 dark:text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]">TRACKER</span>
-              </h2>
+            {/* Personalized Name & Title Banner */}
+            <div className="relative border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2 sm:p-2.5 text-center bg-slate-50/90 dark:bg-slate-950/70 mb-4 shadow-xs dark:shadow-inner transition-all group/banner hover:border-indigo-400 dark:hover:border-indigo-500/60">
+              {isEditingName ? (
+                <div className="flex items-center justify-center gap-1.5 py-0.5">
+                  <input
+                    type="text"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveName();
+                      if (e.key === 'Escape') setIsEditingName(false);
+                    }}
+                    placeholder="Enter your name (e.g. Saarth)..."
+                    maxLength={18}
+                    autoFocus
+                    className="w-full text-center bg-transparent border-b-2 border-rose-500 font-mono text-base sm:text-lg font-black uppercase text-slate-900 dark:text-white outline-none focus:ring-0 px-1 py-0.5"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveName}
+                    className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer shrink-0 shadow-xs"
+                    title="Save name"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingName(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer shrink-0"
+                    title="Cancel"
+                  >
+                    <CloseIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempName(customName);
+                    setIsEditingName(true);
+                  }}
+                  className="w-full flex flex-col items-center justify-center cursor-pointer outline-none group/title py-0.5"
+                  title="Click to enter your name"
+                >
+                  <div className="flex items-center justify-center gap-1.5 w-full">
+                    <h2 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 dark:text-white font-mono truncate">
+                      {formattedName}{' '}
+                      <span className="text-rose-500 dark:text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]">
+                        TRACKER
+                      </span>
+                    </h2>
+                    <Pencil className="w-3.5 h-3.5 text-slate-400 group-hover/title:text-rose-500 transition-colors shrink-0" />
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 opacity-60 group-hover/title:opacity-100 transition-opacity">
+                    Click to personalize title
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Month & Year Selectors */}
