@@ -33,18 +33,21 @@ ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies for habits
 -- Users can only read their own habits
+DROP POLICY IF EXISTS "Users can view their own habits" ON public.habits;
 CREATE POLICY "Users can view their own habits"
     ON public.habits
     FOR SELECT
     USING (auth.uid() = user_id);
 
 -- Users can insert their own habits
+DROP POLICY IF EXISTS "Users can create their own habits" ON public.habits;
 CREATE POLICY "Users can create their own habits"
     ON public.habits
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own habits
+DROP POLICY IF EXISTS "Users can update their own habits" ON public.habits;
 CREATE POLICY "Users can update their own habits"
     ON public.habits
     FOR UPDATE
@@ -52,6 +55,7 @@ CREATE POLICY "Users can update their own habits"
     WITH CHECK (auth.uid() = user_id);
 
 -- Users can delete their own habits
+DROP POLICY IF EXISTS "Users can delete their own habits" ON public.habits;
 CREATE POLICY "Users can delete their own habits"
     ON public.habits
     FOR DELETE
@@ -59,6 +63,7 @@ CREATE POLICY "Users can delete their own habits"
 
 -- 6. RLS Policies for habit_logs (Enforces ownership via the parent habit)
 -- Users can only view logs belonging to their habits
+DROP POLICY IF EXISTS "Users can view logs for their own habits" ON public.habit_logs;
 CREATE POLICY "Users can view logs for their own habits"
     ON public.habit_logs
     FOR SELECT
@@ -71,6 +76,7 @@ CREATE POLICY "Users can view logs for their own habits"
     );
 
 -- Users can insert logs for their own habits
+DROP POLICY IF EXISTS "Users can insert logs for their own habits" ON public.habit_logs;
 CREATE POLICY "Users can insert logs for their own habits"
     ON public.habit_logs
     FOR INSERT
@@ -83,6 +89,7 @@ CREATE POLICY "Users can insert logs for their own habits"
     );
 
 -- Users can update logs for their own habits
+DROP POLICY IF EXISTS "Users can update logs for their own habits" ON public.habit_logs;
 CREATE POLICY "Users can update logs for their own habits"
     ON public.habit_logs
     FOR UPDATE
@@ -102,6 +109,7 @@ CREATE POLICY "Users can update logs for their own habits"
     );
 
 -- Users can delete logs for their own habits
+DROP POLICY IF EXISTS "Users can delete logs for their own habits" ON public.habit_logs;
 CREATE POLICY "Users can delete logs for their own habits"
     ON public.habit_logs
     FOR DELETE
