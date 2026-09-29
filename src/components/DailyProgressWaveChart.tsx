@@ -139,6 +139,7 @@ export function DailyProgressWaveChart({
               className="cursor-pointer transition-all duration-150 hover:r-4"
               onMouseEnter={() => setHoveredDay(pt.day)}
               onMouseLeave={() => setHoveredDay(null)}
+              onTouchStart={() => setHoveredDay(pt.day)}
             />
           ))}
         </svg>

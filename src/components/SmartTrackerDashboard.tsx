@@ -235,9 +235,9 @@ export function SmartTrackerDashboard({
       {/* ========================================================================= */}
       {/* 1. TOP SECTION (Habit Tracker Title / Month Picker / Wave Chart / Donut) */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4">
         {/* Top-Left: Brand & Date Controls */}
-        <div className="lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
+        <div className="md:col-span-1 lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
           <div>
             <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-2.5 text-center bg-slate-50/90 dark:bg-slate-950/70 mb-4 shadow-xs dark:shadow-inner">
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono">
@@ -300,12 +300,12 @@ export function SmartTrackerDashboard({
         </div>
 
         {/* Top-Center: Daily Progress Wave Chart */}
-        <div className="lg:col-span-6 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
+        <div className="md:col-span-2 lg:col-span-6 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
           <DailyProgressWaveChart dayMetrics={analytics.dayMetricsList} color="#FB7185" />
         </div>
 
         {/* Top-Right: Overall Monthly Progress Gauge */}
-        <div className="lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-3xl p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex items-center justify-around transition-colors">
+        <div className="md:col-span-1 lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex items-center justify-around transition-colors">
           <CircularGauge
             percentage={analytics.overallPercentage}
             size={105}
@@ -341,9 +341,9 @@ export function SmartTrackerDashboard({
       {/* ========================================================================= */}
       {/* 2. THE MAIN SMART HABIT MATRIX (Week 1 to 5 Color Grouped Grid) */}
       {/* ========================================================================= */}
-      <div className="bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-3xl border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl overflow-hidden transition-colors">
+      <div className="bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl overflow-hidden transition-colors">
         {/* Table Action Bar */}
-        <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/60 flex items-center justify-between transition-colors">
+        <div className="px-4 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5 transition-colors">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-mono">
               {MONTH_NAMES[selectedMonth]} {selectedYear} Consistency Matrix
@@ -377,7 +377,7 @@ export function SmartTrackerDashboard({
         </div>
 
         {/* Scrollable Spreadsheet Table */}
-        <div className="overflow-x-auto w-full">
+        <div className="overflow-x-auto w-full smooth-scroll overscroll-x-contain">
           <table className="w-full border-collapse text-left min-w-[920px]">
             {/* Header: Weeks Top Row */}
             <thead>
@@ -385,7 +385,7 @@ export function SmartTrackerDashboard({
                 {/* Habit title column */}
                 <th
                   rowSpan={2}
-                  className="p-3 bg-purple-100/70 dark:bg-purple-950/50 text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 min-w-[210px] align-bottom transition-colors"
+                  className="sticky left-0 z-30 p-2.5 sm:p-3 bg-purple-100/95 dark:bg-purple-950/95 backdrop-blur-md text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 min-w-[140px] sm:min-w-[200px] max-w-[140px] sm:max-w-[200px] align-bottom transition-colors shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)]"
                 >
                   <div className="text-[11px] uppercase tracking-wider font-extrabold text-purple-800 dark:text-purple-300 font-mono">
                     DAILY HABIT
@@ -511,7 +511,7 @@ export function SmartTrackerDashboard({
                       className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group"
                     >
                     {/* Habit Index & Name */}
-                    <td className="p-2.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200">
+                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200 min-w-[140px] sm:min-w-[200px] max-w-[140px] sm:max-w-[200px] shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 truncate">
                           <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-semibold w-4 shrink-0">
@@ -557,7 +557,7 @@ export function SmartTrackerDashboard({
                           <button
                             type="button"
                             onClick={() => handleToggleCell(habit.id, day.dateString)}
-                            className="w-full h-8 flex items-center justify-center cursor-pointer transition-transform outline-none group/cell"
+                            className="w-full h-8 sm:h-8.5 flex items-center justify-center cursor-pointer transition-transform duration-100 active:scale-80 outline-none group/cell touch-manipulation"
                             title={
                               isGuestMode
                                 ? `Sign in to check off ${habit.title}`
@@ -705,7 +705,7 @@ export function SmartTrackerDashboard({
               <table className="w-full text-center border-collapse text-[10px] font-mono">
                 <thead>
                   <tr className="bg-slate-50/90 dark:bg-slate-950/80 text-slate-500 border-y border-slate-200 dark:border-slate-800">
-                    <th className="p-1.5 px-2 text-left font-sans font-bold text-slate-600 dark:text-slate-400 min-w-[120px]">
+                    <th className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-bold text-slate-600 dark:text-slate-400 min-w-[130px] bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
                       Daily Breakdown
                     </th>
                     {days.map((d) => (
@@ -718,7 +718,7 @@ export function SmartTrackerDashboard({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {/* Completed row */}
                   <tr>
-                    <td className="p-1.5 px-2 text-left font-sans font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/20 flex items-center gap-1">
+                    <td className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50/95 dark:bg-emerald-950/90 backdrop-blur-md flex items-center gap-1 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
                       <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Completed
                     </td>
                     {days.map((d) => {
@@ -736,7 +736,7 @@ export function SmartTrackerDashboard({
 
                   {/* Incomplete row */}
                   <tr>
-                    <td className="p-1.5 px-2 text-left font-sans font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/20 flex items-center gap-1">
+                    <td className="sticky left-0 z-20 p-1.5 px-2 text-left font-sans font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/95 dark:bg-rose-950/90 backdrop-blur-md flex items-center gap-1 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.35)]">
                       <CloseIcon className="w-3 h-3 text-rose-600 dark:text-rose-400" /> Incomplete
                     </td>
                     {days.map((d) => {

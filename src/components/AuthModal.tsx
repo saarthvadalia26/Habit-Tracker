@@ -82,7 +82,7 @@ export function AuthModal({
               stiffness: 450,
               damping: 28,
             }}
-            className="relative w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 overflow-hidden text-slate-900 dark:text-slate-100 transition-colors"
+            className="relative w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 text-slate-900 smooth-scroll dark:text-slate-100 transition-colors"
           >
             {/* Top decorative gradient glow */}
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-48 bg-indigo-500/20 dark:bg-indigo-600/25 pointer-events-none blur-3xl" />

@@ -1,4 +1,4 @@
-import { getHabitsWithLogsAction } from '@/app/actions/habits';
+﻿import { getHabitsWithLogsAction } from '@/app/actions/habits';
 import { getCurrentUserAction } from '@/app/actions/auth';
 import { getSampleHabits } from '@/lib/mockData';
 import { SmartTrackerDashboard } from '@/components/SmartTrackerDashboard';
@@ -28,7 +28,7 @@ export default async function HomePage() {
       />
 
       {/* Main Interactive Smart Habit Tracker */}
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-8 py-6">
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         <SmartTrackerDashboard
           initialHabits={initialHabits}
           isGuestMode={isGuestMode}

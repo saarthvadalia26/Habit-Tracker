@@ -65,7 +65,7 @@ export function CreateHabitModal({
               stiffness: 450,
               damping: 28,
             }}
-            className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 overflow-hidden text-slate-900 dark:text-slate-100 transition-colors"
+            className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 text-slate-900 smooth-scroll dark:text-slate-100 transition-colors"
           >
             {/* Top decorative gradient glow */}
             <div
@@ -155,7 +155,7 @@ export function CreateHabitModal({
                             ? `0 0 16px ${theme.hex}`
                             : 'none',
                         }}
-                        className={`w-10 h-10 rounded-2xl transition-all flex items-center justify-center cursor-pointer ${
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center cursor-pointer ${
                           isSelected
                             ? 'ring-4 ring-offset-2 ring-offset-slate-900 ring-white scale-105'
                             : 'opacity-70 hover:opacity-100'
