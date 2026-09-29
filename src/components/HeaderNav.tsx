@@ -75,14 +75,9 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
               <Orbit className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2.5">
-                <h1 className="font-extrabold text-sm sm:text-base md:text-lg tracking-tight text-slate-900 dark:text-white font-mono truncate transition-colors">
-                  Habit Tracker
-                </h1>
-                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 font-mono shrink-0 transition-colors">
-                  Matrix
-                </span>
-              </div>
+              <h1 className="font-extrabold text-sm sm:text-base md:text-lg tracking-tight text-slate-900 dark:text-white font-mono truncate transition-colors">
+                Habit Tracker
+              </h1>
               <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium hidden md:block truncate transition-colors">
                 Personal daily rituals • Build consistency & track your progress
               </p>
