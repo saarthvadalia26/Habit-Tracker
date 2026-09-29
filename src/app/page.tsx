@@ -1,4 +1,4 @@
-﻿import { getHabitsWithLogsAction } from '@/app/actions/habits';
+import { getHabitsWithLogsAction } from '@/app/actions/habits';
 import { getCurrentUserAction } from '@/app/actions/auth';
 import { getSampleHabits } from '@/lib/mockData';
 import { SmartTrackerDashboard } from '@/components/SmartTrackerDashboard';
