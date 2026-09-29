@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Google Antigravity Habit Tracker - Supabase SQL Schema
+-- Habit Tracker - Supabase SQL Schema
 -- ==============================================================================
 
 -- 1. Create habits table

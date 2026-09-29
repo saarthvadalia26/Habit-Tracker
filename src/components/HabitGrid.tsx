@@ -162,7 +162,7 @@ export function HabitGrid({
       </AnimatePresence>
 
       {/* Main Grid Card */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-antigravity border border-slate-100 relative">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-100 relative">
         {/* Header Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>

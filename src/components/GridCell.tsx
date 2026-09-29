@@ -104,7 +104,7 @@ export function GridCell({
           />
         )}
 
-        {/* Antigravity floating aura on completion */}
+        {/* Floating aura on completion */}
         {isCompleted && (
           <motion.div
             initial={{ opacity: 0.8, scale: 0.9 }}

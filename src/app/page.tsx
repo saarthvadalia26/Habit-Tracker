@@ -2,7 +2,7 @@ import { getHabitsWithLogsAction } from '@/app/actions/habits';
 import { getCurrentUserAction } from '@/app/actions/auth';
 import { getSampleHabits } from '@/lib/mockData';
 import { SmartTrackerDashboard } from '@/components/SmartTrackerDashboard';
-import { AntigravityBackground } from '@/components/AntigravityBackground';
+import { AmbientBackground } from '@/components/AmbientBackground';
 import { HeaderNav } from '@/components/HeaderNav';
 import { Layers } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export default async function HomePage() {
 
   return (
     <div className="relative min-h-screen text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
-      <AntigravityBackground />
+      <AmbientBackground />
 
       {/* Floating Dark Navigation Header with Individual Account Controls */}
       <HeaderNav

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useTheme } from '@/context/ThemeContext';
 
-export function AntigravityBackground() {
+export function AmbientBackground() {
   const { isDark } = useTheme();
 
   return (

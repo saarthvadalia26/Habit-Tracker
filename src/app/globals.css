@@ -45,8 +45,8 @@
   }
 }
 
-/* Antigravity floating animation keyframes */
-@keyframes antigravityFloatSlow {
+/* Ambient floating animation keyframes */
+@keyframes ambientFloatSlow {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);
   }
@@ -55,7 +55,7 @@
   }
 }
 
-@keyframes antigravityFloatMedium {
+@keyframes ambientFloatMedium {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);
   }
@@ -76,23 +76,23 @@
 }
 
 .animate-float-slow {
-  animation: antigravityFloatSlow 7s ease-in-out infinite;
+  animation: ambientFloatSlow 7s ease-in-out infinite;
 }
 
 .animate-float-medium {
-  animation: antigravityFloatMedium 5s ease-in-out infinite;
+  animation: ambientFloatMedium 5s ease-in-out infinite;
 }
 
 .animate-gentle-glow {
   animation: gentleGlow 4s ease-in-out infinite;
 }
 
-/* Dark Antigravity Depth Shadows */
-.shadow-antigravity-dark {
+/* Dark Ambient Depth Shadows */
+.shadow-ambient-dark {
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
 }
 
-.shadow-antigravity-dark-hover {
+.shadow-ambient-dark-hover {
   box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7), 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 }
 

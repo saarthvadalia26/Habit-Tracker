@@ -10,7 +10,7 @@ interface NotesSectionProps {
 }
 
 export function NotesSection({
-  storageKey = 'antigravity_habit_notes',
+  storageKey = 'habit_tracker_notes',
   readOnly = false,
   onRequireAuth,
 }: NotesSectionProps) {
