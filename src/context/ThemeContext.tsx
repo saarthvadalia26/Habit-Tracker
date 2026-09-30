@@ -18,9 +18,23 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
 });
 
+function applyTheme(t: Theme) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (t === 'dark') {
+    root.classList.add('dark');
+    root.classList.remove('light');
+    root.style.colorScheme = 'dark';
+  } else {
+    root.classList.remove('dark');
+    root.classList.add('light');
+    root.style.colorScheme = 'light';
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
-  const [mounted, setMounted] = useState(false);
+  
 
   useEffect(() => {
     const saved = localStorage.getItem('habit_tracker_theme') as Theme | null;
@@ -30,22 +44,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       applyTheme('dark');
     }
-    setMounted(true);
+    
   }, []);
 
-  const applyTheme = (t: Theme) => {
-    const root = document.documentElement;
-    if (t === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-      root.style.colorScheme = 'dark';
-    } else {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      root.style.colorScheme = 'light';
-    }
-  };
-
+  
   const setTheme = (nextTheme: Theme) => {
     // Check for native browser View Transition API
     if (typeof document !== 'undefined' && 'startViewTransition' in document) {

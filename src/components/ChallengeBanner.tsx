@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, Sparkles, ChevronRight, RotateCcw, CheckCircle2, Award, Calendar, Zap, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trophy, Flame, Sparkles, ChevronRight, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { Challenge, ChallengeProgress } from '@/types/challenge.types';
 import { HabitWithLogs } from '@/types/database.types';
 import { computeChallengeProgress } from '@/lib/challengeUtils';

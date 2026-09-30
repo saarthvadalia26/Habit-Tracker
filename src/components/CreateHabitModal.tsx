@@ -11,6 +11,23 @@ interface CreateHabitModalProps {
   onCreate: (title: string, colorTheme: string) => Promise<void>;
 }
 
+function isLightHex(hexColor: string): boolean {
+  if (!hexColor) return false;
+  let hex = hexColor.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex.split('').map((c) => c + c).join('');
+  }
+  const r = parseInt(hex.slice(0, 2), 16) || 0;
+  const g = parseInt(hex.slice(2, 4), 16) || 0;
+  const b = parseInt(hex.slice(4, 6), 16) || 0;
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 155;
+}
+
+function getContrastTextColor(hexColor: string): '#0F172A' | '#FFFFFF' {
+  return isLightHex(hexColor) ? '#0F172A' : '#FFFFFF';
+}
+
 const QUICK_COLORS = [
   '#EC4899', // Neon Pink
   '#F43F5E', // Rose
@@ -34,6 +51,9 @@ export function CreateHabitModal({
   const [hexInputText, setHexInputText] = useState('EC4899');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isSubmitLight = isLightHex(selectedTheme.hex);
+  const submitTextColor = getContrastTextColor(selectedTheme.hex);
+  const isCustomLight = isLightHex(customHex);
 
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -236,7 +256,7 @@ export function CreateHabitModal({
                         {isSelected && (
                           <motion.div
                             layoutId="active-theme-check"
-                            className="w-2.5 h-2.5 bg-white rounded-full shadow-sm"
+                            className={"w-2.5 h-2.5 rounded-full shadow-sm " + (isLightHex(theme.hex) ? "bg-slate-900" : "bg-white")}
                           />
                         )}
                       </motion.button>
@@ -258,7 +278,7 @@ export function CreateHabitModal({
                     }}
                     className={`relative h-8 sm:h-10 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center cursor-pointer overflow-hidden ${
                       isCustom
-                        ? 'ring-3 ring-offset-2 ring-offset-slate-900 ring-white scale-105 shadow-md'
+                        ? ('ring-3 ring-offset-2 ring-offset-slate-900 scale-105 shadow-md ' + (isCustomLight ? 'ring-slate-400 border border-slate-300 dark:border-slate-600' : 'ring-white'))
                         : 'border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400 bg-gradient-to-tr from-pink-500/15 via-indigo-500/15 to-cyan-500/15'
                     }`}
                     title="Custom Color"
@@ -266,7 +286,7 @@ export function CreateHabitModal({
                     {isCustom ? (
                       <motion.div
                         layoutId="active-theme-check"
-                        className="w-2.5 h-2.5 bg-white rounded-full shadow-sm"
+                        className={"w-2.5 h-2.5 rounded-full shadow-sm " + (isCustomLight ? "bg-slate-900" : "bg-white")}
                       />
                     ) : (
                       <Palette className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -293,10 +313,10 @@ export function CreateHabitModal({
                             backgroundColor: customHex,
                             boxShadow: `0 0 12px ${customHex}70`,
                           }}
-                          className="w-8 h-8 rounded-xl border border-white/30 flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+                          className={"w-8 h-8 rounded-xl border flex items-center justify-center cursor-pointer transition-transform hover:scale-105 " + (isCustomLight ? "border-slate-300 text-slate-900" : "border-white/30 text-white")}
                           title="Open color wheel"
                         >
-                          <Palette className="w-3.5 h-3.5 text-white drop-shadow pointer-events-none" />
+                          <Palette className="w-3.5 h-3.5 drop-shadow pointer-events-none" style={{ color: isCustomLight ? "#0F172A" : "#FFFFFF" }} />
                         </div>
                       </div>
 
@@ -364,10 +384,10 @@ export function CreateHabitModal({
                     backgroundColor: selectedTheme.hex,
                     boxShadow: `0 0 20px ${selectedTheme.hex}70`,
                   }}
-                  className="px-6 py-2.5 text-sm font-semibold text-white rounded-2xl flex items-center gap-2 disabled:opacity-50 transition-shadow cursor-pointer"
+                  className={"px-6 py-2.5 text-sm font-bold rounded-2xl flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer " + (isSubmitLight ? "border border-slate-300 dark:border-slate-500 shadow-md" : "")}
                 >
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  <span>{isSubmitting ? 'Creating...' : 'Create Habit'}</span>
+                  <Plus className="w-4 h-4 stroke-[3]" style={{ color: submitTextColor }} />
+                  <span style={{ color: submitTextColor }}>{isSubmitting ? 'Creating...' : 'Create Habit'}</span>
                 </motion.button>
               </div>
             </form>

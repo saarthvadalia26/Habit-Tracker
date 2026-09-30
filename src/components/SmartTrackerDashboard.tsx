@@ -706,7 +706,7 @@ export function SmartTrackerDashboard({
                 {/* Habit title column */}
                 <th
                   rowSpan={2}
-                  className="sticky left-0 z-30 p-2.5 sm:p-3 bg-purple-100/95 dark:bg-purple-950/95 backdrop-blur-md text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 min-w-[140px] sm:min-w-[200px] max-w-[140px] sm:max-w-[200px] align-bottom transition-colors shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)]"
+                  className="sticky left-0 z-30 p-2.5 sm:p-3 bg-purple-100/95 dark:bg-purple-950/95 backdrop-blur-md text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 min-w-[165px] sm:min-w-[210px] max-w-[165px] sm:max-w-[210px] align-bottom transition-colors shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)]"
                 >
                   <div className="text-[11px] uppercase tracking-wider font-extrabold text-purple-800 dark:text-purple-300 font-mono">
                     DAILY HABIT
@@ -851,14 +851,14 @@ export function SmartTrackerDashboard({
                       className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group"
                     >
                     {/* Habit Index & Name */}
-                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200 min-w-[140px] sm:min-w-[200px] max-w-[140px] sm:max-w-[200px] shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
+                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200 min-w-[165px] sm:min-w-[210px] max-w-[165px] sm:max-w-[210px] shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 truncate">
                           <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-semibold w-4 shrink-0">
                             {habitIndex + 1}.
                           </span>
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm border border-black/15 dark:border-white/25"
                             style={{
                               backgroundColor: habit.color_theme,
                               boxShadow: `0 0 8px ${habit.color_theme}60`,
@@ -869,16 +869,22 @@ export function SmartTrackerDashboard({
                           </span>
                         </div>
 
-                        {!isGuestMode && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteHabit(habit.id, habit.title)}
-                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition-opacity p-1 cursor-pointer"
-                            title="Delete habit"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isGuestMode) {
+                              setIsAuthModalOpen(true);
+                            } else {
+                              handleDeleteHabit(habit.id, habit.title);
+                            }
+                          }}
+                          className="opacity-80 hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-slate-400 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 p-1.5 -mr-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-all cursor-pointer shrink-0 active:scale-90"
+                          title={isGuestMode ? "Sign in to delete habit" : "Delete habit"}
+                          aria-label={"Delete habit " + habit.title}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
 

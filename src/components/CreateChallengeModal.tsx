@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, Calendar, Check, Flame, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Trophy, X, Check, Flame, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
 import { CHALLENGE_PRESETS } from '@/lib/challengeUtils';
 import { HabitWithLogs } from '@/types/database.types';
 import { formatDateToISO } from '@/lib/dateUtils';
-import { Challenge } from '@/types/challenge.types';
 
 interface CreateChallengeModalProps {
   isOpen: boolean;
