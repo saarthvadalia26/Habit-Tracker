@@ -471,6 +471,14 @@ export function SmartTrackerDashboard({
 
   return (
     <div className="w-full space-y-5">
+      {/* Challenge Hero / Motivational Banner */}
+      <ChallengeBanner
+        challenge={challenge}
+        habits={habits}
+        onOpenCreateModal={() => setIsChallengeModalOpen(true)}
+        onCompleteChallenge={handleCompleteChallenge}
+        onAbandonChallenge={handleAbandonChallenge}
+      />
       {/* ========================================================================= */}
       {/* 1. TOP SECTION (Habit Tracker Title / Month Picker / Wave Chart / Donut) */}
       {/* ========================================================================= */}
@@ -659,21 +667,34 @@ export function SmartTrackerDashboard({
             )}
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => {
-              if (isGuestMode) {
-                setIsAuthModalOpen(true);
-              } else {
-                setIsModalOpen(true);
-              }
-            }}
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span>Add Habit</span>
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setIsChallengeModalOpen(true)}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/25 cursor-pointer transition-all"
+              title="Start or manage 75 Hard, 90-Day Monk Mode, or Custom Challenge"
+            >
+              <Trophy className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>{challenge ? 'Active Challenge' : 'Challenges'}</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                if (isGuestMode) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  setIsModalOpen(true);
+                }
+              }}
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Add Habit</span>
+            </motion.button>
+          </div>
         </div>
 
         {/* Scrollable Spreadsheet Table */}
@@ -1199,6 +1220,14 @@ export function SmartTrackerDashboard({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateHabit}
+      />
+
+      {/* Challenge Creation Modal */}
+      <CreateChallengeModal
+        isOpen={isChallengeModalOpen}
+        onClose={() => setIsChallengeModalOpen(false)}
+        habits={habits}
+        onCreate={handleCreateChallenge}
       />
 
       {/* Auth Modal for Guests */}
