@@ -5,20 +5,25 @@ import { Edit3, Check } from 'lucide-react';
 
 interface NotesSectionProps {
   storageKey?: string;
+  userEmail?: string | null;
   readOnly?: boolean;
   onRequireAuth?: () => void;
 }
 
 export function NotesSection({
   storageKey = 'habit_tracker_notes',
+  userEmail,
   readOnly = false,
   onRequireAuth,
 }: NotesSectionProps) {
   const [notes, setNotes] = useState('');
   const [saved, setSaved] = useState(false);
 
+  // User-scoped storage key prevents cross-account notes leakage on shared devices
+  const scopedKey = userEmail ? `${storageKey}_${userEmail}` : `${storageKey}_guest`;
+
   useEffect(() => {
-    const savedText = localStorage.getItem(storageKey);
+    const savedText = localStorage.getItem(scopedKey);
     if (savedText !== null) {
       setNotes(savedText);
     } else {
@@ -26,7 +31,7 @@ export function NotesSection({
         '• Prioritize morning hydration & meditation.\n• Hit at least 4 workouts per week.\n• Keep phone away 45 mins before bedtime.'
       );
     }
-  }, [storageKey]);
+  }, [scopedKey]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (readOnly) {
@@ -35,7 +40,7 @@ export function NotesSection({
     }
     const val = e.target.value;
     setNotes(val);
-    localStorage.setItem(storageKey, val);
+    localStorage.setItem(scopedKey, val);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

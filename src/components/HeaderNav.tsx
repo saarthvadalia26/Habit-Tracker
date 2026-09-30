@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
+import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
-import { signOutAction, deleteAccountAction } from '@/app/actions/auth';
+import { signOutAction } from '@/app/actions/auth';
 import { toast, Toaster } from 'sonner';
 
 interface HeaderNavProps {
@@ -17,6 +18,7 @@ interface HeaderNavProps {
 export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
   const { isDark } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   const handleSignOut = async () => {
@@ -27,33 +29,6 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
           await signOutAction();
           toast.success('Signed out successfully');
           window.location.reload();
-        },
-      },
-      cancel: {
-        label: 'Cancel',
-        onClick: () => {},
-      },
-    });
-  };
-
-  const handleDeleteAccount = () => {
-    toast.error('Permanently delete your account?', {
-      description: 'This will completely wipe your account and all habit records from the database. This action cannot be undone.',
-      action: {
-        label: 'Delete All Data',
-        onClick: async () => {
-          try {
-            const res = await deleteAccountAction();
-            if (res.error) {
-              toast.error(res.error);
-            } else {
-              localStorage.removeItem('smart_tracker_habits');
-              toast.success('Account and all database records deleted.');
-              window.location.reload();
-            }
-          } catch (err: unknown) {
-            toast.error(err instanceof Error ? err.message : 'Failed to delete account');
-          }
         },
       },
       cancel: {
@@ -79,7 +54,7 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
                 Habit Tracker
               </h1>
               <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium hidden md:block truncate transition-colors">
-                Personal daily rituals • Build consistency & track your progress
+                Personal daily rituals &bull; Build consistency & track your progress
               </p>
             </div>
           </div>
@@ -123,7 +98,7 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
                 <motion.button
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
-                  onClick={handleDeleteAccount}
+                  onClick={() => setIsDeleteModalOpen(true)}
                   className="flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-white bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 rounded-xl transition-all cursor-pointer font-medium"
                   title="Permanently delete account and all records"
                 >
@@ -152,6 +127,13 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         defaultMode={authMode}
+      />
+
+      {/* Account Deletion Modal */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        userEmail={userEmail}
       />
     </>
   );

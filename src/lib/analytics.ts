@@ -1,5 +1,6 @@
 import { HabitWithLogs } from '@/types/database.types';
 import { MonthDay, WeekGroup } from '@/lib/monthUtils';
+import { formatDateToISO } from '@/lib/dateUtils';
 
 export interface DayMetric {
   dateString: string;
@@ -8,6 +9,7 @@ export interface DayMetric {
   incompleteCount: number;
   percentage: number;
   isPerfect: boolean;
+  isUpcoming: boolean;
 }
 
 export interface HabitMetric {
@@ -39,6 +41,53 @@ export interface MonthlyAnalytics {
   perfectDaysCount: number;
 }
 
+/**
+ * Calculates continuous streak backwards starting from today across month/year boundaries
+ */
+export function calculateContinuousStreak(logs: Record<string, boolean>): number {
+  if (!logs || Object.keys(logs).length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayStr = formatDateToISO(today);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatDateToISO(yesterday);
+
+  let streak = 0;
+  let currentDate = new Date(today);
+
+  // If today is completed, streak starts from today
+  if (logs[todayStr]) {
+    streak++;
+    currentDate.setDate(currentDate.getDate() - 1);
+  } else if (logs[yesterdayStr]) {
+    // If today is not completed yet, allow streak to continue from yesterday
+    currentDate = yesterday;
+  } else {
+    // Neither today nor yesterday completed: active streak is broken
+    return 0;
+  }
+
+  // Count backwards day by day as long as habit log is true
+  while (true) {
+    const dateStr = formatDateToISO(currentDate);
+    if (logs[dateStr]) {
+      // If we didn't count yesterday already in the first step
+      if (currentDate.getTime() !== today.getTime()) {
+        streak++;
+      }
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
 export function computeMonthlyAnalytics(
   habits: HabitWithLogs[],
   days: MonthDay[],
@@ -46,7 +95,14 @@ export function computeMonthlyAnalytics(
 ): MonthlyAnalytics {
   const totalHabits = habits.length;
   const daysInMonth = days.length;
-  const totalPossible = totalHabits * daysInMonth;
+
+  // Determine elapsed days vs future days in this month
+  const elapsedDays = days.filter((d) => !d.isUpcoming);
+  const isAllFuture = elapsedDays.length === 0;
+
+  // Total possible is based on elapsed days for active/current month, or all days for past month
+  const activeElapsedCount = isAllFuture ? 0 : elapsedDays.length;
+  const totalPossible = totalHabits * activeElapsedCount;
 
   // 1. Day Metrics
   const dayMetrics: Record<string, DayMetric> = {};
@@ -62,15 +118,22 @@ export function computeMonthlyAnalytics(
       }
     });
 
-    const incompleteOnDay = Math.max(0, totalHabits - completedOnDay);
+    // For upcoming future days, incompleteCount is 0 (day hasn't arrived yet)
+    const incompleteOnDay = day.isUpcoming
+      ? 0
+      : Math.max(0, totalHabits - completedOnDay);
+
     const percentage = totalHabits > 0 ? Math.round((completedOnDay / totalHabits) * 100) : 0;
-    const isPerfect = totalHabits > 0 && completedOnDay === totalHabits;
+    const isPerfect = !day.isUpcoming && totalHabits > 0 && completedOnDay === totalHabits;
 
     if (isPerfect) {
       perfectDaysCount++;
     }
 
-    totalCompletedAll += completedOnDay;
+    // Only count completed habits in elapsed/active periods
+    if (!day.isUpcoming) {
+      totalCompletedAll += completedOnDay;
+    }
 
     const metric: DayMetric = {
       dateString: day.dateString,
@@ -79,67 +142,55 @@ export function computeMonthlyAnalytics(
       incompleteCount: incompleteOnDay,
       percentage,
       isPerfect,
+      isUpcoming: day.isUpcoming,
     };
 
     dayMetrics[day.dateString] = metric;
     dayMetricsList.push(metric);
   });
 
-  // 2. Habit Metrics & Streaks
+  // 2. Habit Metrics & Continuous Streaks
   const habitMetrics: Record<string, HabitMetric> = {};
-  const todayStr = new Date().toISOString().split('T')[0];
 
   habits.forEach((habit) => {
-    let completedCount = 0;
+    let completedCountInMonth = 0;
     days.forEach((day) => {
       if (habit.logs[day.dateString]) {
-        completedCount++;
+        completedCountInMonth++;
       }
     });
 
-    const percentage = daysInMonth > 0 ? Math.round((completedCount / daysInMonth) * 100) : 0;
+    const goal = activeElapsedCount > 0 ? activeElapsedCount : daysInMonth;
+    const percentage = goal > 0 ? Math.round((completedCountInMonth / goal) * 100) : 0;
 
-    // Calculate streak backwards from today
-    let streak = 0;
-    const sortedDays = [...days].sort((a, b) => b.dayNumber - a.dayNumber);
-    const todayIndex = sortedDays.findIndex((d) => d.dateString === todayStr);
-    const startIndex = todayIndex >= 0 ? todayIndex : 0;
-
-    for (let i = startIndex; i < sortedDays.length; i++) {
-      const d = sortedDays[i];
-      if (habit.logs[d.dateString]) {
-        streak++;
-      } else {
-        // If today is incomplete, allow streak to continue if yesterday was complete
-        if (i === startIndex && d.dateString === todayStr) {
-          continue;
-        }
-        break;
-      }
-    }
+    // Continuous streak across all dates in habit.logs (preserves cross-month streaks)
+    const currentStreak = calculateContinuousStreak(habit.logs);
 
     habitMetrics[habit.id] = {
       habitId: habit.id,
       title: habit.title,
       colorTheme: habit.color_theme,
-      completedDays: completedCount,
+      completedDays: completedCountInMonth,
       goal: daysInMonth,
       percentage,
-      currentStreak: streak,
+      currentStreak,
     };
   });
 
   // 3. Weekly Metrics
   const weekMetrics: WeekMetric[] = weeks.map((week) => {
     let weekCompleted = 0;
-    const weekPossible = totalHabits * week.days.length;
+    const weekElapsedDays = week.days.filter((d) => !d.isUpcoming);
+    const weekPossible = totalHabits * weekElapsedDays.length;
 
     week.days.forEach((day) => {
-      habits.forEach((habit) => {
-        if (habit.logs[day.dateString]) {
-          weekCompleted++;
-        }
-      });
+      if (!day.isUpcoming) {
+        habits.forEach((habit) => {
+          if (habit.logs[day.dateString]) {
+            weekCompleted++;
+          }
+        });
+      }
     });
 
     const percentage = weekPossible > 0 ? Math.round((weekCompleted / weekPossible) * 100) : 0;
@@ -157,7 +208,7 @@ export function computeMonthlyAnalytics(
     .sort((a, b) => b.completedDays - a.completedDays)
     .slice(0, 7);
 
-  // 5. Overall percentage
+  // 5. Overall percentage based on active elapsed days
   const overallPercentage = totalPossible > 0 ? Math.round((totalCompletedAll / totalPossible) * 100) : 0;
 
   return {

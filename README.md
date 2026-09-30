@@ -1,61 +1,24 @@
-<div align="center">
+# 🎯 Habit Tracker
 
-# ⚡ Habit Tracker
-
-**A modern, high-performance daily habit tracker and consistency dashboard built for discipline, focus, and long-term personal performance.**
-
-[![Next.js](https://img.shields.io/badge/Next.js-16.3.6-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-
-<br />
-
-[Features](#features) • [Tech Stack](#tech-stack) • [Database Architecture](#database-architecture) • [Getting Started](#getting-started) • [Project Structure](#project-structure) • [Integrity Rules](#integrity-rules)
-
-</div>
+A modern, high-performance web-based habit tracking application designed for daily discipline, consistency analysis, and focus. Built with **Next.js 16 (App Router)**, **React 19**, **Tailwind CSS v4**, **Framer Motion**, and **Supabase (PostgreSQL)**.
 
 ---
 
-<a id="overview"></a>
-## 🌟 Overview
+## ⚡ Key Highlights
 
-**Habit Tracker** is a full-stack, cloud-synchronized web application crafted to turn daily routines into lasting streaks. It combines high-density habit visualization with gamified consistency analytics, real-time wave and donut metrics, custom color aesthetics, and strict habit-integrity rules.
+### 📊 Matrix View & Rolling Analytics
+- **Dynamic 31-Day Habit Matrix:** High-density, interactive monthly grid with responsive horizontal scrolling.
+- **Continuous Cross-Month Streaks:** Calculates streaks backwards across all historical logs, preserving your 30+, 60+, and 90+ day streaks seamlessly across month boundaries.
+- **72-Hour Integrity Window & Future Guard:** Prevents premature ticking of future days and locks records older than 72 hours (3 calendar days) to protect authentic habit consistency.
+- **Daily Progress Wave:** Real-time Bézier spline graph displaying percentage execution day-by-day.
+- **Circular Progress Metric:** Animated SVG gauge displaying overall completion based on elapsed days.
+- **Top 7 Daily Leaderboard:** Highlights your most consistent routines with active flame badges.
 
-Whether managing fitness routines, reading targets, or deep work sessions, Habit Tracker delivers an engaging interface with instant optimistic feedback, zero-lag theme transitions, and end-to-end device synchronization.
+### 🎨 Custom Color Studio
+- **Palette Presets & Custom Hex Picker:** Choose from 7 curated modern tones or pick any custom color using the native color picker, hex input, eyedropper tool, or quick-select chips.
+- **Dynamic Glow System:** Checked habit cells radiate custom drop shadows matched to the habit's theme.
 
----
-
-<a id="features"></a>
-## ✨ Key Features
-
-### 📅 High-Density Monthly Habit Matrix
-- **Full 12-Month Calendar Grid:** Seamlessly view, navigate, and log habits across any month and year.
-- **Weekly Chunking:** Automatic grouping of days into weeks with distinct color palettes and active week progression.
-- **Optimistic State Toggles:** Instant checkbox feedback powered by React transitions and background Supabase database syncing.
-
-### 🛡️ Authentic Habit Integrity (The 72-Hour Rule)
-- **Future Date Lock:** Habits cannot be checked off for upcoming dates in advance—encouraging genuine daily presence.
-- **72-Hour Edit Window:** Records older than 3 days (72 hours) are permanently locked to preserve historical accuracy and prevent retroactive tampering.
-- **Immediate Denial Feedback:** Clicking locked cells triggers a subtle shake animation and instant informational toast without false optimistic states.
-
-### 🎨 Fully Customizable Color Aesthetics
-- **7 Curated Designer Palettes:** Cosmic Indigo, Neo Emerald, Stellar Rose, Solar Amber, Aqua Cyan, Orbit Purple, and Zero-G Blue.
-- **Full Spectrum Native Color Picker:** Custom color wheel for choosing any hue, saturation, and luminance.
-- **Direct Hex Code Input:** Type or paste any `#HEX` color code with instant validation.
-- **Screen Eyedropper Tool:** Sample any pixel on your screen with the native browser Eyedropper API.
-- **Dynamic Reactive Glow:** Modal header badges, submission buttons, and background auras react in real time to the selected theme.
-
-### 📊 Real-Time Analytics & Charts
-- **Monthly Wave Performance Chart:** Smooth SVG area chart tracking your daily consistency velocity.
-- **Target Completion Donut:** Dynamic completion percentage with dynamic goal metrics.
-- **Weekly Progress Bars:** Interactive visual bars detailing completed vs. possible checkmarks per week.
-- **Daily Breakdown Table:** Clear daily tally of completed vs. incomplete habits across the month with high-contrast typography.
-- **Top 7 Daily Habits Leaderboard:** Highlights your strongest habits ranked by completion rate.
-
-### 🔄 Multi-Device Cloud Synchronization
+### 📱 Multi-Device Cloud Synchronization
 - **Personalized Header Title:** Customize the tracker banner with your name (e.g., `SAARTH'S HABIT TRACKER`).
 - **Cloud Metadata Persistence:** Custom titles are stored in Supabase user metadata and automatically hydrated across phones, laptops, and tablets.
 - **Guest / Demo Mode:** Explore all dashboard features and mock data immediately without signing up.
@@ -109,7 +72,7 @@ erDiagram
 ```
 
 ### Database Security & RLS Policies:
-- **`habits` Table:** Only the authenticated owner (`auth.uid() = user_id`) can `SELECT`, `INSERT`, `UPDATE`, and `DELETE`.
+- **`habits` Table:** Only the authenticated owner (`auth.uid() = user_id`) can `SELECT`, `INSERT`, `UPDATE`, and `DELETE`. Title length and color constraints enforced at schema level.
 - **`habit_logs` Table:** Ownership is validated by checking the parent habit's `user_id = auth.uid()`.
 - **Account Deletion RPC (`delete_user_account`):** Enables users to permanently wipe all habits, logs, and authentication records in one atomic transaction.
 - **Idempotent Migration:** All policies include `DROP POLICY IF EXISTS` guards for safe, repeatable schema runs.
@@ -162,7 +125,7 @@ npm run start
 ---
 
 <a id="project-structure"></a>
-## 📁 Project Structure
+## 📂 Project Structure
 
 ```plaintext
 habit-tracker/
@@ -177,28 +140,29 @@ habit-tracker/
 │   ├── components/                # Modular UI Components
 │   │   ├── AmbientBackground.tsx  # Dynamic floating ambient orbs and dot matrix
 │   │   ├── AuthModal.tsx          # Login & registration modal dialog
+│   │   ├── CircularGauge.tsx      # SVG progress donut gauge
 │   │   ├── CreateHabitModal.tsx   # Habit creation modal with custom color picker
-│   │   ├── DeleteAccountModal.tsx # Account wipe confirmation dialog
-│   │   ├── GridCell.tsx           # Interactive 7-day habit checkbox cell
-│   │   ├── HabitGrid.tsx          # 7-day routine tracker component
-│   │   ├── HabitRow.tsx           # Single habit row with action buttons
+│   │   ├── DailyProgressWaveChart.tsx # Bézier curve daily completion graph
+│   │   ├── DeleteAccountModal.tsx # Account wipe confirmation dialog with DELETE confirmation
 │   │   ├── HeaderNav.tsx          # Navigation header with account dropdown & theme toggle
-│   │   ├── NotesSection.tsx       # Local markdown notes / reflection scratchpad
-│   │   └── SmartTrackerDashboard.tsx # Comprehensive monthly matrix & analytics engine
+│   │   ├── NotesSection.tsx       # User-scoped markdown notes & reflection scratchpad
+│   │   ├── SmartTrackerDashboard.tsx # Comprehensive monthly matrix & analytics engine
+│   │   └── ThemeToggle.tsx        # Animated Light/Dark switch
 │   ├── context/
 │   │   └── ThemeContext.tsx       # Fast, lag-free Light/Dark theme provider
 │   ├── lib/
-│   │   ├── analytics.ts           # Monthly calculations, percentages, and streaks
+│   │   ├── analytics.ts           # Continuous streak math & elapsed-day completion analytics
 │   │   ├── constants.ts           # Predefined themes & dynamic color resolution
 │   │   ├── dateUtils.ts           # Date math, ISO formatters, rolling day windows
 │   │   ├── mockData.ts            # Sample habits for guest / preview mode
 │   │   ├── monthUtils.ts          # Monthly days generator, 72h rule calculations
-│   │   └── supabase/              # Supabase SSR clients (server & browser)
-│   └── types/
-│       └── database.types.ts      # TypeScript definitions for database entities
+│   │   └── supabase/              # Supabase SSR clients (server, browser, and middleware)
+│   ├── types/
+│   │   └── database.types.ts      # TypeScript definitions for database entities
+│   └── middleware.ts              # Next.js root middleware for active session refreshing
 ├── supabase/
 │   └── schema.sql                 # Complete idempotent PostgreSQL schema & RLS policies
-├── public/                        # Static assets and icons
+├── public/                        # Static assets, multi-res favicons, and manifest
 ├── README.md                      # Project documentation
 └── package.json
 ```
@@ -210,9 +174,10 @@ habit-tracker/
 
 | Rule | Enforcement | Behavior |
 | :--- | :--- | :--- |
-| **Future Date Restriction** | Client & Server Action | Cannot check off habits for tomorrow or any future date. |
+| **Future Date Restriction** | Client & Server Action | Cannot check off habits for tomorrow or any future date (with timezone tolerance). |
 | **72-Hour Edit Window** | Client & Server Action | Checkboxes for dates older than 3 days (72 hours) are locked to maintain authentic habit discipline. |
 | **Private Data Isolation** | PostgreSQL RLS | Users can strictly access and modify their own records. |
+| **Continuous Streaks** | Analytics Engine | Streaks calculate across month boundaries to reward sustained long-term consistency. |
 | **Guest Exploration** | Client State | Visitors can try all tracking features in a local sandbox without signing in. |
 | **Cross-Device Title** | Supabase User Metadata | Custom user tracker titles sync seamlessly across mobile, desktop, and tablets. |
 
@@ -239,5 +204,5 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
 ---
 
 <div align="center">
-  <sub>Built with ❤️ for personal discipline and focus.</sub>
+  <sub>Built with focus & dedication for personal discipline.</sub>
 </div>

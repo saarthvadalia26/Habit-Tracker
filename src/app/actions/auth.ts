@@ -72,8 +72,6 @@ export async function signUpAction(email: string, password: string) {
       return { error: error.message };
     }
 
-    // New user starts with an empty tracker with no pre-seeded habits
-
     revalidatePath('/');
     return { data, error: null };
   } catch (err: unknown) {
@@ -93,6 +91,10 @@ export async function signOutAction() {
   }
 }
 
+/**
+ * Permanently deletes the user account, habits, and all database records.
+ * Accurately surfaces errors if the deletion procedure fails.
+ */
 export async function deleteAccountAction() {
   try {
     const supabase = await createClient();
@@ -112,17 +114,22 @@ export async function deleteAccountAction() {
       .eq('user_id', user.id);
 
     if (habitsDeleteError) {
-      console.warn('Could not delete habits directly:', habitsDeleteError.message);
+      return { success: false, error: `Failed to remove user habits: ${habitsDeleteError.message}` };
     }
 
-    // 2. Call RPC to delete auth.users record if configured
-    try {
-      await supabase.rpc('delete_user_account');
-    } catch (rpcErr) {
-      console.warn('RPC delete_user_account failed, proceeding with sign out:', rpcErr);
+    // 2. Call RPC to delete auth.users record
+    const { error: rpcError } = await supabase.rpc('delete_user_account');
+
+    if (rpcError) {
+      // If RPC is missing or fails, report accurately
+      console.error('RPC delete_user_account error:', rpcError.message);
+      return {
+        success: false,
+        error: `Database wiped, but auth account deletion failed: ${rpcError.message}. Please ensure delete_user_account RPC is installed in Supabase.`,
+      };
     }
 
-    // 3. Sign out user and clear all cookies
+    // 3. Sign out user and clear session cookies
     await supabase.auth.signOut();
     revalidatePath('/');
     return { success: true, error: null };
@@ -131,7 +138,6 @@ export async function deleteAccountAction() {
     return { success: false, error: message };
   }
 }
-
 
 /**
  * Updates the user's custom tracker title in Supabase Auth user metadata
@@ -149,7 +155,8 @@ export async function updateCustomNameAction(customName: string) {
       return { success: false, error: 'Authentication required to save title.' };
     }
 
-    const clean = customName.trim().slice(0, 18);
+    // Sanitize: max 18 chars, strip control characters
+    const clean = customName.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim().slice(0, 18);
     const { error } = await supabase.auth.updateUser({
       data: {
         custom_name: clean,

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -1079,6 +1079,7 @@ export function SmartTrackerDashboard({
           {/* Notes & Intentions Pad with Per-Month Key */}
           <NotesSection
             storageKey={`habit_notes_${selectedYear}_${selectedMonth}`}
+            userEmail={userEmail}
             readOnly={isGuestMode}
             onRequireAuth={() => setIsAuthModalOpen(true)}
           />

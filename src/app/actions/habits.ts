@@ -9,6 +9,8 @@ export interface ActionResponse<T> {
   error: string | null;
 }
 
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
 /**
  * Fetches all habits for the logged-in user, along with their logs in a given date range
  */
@@ -45,12 +47,13 @@ export async function getHabitsWithLogsAction(
       return { data: [], error: null };
     }
 
-    // 2. Fetch logs for habits
+    // 2. Fetch logs for habits (allow up to 5,000 rows to avoid PostgREST default 1,000 truncation)
     const habitIds = habits.map((h) => h.id);
     let logsQuery = supabase
       .from('habit_logs')
       .select('*')
-      .in('habit_id', habitIds);
+      .in('habit_id', habitIds)
+      .limit(5000);
 
     if (startDate) {
       logsQuery = logsQuery.gte('date', startDate);
@@ -91,17 +94,22 @@ export async function getHabitsWithLogsAction(
 }
 
 /**
- * Creates a new habit for the current user
+ * Creates a new habit for the current user with strict input sanitization
  */
 export async function createHabitAction(
   title: string,
   colorTheme: string = '#6366F1'
 ): Promise<ActionResponse<Habit>> {
   try {
-    const trimmedTitle = title.trim();
+    const trimmedTitle = title.trim().slice(0, 60);
     if (!trimmedTitle) {
       return { data: null, error: 'Habit title cannot be empty.' };
     }
+
+    // Validate hex color to prevent CSS or arbitrary injection
+    const validatedColor = HEX_COLOR_REGEX.test(colorTheme.trim())
+      ? colorTheme.trim()
+      : '#6366F1';
 
     const supabase = await createClient();
     const {
@@ -121,7 +129,7 @@ export async function createHabitAction(
       .insert({
         user_id: user.id,
         title: trimmedTitle,
-        color_theme: colorTheme,
+        color_theme: validatedColor,
       })
       .select()
       .single();
@@ -139,7 +147,8 @@ export async function createHabitAction(
 }
 
 /**
- * Toggles or updates the completion status of a habit on a specific date
+ * Toggles or updates the completion status of a habit on a specific date.
+ * Enforces business rules with timezone-aware tolerance.
  */
 export async function toggleHabitLogAction(
   habitId: string,
@@ -149,6 +158,11 @@ export async function toggleHabitLogAction(
   try {
     if (!habitId || !date) {
       return { data: null, error: 'Habit ID and date are required.' };
+    }
+
+    // Validate date format YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return { data: null, error: 'Invalid date format. Expected YYYY-MM-DD.' };
     }
 
     const supabase = await createClient();
@@ -165,24 +179,25 @@ export async function toggleHabitLogAction(
     }
 
     // Business Rules:
-    // 1. Cannot tick upcoming/future dates
-    // 2. Cannot edit after 72 hours (3 days)
+    // 1. Cannot tick future dates (> 1 day tolerance to account for global client timezones ahead of UTC)
+    // 2. Cannot edit past records older than 72 hours (3 calendar days + timezone tolerance)
     const [y, m, d] = date.split('-').map(Number);
-    const targetDate = new Date(y, m - 1, d);
-    targetDate.setHours(0, 0, 0, 0);
+    const targetDate = new Date(Date.UTC(y, m - 1, d));
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    const diffDays = Math.round((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round((todayUTC.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) {
+    // diffDays < -1 means the target date is strictly in the future even considering timezone offsets up to UTC+14
+    if (diffDays < -1) {
       return {
         data: null,
         error: 'Cannot log habits for future dates. Please wait until the day arrives.',
       };
     }
 
+    // diffDays > 3 allows today, yesterday, 2 days ago, and 3 days ago (72h edit window)
     if (diffDays > 3) {
       return {
         data: null,
