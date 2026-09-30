@@ -500,6 +500,8 @@ export function SmartTrackerDashboard({
           <CircularGauge
             percentage={analytics.overallPercentage}
             size={105}
+            containerClassName="w-[85px] h-[85px] sm:w-[105px] sm:h-[105px]"
+            valueClassName="text-lg sm:text-2xl font-black"
             strokeWidth={10}
             color="#FB7185"
             bgColor={isDark ? '#1E293B' : '#E2E8F0'}
@@ -917,8 +919,8 @@ export function SmartTrackerDashboard({
               </div>
             </div>
 
-            {/* 5 Circular Gauges (Week 1 to 5) */}
-            <div className="grid grid-cols-5 gap-2 py-4">
+            {/* 5 Circular Gauges (Week 1 to 5) with Mobile-Optimized Breathing Room */}
+            <div className="grid grid-cols-5 gap-1.5 xs:gap-2 sm:gap-3 py-3 sm:py-4">
               {weeks.map((week, idx) => {
                 const metric = analytics.weekMetrics[idx] || {
                   percentage: 0,
@@ -928,25 +930,28 @@ export function SmartTrackerDashboard({
                 return (
                   <div
                     key={week.weekNumber}
-                    className="flex flex-col items-center justify-center p-2 rounded-2xl bg-slate-50/90 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-xs dark:shadow-inner transition-colors"
+                    className="flex flex-col items-center justify-center py-2.5 px-1 xs:px-1.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/90 dark:bg-slate-950/70 border border-slate-200/90 dark:border-slate-800/80 shadow-xs dark:shadow-inner transition-all hover:border-slate-300 dark:hover:border-slate-700"
                   >
                     <CircularGauge
                       percentage={metric.percentage}
-                      size={72}
-                      strokeWidth={7}
+                      size={60}
+                      strokeWidth={5.5}
                       color={week.color.accent}
                       bgColor={isDark ? '#1E293B' : '#E2E8F0'}
-                      label={`WEEK ${week.weekNumber}`}
                       showTickMarks={false}
+                      containerClassName="w-[42px] h-[42px] xs:w-[46px] xs:h-[46px] sm:w-[58px] sm:h-[58px]"
+                      valueClassName="text-[10px] xs:text-[11px] sm:text-xs font-black"
                     />
-                    <span className="text-xs font-mono text-slate-600 dark:text-slate-300 font-semibold mt-1">
+                    <span className="mt-1.5 sm:mt-2 text-[9px] xs:text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 font-mono text-center">
+                      WEEK {week.weekNumber}
+                    </span>
+                    <span className="text-[10px] xs:text-[11px] sm:text-xs font-mono text-slate-600 dark:text-slate-300 font-bold mt-0.5 text-center">
                       {metric.completed}/{metric.possible}
                     </span>
                   </div>
                 );
               })}
             </div>
-
             {/* Day Breakdown Rows (Completed & Incomplete counts per day) */}
             <div className="overflow-x-auto mt-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
               <table className="w-full text-center border-collapse text-xs sm:text-[13px] font-mono">
