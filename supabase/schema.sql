@@ -1,5 +1,5 @@
-﻿-- ==============================================================================
--- Habit Tracker - Hardened Supabase SQL Schema
+-- ==============================================================================
+-- Habit Tracker - Hardened Supabase SQL Schema (with Challenges Support)
 -- ==============================================================================
 
 -- 1. Create habits table with length and validation constraints
@@ -22,31 +22,43 @@ CREATE TABLE IF NOT EXISTS public.habit_logs (
     CONSTRAINT unique_habit_date UNIQUE (habit_id, date)
 );
 
--- 3. Performance Indexes
+-- 3. Create challenges table (for 75-Day, 90-Day, 30-Day, and custom challenges)
+CREATE TABLE IF NOT EXISTS public.challenges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL CONSTRAINT check_challenge_title CHECK (char_length(trim(title)) > 0 AND char_length(title) <= 100),
+    duration_days INT NOT NULL CONSTRAINT check_duration CHECK (duration_days >= 7 AND duration_days <= 365),
+    start_date DATE NOT NULL,
+    habit_ids UUID[] DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'active' CONSTRAINT check_challenge_status CHECK (status IN ('active', 'completed', 'abandoned')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 4. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_habits_user_id ON public.habits(user_id);
 CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id ON public.habit_logs(habit_id);
 CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_date ON public.habit_logs(habit_id, date);
+CREATE INDEX IF NOT EXISTS idx_challenges_user_id ON public.challenges(user_id);
+CREATE INDEX IF NOT EXISTS idx_challenges_status ON public.challenges(user_id, status);
 
--- 4. Enable Row Level Security (RLS)
+-- 5. Enable Row Level Security (RLS)
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies for habits
--- Users can only read their own habits
+-- 6. RLS Policies for habits
 DROP POLICY IF EXISTS "Users can view their own habits" ON public.habits;
 CREATE POLICY "Users can view their own habits"
     ON public.habits
     FOR SELECT
     USING (auth.uid() = user_id);
 
--- Users can insert their own habits
 DROP POLICY IF EXISTS "Users can create their own habits" ON public.habits;
 CREATE POLICY "Users can create their own habits"
     ON public.habits
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own habits
 DROP POLICY IF EXISTS "Users can update their own habits" ON public.habits;
 CREATE POLICY "Users can update their own habits"
     ON public.habits
@@ -54,14 +66,13 @@ CREATE POLICY "Users can update their own habits"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- Users can delete their own habits
 DROP POLICY IF EXISTS "Users can delete their own habits" ON public.habits;
 CREATE POLICY "Users can delete their own habits"
     ON public.habits
     FOR DELETE
     USING (auth.uid() = user_id);
 
--- 6. RLS Policies for habit_logs (Enforces ownership via the parent habit)
+-- 7. RLS Policies for habit_logs (Enforces ownership via the parent habit)
 DROP POLICY IF EXISTS "Users can view logs for their own habits" ON public.habit_logs;
 CREATE POLICY "Users can view logs for their own habits"
     ON public.habit_logs
@@ -117,8 +128,33 @@ CREATE POLICY "Users can delete logs for their own habits"
         )
     );
 
--- 7. Secure Account Deletion RPC Function
--- Enables authenticated users to completely wipe their account and all data
+-- 8. RLS Policies for challenges
+DROP POLICY IF EXISTS "Users can view their own challenges" ON public.challenges;
+CREATE POLICY "Users can view their own challenges"
+    ON public.challenges
+    FOR SELECT
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own challenges" ON public.challenges;
+CREATE POLICY "Users can create their own challenges"
+    ON public.challenges
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own challenges" ON public.challenges;
+CREATE POLICY "Users can update their own challenges"
+    ON public.challenges
+    FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own challenges" ON public.challenges;
+CREATE POLICY "Users can delete their own challenges"
+    ON public.challenges
+    FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- 9. Secure Account Deletion RPC Function
 CREATE OR REPLACE FUNCTION public.delete_user_account()
 RETURNS void
 LANGUAGE plpgsql
@@ -136,6 +172,9 @@ BEGIN
     -- Explicitly delete all habits (cascades to habit_logs)
     DELETE FROM public.habits WHERE user_id = current_user_id;
 
+    -- Explicitly delete all user challenges
+    DELETE FROM public.challenges WHERE user_id = current_user_id;
+
     -- Delete auth identities and sessions to guarantee clean cascade
     DELETE FROM auth.identities WHERE user_id = current_user_id;
     DELETE FROM auth.sessions WHERE user_id = current_user_id;
@@ -148,15 +187,16 @@ $$;
 REVOKE ALL ON FUNCTION public.delete_user_account() FROM public;
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
--- 8. Hardened Role Permissions (Principle of Least Privilege: NO GRANT ALL for authenticated users)
+-- 10. Hardened Role Permissions (Least Privilege)
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.habits TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.habit_logs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.challenges TO authenticated;
 GRANT ALL ON TABLE public.habits TO service_role;
 GRANT ALL ON TABLE public.habit_logs TO service_role;
+GRANT ALL ON TABLE public.challenges TO service_role;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, service_role;
 
--- Ensure future tables grant least privilege automatically
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated, service_role;

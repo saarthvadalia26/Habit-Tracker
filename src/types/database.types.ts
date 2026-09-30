@@ -33,6 +33,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      challenges: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          duration_days: number;
+          start_date: string;
+          habit_ids: string[];
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          title: string;
+          duration_days: number;
+          start_date: string;
+          habit_ids?: string[];
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          duration_days?: number;
+          start_date?: string;
+          habit_ids?: string[];
+          status?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       habit_logs: {
         Row: {
           id: string;
@@ -88,6 +121,8 @@ export type Habit = Database['public']['Tables']['habits']['Row'];
 export type HabitInsert = Database['public']['Tables']['habits']['Insert'];
 export type HabitLog = Database['public']['Tables']['habit_logs']['Row'];
 export type HabitLogInsert = Database['public']['Tables']['habit_logs']['Insert'];
+export type ChallengeRow = Database['public']['Tables']['challenges']['Row'];
+export type ChallengeInsert = Database['public']['Tables']['challenges']['Insert'];
 
 export interface HabitWithLogs extends Habit {
   logs: Record<string, boolean>; // date (YYYY-MM-DD) -> is_completed

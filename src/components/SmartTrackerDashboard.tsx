@@ -37,12 +37,21 @@ import {
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
 import { updateCustomNameAction } from '@/app/actions/auth';
+import { ChallengeBanner } from '@/components/ChallengeBanner';
+import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { Challenge } from '@/types/challenge.types';
+import {
+  createChallengeAction,
+  completeChallengeAction,
+  abandonChallengeAction,
+} from '@/app/actions/challenges';
 
 interface SmartTrackerDashboardProps {
   initialHabits: HabitWithLogs[];
   isGuestMode?: boolean;
   userEmail?: string | null;
   initialCustomName?: string;
+  initialChallenge?: Challenge | null;
 }
 
 export function SmartTrackerDashboard({
@@ -50,6 +59,7 @@ export function SmartTrackerDashboard({
   isGuestMode = false,
   userEmail,
   initialCustomName = '',
+  initialChallenge = null,
 }: SmartTrackerDashboardProps) {
   const { isDark } = useTheme();
   const currentDate = new Date();
@@ -58,6 +68,84 @@ export function SmartTrackerDashboard({
   const [habits, setHabits] = useState<HabitWithLogs[]>(initialHabits);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [challenge, setChallenge] = useState<Challenge | null>(initialChallenge ?? null);
+  const [isChallengeModalOpen, setIsChallengeModalOpen] = useState<boolean>(false);
+
+  // Sync or restore challenge (with guest localStorage fallback)
+  useEffect(() => {
+    if (initialChallenge) {
+      setChallenge(initialChallenge);
+    } else {
+      try {
+        const key = userEmail ? `habit_challenge_${userEmail}` : 'habit_challenge_guest';
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          setChallenge(JSON.parse(saved));
+        }
+      } catch {}
+    }
+  }, [initialChallenge, userEmail]);
+
+  const handleCreateChallenge = async (
+    title: string,
+    durationDays: number,
+    startDate: string,
+    habitIds: string[]
+  ) => {
+    if (isGuestMode) {
+      const guestChallenge: Challenge = {
+        id: `guest-challenge-${Date.now()}`,
+        title,
+        duration_days: durationDays,
+        start_date: startDate,
+        habit_ids: habitIds,
+        status: 'active',
+      };
+      setChallenge(guestChallenge);
+      localStorage.setItem('habit_challenge_guest', JSON.stringify(guestChallenge));
+      toast.success(`Launched ${durationDays}-Day Challenge!`, { description: `Goal: ${title}. Stay unbroken!`, });
+      return;
+    }
+
+    try {
+      const res = await createChallengeAction(title, durationDays, startDate, habitIds);
+      if (res.error) {
+        toast.error('Failed to create challenge', { description: res.error });
+      } else if (res.data) {
+        setChallenge(res.data);
+        if (userEmail) {
+          localStorage.setItem(`habit_challenge_${userEmail}`, JSON.stringify(res.data));
+        }
+        toast.success(`Launched ${durationDays}-Day Challenge!`, { description: `Goal: ${title} (${durationDays} days). Stay unbroken!`, });
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to launch challenge');
+    }
+  };
+
+  const handleCompleteChallenge = async (challengeId: string) => {
+    setChallenge(null);
+    const key = userEmail ? `habit_challenge_${userEmail}` : 'habit_challenge_guest';
+    localStorage.removeItem(key);
+
+    if (!isGuestMode) {
+      try {
+        await completeChallengeAction(challengeId);
+      } catch {}
+    }
+  };
+
+  const handleAbandonChallenge = async (challengeId: string) => {
+    setChallenge(null);
+    const key = userEmail ? `habit_challenge_${userEmail}` : 'habit_challenge_guest';
+    localStorage.removeItem(key);
+
+    if (!isGuestMode) {
+      try {
+        await abandonChallengeAction(challengeId);
+      } catch {}
+    }
+  };
   const [, startTransition] = useTransition();
 
   const [customName, setCustomName] = useState<string>(() => initialCustomName || '');

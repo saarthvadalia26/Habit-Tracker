@@ -6,12 +6,23 @@ A modern, high-performance web-based habit tracking application designed for dai
 
 ## ⚡ Key Highlights
 
+### 🏆 75-Day & 90-Day Challenge Engine
+- **Fixed-Term Milestone Sprints:** Commit to unbroken daily discipline with dedicated challenge structures:
+  - **75 Hard / 75-Day Discipline** (75 Days)
+  - **90-Day Monk Mode / Deep Work** (90 Days)
+  - **30-Day Consistency Sprint** (30 Days)
+  - **21-Day Habit Builder** (21 Days)
+  - **Custom Challenge** (Set custom name and duration between 7 and 365 days).
+- **Live Days-Remaining Countdown:** Real-time day counter (`Day 14 of 75 • 61 Days Left`).
+- **Milestone Badges & Rewards:** Unlock Bronze (25%), Silver (50%), Gold (75%), and Finisher Champion (100%) badges with celebratory confetti effects.
+- **Challenge Habit Selection:** Select all habits or handpick specific routines that count toward your challenge.
+
 ### 📊 Matrix View & Rolling Analytics
 - **Dynamic 31-Day Habit Matrix:** High-density, interactive monthly grid with responsive horizontal scrolling.
 - **Continuous Cross-Month Streaks:** Calculates streaks backwards across all historical logs, preserving your 30+, 60+, and 90+ day streaks seamlessly across month boundaries.
-- **72-Hour Integrity Window & Future Guard:** Prevents premature ticking of future days and locks records older than 72 hours (3 calendar days) to protect authentic habit consistency.
+- **72-Hour Integrity Window & Future Guard:** Prevents premature ticking of future days and locks records older than 72 hours (3 calendar days) to protect authentic habit discipline.
 - **Daily Progress Wave:** Real-time Bézier spline graph displaying percentage execution day-by-day.
-- **Circular Progress Metric:** Animated SVG gauge displaying overall completion based on elapsed days.
+- **Circular Progress Metric:** Animated SVG gauge displaying overall completion based on elapsed days with mobile-optimized breathing room.
 - **Top 7 Daily Leaderboard:** Highlights your most consistent routines with active flame badges.
 
 ### 🎨 Custom Color Studio
@@ -21,7 +32,7 @@ A modern, high-performance web-based habit tracking application designed for dai
 ### 📱 Multi-Device Cloud Synchronization
 - **Personalized Header Title:** Customize the tracker banner with your name (e.g., `SAARTH'S HABIT TRACKER`).
 - **Cloud Metadata Persistence:** Custom titles are stored in Supabase user metadata and automatically hydrated across phones, laptops, and tablets.
-- **Guest / Demo Mode:** Explore all dashboard features and mock data immediately without signing up.
+- **Guest / Demo Mode:** Explore all dashboard features, challenges, and mock data immediately without signing up.
 
 ### 🌓 Ultra-Smooth Dark / Light Mode
 - Zero-lag CSS-variable-based theme switching with custom easing transitions.
@@ -53,6 +64,7 @@ The backend runs on PostgreSQL via Supabase with **Row Level Security (RLS)** st
 erDiagram
     auth_users ||--o{ habits : "owns (ON DELETE CASCADE)"
     habits ||--o{ habit_logs : "contains (ON DELETE CASCADE)"
+    auth_users ||--o{ challenges : "owns (ON DELETE CASCADE)"
 
     habits {
         uuid id PK
@@ -69,12 +81,24 @@ erDiagram
         boolean is_completed
         timestamptz created_at
     }
+
+    challenges {
+        uuid id PK
+        uuid user_id FK
+        text title
+        int duration_days
+        date start_date
+        uuid_array habit_ids
+        text status
+        timestamptz created_at
+    }
 ```
 
 ### Database Security & RLS Policies:
-- **`habits` Table:** Only the authenticated owner (`auth.uid() = user_id`) can `SELECT`, `INSERT`, `UPDATE`, and `DELETE`. Title length and color constraints enforced at schema level.
+- **`habits` Table:** Only the authenticated owner (`auth.uid() = user_id`) can `SELECT`, `INSERT`, `UPDATE`, and `DELETE`.
 - **`habit_logs` Table:** Ownership is validated by checking the parent habit's `user_id = auth.uid()`.
-- **Account Deletion RPC (`delete_user_account`):** Enables users to permanently wipe all habits, logs, and authentication records in one atomic transaction.
+- **`challenges` Table:** Strictly isolated to the owner (`auth.uid() = user_id`) with status constraints (`active`, `completed`, `abandoned`).
+- **Account Deletion RPC (`delete_user_account`):** Enables users to permanently wipe all habits, challenges, logs, and authentication records in one atomic transaction.
 - **Idempotent Migration:** All policies include `DROP POLICY IF EXISTS` guards for safe, repeatable schema runs.
 
 ---
@@ -131,8 +155,9 @@ npm run start
 habit-tracker/
 ├── src/
 │   ├── app/
-│   │   ├── actions/               # Server Actions (Auth, Habits, Logs)
+│   │   ├── actions/               # Server Actions (Auth, Habits, Challenges)
 │   │   │   ├── auth.ts            # Sign in, Sign up, Delete account, Metadata sync
+│   │   │   ├── challenges.ts      # Create, fetch, finish, and abandon challenge actions
 │   │   │   └── habits.ts          # CRUD for habits & daily completion logs
 │   │   ├── globals.css            # Design tokens, keyframes, scrollbar styling
 │   │   ├── layout.tsx             # Root layout with font configuration & ThemeProvider
@@ -140,7 +165,9 @@ habit-tracker/
 │   ├── components/                # Modular UI Components
 │   │   ├── AmbientBackground.tsx  # Dynamic floating ambient orbs and dot matrix
 │   │   ├── AuthModal.tsx          # Login & registration modal dialog
-│   │   ├── CircularGauge.tsx      # SVG progress donut gauge
+│   │   ├── ChallengeBanner.tsx    # Active challenge countdown, progress bar & milestone badges
+│   │   ├── CircularGauge.tsx      # SVG progress donut gauge with responsive viewBox
+│   │   ├── CreateChallengeModal.tsx # 75 Hard, 90 Monk & custom challenge creator
 │   │   ├── CreateHabitModal.tsx   # Habit creation modal with custom color picker
 │   │   ├── DailyProgressWaveChart.tsx # Bézier curve daily completion graph
 │   │   ├── DeleteAccountModal.tsx # Account wipe confirmation dialog with DELETE confirmation
@@ -152,12 +179,14 @@ habit-tracker/
 │   │   └── ThemeContext.tsx       # Fast, lag-free Light/Dark theme provider
 │   ├── lib/
 │   │   ├── analytics.ts           # Continuous streak math & elapsed-day completion analytics
+│   │   ├── challengeUtils.ts      # Presets (75 Hard, 90 Monk, 30 Sprint) & milestone math
 │   │   ├── constants.ts           # Predefined themes & dynamic color resolution
 │   │   ├── dateUtils.ts           # Date math, ISO formatters, rolling day windows
 │   │   ├── mockData.ts            # Sample habits for guest / preview mode
 │   │   ├── monthUtils.ts          # Monthly days generator, 72h rule calculations
 │   │   └── supabase/              # Supabase SSR clients (server, browser, and middleware)
 │   ├── types/
+│   │   ├── challenge.types.ts     # TypeScript interfaces for challenges & milestones
 │   │   └── database.types.ts      # TypeScript definitions for database entities
 │   └── middleware.ts              # Next.js root middleware for active session refreshing
 ├── supabase/
@@ -174,11 +203,13 @@ habit-tracker/
 
 | Rule | Enforcement | Behavior |
 | :--- | :--- | :--- |
+| **75 / 90-Day Challenge Engine** | Client & Server Action | Fixed-term milestone sprints with milestone badges (25%, 50%, 75%, 100%) and countdowns. |
 | **Future Date Restriction** | Client & Server Action | Cannot check off habits for tomorrow or any future date (with timezone tolerance). |
 | **72-Hour Edit Window** | Client & Server Action | Checkboxes for dates older than 3 days (72 hours) are locked to maintain authentic habit discipline. |
 | **Private Data Isolation** | PostgreSQL RLS | Users can strictly access and modify their own records. |
 | **Continuous Streaks** | Analytics Engine | Streaks calculate across month boundaries to reward sustained long-term consistency. |
-| **Guest Exploration** | Client State | Visitors can try all tracking features in a local sandbox without signing in. |
+| **Account-Scoped Cache** | Client State & Storage | Custom titles and notes are strictly isolated per account email, preventing bleed across signouts or recreations. |
+| **Guest Exploration** | Client State | Visitors can try all tracking features, custom challenges, and matrix views without signing in. |
 | **Cross-Device Title** | Supabase User Metadata | Custom user tracker titles sync seamlessly across mobile, desktop, and tablets. |
 
 ---

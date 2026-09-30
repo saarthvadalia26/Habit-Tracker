@@ -1,5 +1,6 @@
 import { getHabitsWithLogsAction } from '@/app/actions/habits';
 import { getCurrentUserAction } from '@/app/actions/auth';
+import { getActiveChallengeAction } from '@/app/actions/challenges';
 import { getSampleHabits } from '@/lib/mockData';
 import { SmartTrackerDashboard } from '@/components/SmartTrackerDashboard';
 import { AmbientBackground } from '@/components/AmbientBackground';
@@ -9,6 +10,7 @@ import { Layers } from 'lucide-react';
 export default async function HomePage() {
   const { user } = await getCurrentUserAction();
   const habitsRes = await getHabitsWithLogsAction();
+  const challengeRes = await getActiveChallengeAction();
 
   // If user is authenticated, load their personal PostgreSQL habits
   // If user has zero habits yet, start with empty list or let them create
@@ -17,6 +19,7 @@ export default async function HomePage() {
   // Authenticated users only see their own habits (empty list for new accounts)
   const initialHabits = user ? (habitsRes.data ?? []) : getSampleHabits();
   const initialCustomName = (user?.user_metadata?.custom_name as string) || '';
+  const initialChallenge = challengeRes?.data ?? null;
 
   return (
     <div className="relative min-h-screen text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
@@ -35,6 +38,7 @@ export default async function HomePage() {
           isGuestMode={isGuestMode}
           userEmail={user?.email}
           initialCustomName={initialCustomName}
+          initialChallenge={initialChallenge}
         />
       </main>
 
