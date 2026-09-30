@@ -28,6 +28,9 @@ export interface ChallengeProgress {
   totalCompletedChecks: number;
   totalPossibleChecks: number;
   isFinished: boolean;
+  isUpcoming: boolean;
+  daysUntilStart: number;
+  formattedStartDate: string;
   milestones: Milestone[];
 }
 

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Flame, Sparkles, ChevronRight, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Trophy, Flame, Sparkles, ChevronRight, RotateCcw, CheckCircle2, Clock, Quote, Shuffle } from 'lucide-react';
+import { getDailyQuote, getRandomQuote, MotivationQuote } from '@/lib/quotes';
 import { Challenge, ChallengeProgress } from '@/types/challenge.types';
 import { HabitWithLogs } from '@/types/database.types';
 import { computeChallengeProgress } from '@/lib/challengeUtils';
@@ -25,6 +26,14 @@ export function ChallengeBanner({
   onAbandonChallenge,
 }: ChallengeBannerProps) {
   const [showOptions, setShowOptions] = useState(false);
+  const [quote, setQuote] = useState<MotivationQuote>(getDailyQuote);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  const handleShuffleQuote = () => {
+    setIsSpinning(true);
+    setQuote(getRandomQuote(quote.quote));
+    setTimeout(() => setIsSpinning(false), 500);
+  };
 
   const progress: ChallengeProgress | null = useMemo(() => {
     if (!challenge) return null;
@@ -79,6 +88,37 @@ export function ChallengeBanner({
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Motivational / Discipline Quote Strip */}
+        <div className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
+              <Quote className="w-3.5 h-3.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-[13px] font-medium italic text-slate-700 dark:text-slate-300 leading-snug">
+                &ldquo;{quote.quote}&rdquo;
+              </p>
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                <span>— {quote.author}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                  #{quote.tag}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleShuffleQuote}
+            className="self-end sm:self-auto px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95 shadow-xs"
+            title="Shuffle quote for fresh inspiration"
+          >
+            <Shuffle className={'w-3 h-3 text-indigo-500 transition-transform duration-500 ' + (isSpinning ? 'rotate-180' : '')} />
+            <span>Shuffle Quote</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -99,11 +139,20 @@ export function ChallengeBanner({
 
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
-                ACTIVE CHALLENGE
-              </span>
+              {progress.isUpcoming ? (
+                <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700/80 flex items-center gap-1 animate-pulse">
+                  <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span>Starts in {progress.daysUntilStart} {progress.daysUntilStart === 1 ? 'day' : 'days'}</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
+                  ACTIVE CHALLENGE
+                </span>
+              )}
               <span className="text-xs font-mono font-bold text-slate-500">
-                Day {progress.currentDay} of {progress.totalDays}
+                {progress.isUpcoming
+                  ? 'Starts ' + progress.formattedStartDate + ' • Day 0 of ' + progress.totalDays
+                  : 'Day ' + progress.currentDay + ' of ' + progress.totalDays}
               </span>
             </div>
             <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight font-mono mt-0.5">
@@ -123,8 +172,15 @@ export function ChallengeBanner({
             <Sparkles className="w-3.5 h-3.5" />
           </button>
 
-          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono font-bold text-[11px]">
-            {progress.daysRemaining} days left
+          <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono font-bold text-[11px] flex items-center gap-1">
+            {progress.isUpcoming ? (
+              <>
+                <Clock className="w-3 h-3 text-amber-500" />
+                <span>Starts {progress.formattedStartDate}</span>
+              </>
+            ) : (
+              <span>{progress.daysRemaining} days left</span>
+            )}
           </span>
 
           {/* More options (End / Reset) */}
@@ -175,11 +231,15 @@ export function ChallengeBanner({
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between text-[11px] font-mono font-bold">
           <span className="text-slate-600 dark:text-slate-300">
-            {progress.percentElapsed}% Elapsed
+            {progress.isUpcoming
+              ? '0% Elapsed (Starts in ' + progress.daysUntilStart + (progress.daysUntilStart === 1 ? ' day)' : ' days)')
+              : progress.percentElapsed + '% Elapsed'}
           </span>
           <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
             <Flame className="w-3.5 h-3.5 fill-amber-500" />
-            {progress.adherencePercentage}% Habit Adherence
+            {progress.isUpcoming
+              ? 'Awaiting Start Date'
+              : progress.adherencePercentage + '% Habit Adherence'}
           </span>
         </div>
 
@@ -215,6 +275,37 @@ export function ChallengeBanner({
           ))}
         </div>
       </div>
+
+        {/* Motivational / Discipline Quote Strip */}
+        <div className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
+              <Quote className="w-3.5 h-3.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-[13px] font-medium italic text-slate-700 dark:text-slate-300 leading-snug">
+                &ldquo;{quote.quote}&rdquo;
+              </p>
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                <span>— {quote.author}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                  #{quote.tag}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleShuffleQuote}
+            className="self-end sm:self-auto px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95 shadow-xs"
+            title="Shuffle quote for fresh inspiration"
+          >
+            <Shuffle className={'w-3 h-3 text-indigo-500 transition-transform duration-500 ' + (isSpinning ? 'rotate-180' : '')} />
+            <span>Shuffle Quote</span>
+          </button>
+        </div>
     </div>
   );
 }
