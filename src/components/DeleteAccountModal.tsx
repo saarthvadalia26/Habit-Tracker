@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,9 +38,22 @@ export function DeleteAccountModal({
         return;
       }
 
-      // Clear local storage data on client
+      // Completely wipe all account titles, notes, and tracker data from this device
+      if (userEmail) {
+        localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
+      }
       localStorage.removeItem('habit_tracker_custom_name');
-      localStorage.removeItem('habit_tracker_theme');
+      localStorage.removeItem('smart_tracker_habits');
+      try {
+        const keysToRemove: string[] = [];
+        for (let idx = 0; idx < localStorage.length; idx++) {
+          const k = localStorage.key(idx);
+          if (k && (k.startsWith('habit_') || k.startsWith('smart_tracker_'))) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+      } catch {}
       toast.success('Account Deleted', {
         description: 'Your account, habits, and all database records were permanently deleted.',
       });

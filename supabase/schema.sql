@@ -1,4 +1,4 @@
--- ==============================================================================
+﻿-- ==============================================================================
 -- Habit Tracker - Hardened Supabase SQL Schema
 -- ==============================================================================
 
@@ -135,6 +135,10 @@ BEGIN
 
     -- Explicitly delete all habits (cascades to habit_logs)
     DELETE FROM public.habits WHERE user_id = current_user_id;
+
+    -- Delete auth identities and sessions to guarantee clean cascade
+    DELETE FROM auth.identities WHERE user_id = current_user_id;
+    DELETE FROM auth.sessions WHERE user_id = current_user_id;
 
     -- Permanently delete the user record from auth.users
     DELETE FROM auth.users WHERE id = current_user_id;

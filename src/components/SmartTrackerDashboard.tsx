@@ -66,32 +66,40 @@ export function SmartTrackerDashboard({
   const [shakingCellKey, setShakingCellKey] = useState<string | null>(null);
 
   useEffect(() => {
-    // Priority 1: Supabase account metadata (cross-device source of truth)
-    if (initialCustomName) {
+    // If guest mode or unauthenticated visitor
+    if (isGuestMode || !userEmail) {
+      setCustomName('');
+      localStorage.removeItem('habit_tracker_custom_name');
+      return;
+    }
+
+    // Priority 1: Supabase account metadata (cloud source of truth across all devices)
+    if (initialCustomName && initialCustomName.trim() !== '') {
       setCustomName(initialCustomName);
-      localStorage.setItem('habit_tracker_custom_name', initialCustomName);
+      localStorage.setItem(`habit_tracker_custom_name_${userEmail}`, initialCustomName);
+      localStorage.removeItem('habit_tracker_custom_name');
       return;
     }
 
-    // Priority 2: Local storage on this device
-    const saved = localStorage.getItem('habit_tracker_custom_name');
-    if (saved !== null && saved.trim() !== '') {
+    // Priority 2: Account-scoped local storage for THIS specific email
+    const userScopedKey = `habit_tracker_custom_name_${userEmail}`;
+    const saved = localStorage.getItem(userScopedKey);
+    if (saved && saved.trim() !== '') {
       setCustomName(saved);
-      // Auto-sync this device's existing title up to Supabase cloud account!
-      if (!isGuestMode) {
-        updateCustomNameAction(saved);
-      }
       return;
     }
 
-    // Priority 3: Fallback extracted from user email
-    if (userEmail) {
-      const extracted = userEmail.split('@')[0].replace(/[0-9_.-]/g, '');
-      if (extracted && extracted.length >= 2) {
-        const capitalized = extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase();
-        setCustomName(capitalized);
-      }
+    // Priority 3: Fresh account default extracted from user email (e.g. Alex for alex@gmail.com)
+    const extracted = userEmail.split('@')[0].replace(/[0-9_.-]/g, '');
+    if (extracted && extracted.length >= 2) {
+      const capitalized = extracted.charAt(0).toUpperCase() + extracted.slice(1).toLowerCase();
+      setCustomName(capitalized);
+    } else {
+      setCustomName('');
     }
+
+    // Purge any stale un-scoped legacy key
+    localStorage.removeItem('habit_tracker_custom_name');
   }, [initialCustomName, userEmail, isGuestMode]);
 
   const formattedName = useMemo(() => {
@@ -133,7 +141,14 @@ export function SmartTrackerDashboard({
     }
     const clean = tempName.trim().slice(0, 18);
     setCustomName(clean);
-    localStorage.setItem('habit_tracker_custom_name', clean);
+    if (userEmail) {
+      if (clean) {
+        localStorage.setItem(`habit_tracker_custom_name_${userEmail}`, clean);
+      } else {
+        localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
+      }
+    }
+    localStorage.removeItem('habit_tracker_custom_name');
     setIsEditingName(false);
 
     if (clean) {

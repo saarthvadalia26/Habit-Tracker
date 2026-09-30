@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -26,6 +26,10 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
       action: {
         label: 'Sign Out',
         onClick: async () => {
+          if (userEmail) {
+            localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
+          }
+          localStorage.removeItem('habit_tracker_custom_name');
           await signOutAction();
           toast.success('Signed out successfully');
           window.location.reload();

@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -60,6 +60,11 @@ export async function signUpAction(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
+      options: {
+        data: {
+          custom_name: '',
+        },
+      },
     });
 
     if (error) {
@@ -106,6 +111,15 @@ export async function deleteAccountAction() {
     if (authError || !user) {
       return { success: false, error: 'You must be logged in to delete your account.' };
     }
+
+    // Reset user metadata custom_name so recreating the account never inherits previous title
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          custom_name: '',
+        },
+      });
+    } catch {}
 
     // 1. Explicitly wipe all habits (cascades to habit_logs)
     const { error: habitsDeleteError } = await supabase
