@@ -33,6 +33,9 @@ export interface MonthlyAnalytics {
   overallPercentage: number;
   totalCompleted: number;
   totalPossible: number;
+  todayCompleted: number;
+  todayTotal: number;
+  todayPercentage: number;
   dayMetrics: Record<string, DayMetric>;
   dayMetricsList: DayMetric[];
   habitMetrics: Record<string, HabitMetric>;
@@ -96,13 +99,8 @@ export function computeMonthlyAnalytics(
   const totalHabits = habits.length;
   const daysInMonth = days.length;
 
-  // Determine elapsed days vs future days in this month
-  const elapsedDays = days.filter((d) => !d.isUpcoming);
-  const isAllFuture = elapsedDays.length === 0;
-
-  // Total possible is based on elapsed days for active/current month, or all days for past month
-  const activeElapsedCount = isAllFuture ? 0 : elapsedDays.length;
-  const totalPossible = totalHabits * activeElapsedCount;
+  // True total possible checkmarks for the entire month (e.g. 7 habits × 31 days = 217)
+  const totalPossible = totalHabits * daysInMonth;
 
   // 1. Day Metrics
   const dayMetrics: Record<string, DayMetric> = {};
@@ -118,22 +116,16 @@ export function computeMonthlyAnalytics(
       }
     });
 
-    // For upcoming future days, incompleteCount is 0 (day hasn't arrived yet)
-    const incompleteOnDay = day.isUpcoming
-      ? 0
-      : Math.max(0, totalHabits - completedOnDay);
-
+    const incompleteOnDay = Math.max(0, totalHabits - completedOnDay);
     const percentage = totalHabits > 0 ? Math.round((completedOnDay / totalHabits) * 100) : 0;
-    const isPerfect = !day.isUpcoming && totalHabits > 0 && completedOnDay === totalHabits;
+    const isPerfect = totalHabits > 0 && completedOnDay === totalHabits;
 
-    if (isPerfect) {
+    if (isPerfect && !day.isUpcoming) {
       perfectDaysCount++;
     }
 
-    // Only count completed habits in elapsed/active periods
-    if (!day.isUpcoming) {
-      totalCompletedAll += completedOnDay;
-    }
+    // Accumulate total completed checkmarks in this month
+    totalCompletedAll += completedOnDay;
 
     const metric: DayMetric = {
       dateString: day.dateString,
@@ -149,6 +141,12 @@ export function computeMonthlyAnalytics(
     dayMetricsList.push(metric);
   });
 
+  // Today specific metrics (e.g. 3 of 7 habits completed today = 43%)
+  const todayDay = days.find((d) => d.isToday);
+  const todayCompleted = todayDay ? dayMetrics[todayDay.dateString]?.completedCount || 0 : 0;
+  const todayTotal = totalHabits;
+  const todayPercentage = todayTotal > 0 ? Math.round((todayCompleted / todayTotal) * 100) : 0;
+
   // 2. Habit Metrics & Continuous Streaks
   const habitMetrics: Record<string, HabitMetric> = {};
 
@@ -160,7 +158,8 @@ export function computeMonthlyAnalytics(
       }
     });
 
-    const goal = activeElapsedCount > 0 ? activeElapsedCount : daysInMonth;
+    // The monthly goal for a habit is the total days in that month (e.g. 31 days)
+    const goal = daysInMonth;
     const percentage = goal > 0 ? Math.round((completedCountInMonth / goal) * 100) : 0;
 
     // Continuous streak across all dates in habit.logs (preserves cross-month streaks)
@@ -171,26 +170,23 @@ export function computeMonthlyAnalytics(
       title: habit.title,
       colorTheme: habit.color_theme,
       completedDays: completedCountInMonth,
-      goal: daysInMonth,
+      goal,
       percentage,
       currentStreak,
     };
   });
 
-  // 3. Weekly Metrics
+  // 3. Weekly Metrics (Each week measured by its actual days in that week: totalHabits * week.days.length)
   const weekMetrics: WeekMetric[] = weeks.map((week) => {
     let weekCompleted = 0;
-    const weekElapsedDays = week.days.filter((d) => !d.isUpcoming);
-    const weekPossible = totalHabits * weekElapsedDays.length;
+    const weekPossible = totalHabits * week.days.length;
 
     week.days.forEach((day) => {
-      if (!day.isUpcoming) {
-        habits.forEach((habit) => {
-          if (habit.logs[day.dateString]) {
-            weekCompleted++;
-          }
-        });
-      }
+      habits.forEach((habit) => {
+        if (habit.logs[day.dateString]) {
+          weekCompleted++;
+        }
+      });
     });
 
     const percentage = weekPossible > 0 ? Math.round((weekCompleted / weekPossible) * 100) : 0;
@@ -208,13 +204,16 @@ export function computeMonthlyAnalytics(
     .sort((a, b) => b.completedDays - a.completedDays)
     .slice(0, 7);
 
-  // 5. Overall percentage based on active elapsed days
+  // 5. True Overall Monthly Percentage: total completed checkmarks in month / (totalHabits * daysInMonth)
   const overallPercentage = totalPossible > 0 ? Math.round((totalCompletedAll / totalPossible) * 100) : 0;
 
   return {
     overallPercentage,
     totalCompleted: totalCompletedAll,
     totalPossible,
+    todayCompleted,
+    todayTotal,
+    todayPercentage,
     dayMetrics,
     dayMetricsList,
     habitMetrics,

@@ -620,9 +620,14 @@ export function SmartTrackerDashboard({
             <span className="text-[10px] text-slate-500 font-mono mt-0.5">
               Checkmarks ({habits.length} habits × {days.length}d)
             </span>
-            <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
-              <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-              <span>{analytics.perfectDaysCount} Perfect Days</span>
+            <div className="mt-2 flex flex-col items-end gap-1">
+              <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 px-1.5 py-0.5 rounded-md">
+                Today: {analytics.todayCompleted}/{analytics.todayTotal} ({analytics.todayPercentage}%)
+              </span>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
+                <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{analytics.perfectDaysCount} Perfect Days</span>
+              </div>
             </div>
           </div>
         </div>
