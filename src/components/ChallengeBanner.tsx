@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Flame, Sparkles, ChevronRight, RotateCcw, CheckCircle2, Clock, Quote, Shuffle } from 'lucide-react';
 import { getDailyQuote, getRandomQuote, MotivationQuote } from '@/lib/quotes';
 import { Challenge, ChallengeProgress } from '@/types/challenge.types';
@@ -18,6 +18,84 @@ interface ChallengeBannerProps {
   onAbandonChallenge: (id: string) => Promise<void>;
 }
 
+/**
+ * Hybrid Motivational Quote Strip:
+ * - Slow auto-shuffle cadence (18s) with a soothing fade transition
+ * - Graceful pause on hover/touch so reading is never interrupted
+ * - Compact, sleek icon button for on-demand inspiration
+ */
+function MotivationalQuoteStrip() {
+  const [quote, setQuote] = useState<MotivationQuote>(getDailyQuote);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const handleNextQuote = useCallback(() => {
+    setIsSpinning(true);
+    setQuote((prev) => getRandomQuote(prev.quote));
+    setTimeout(() => setIsSpinning(false), 500);
+  }, []);
+
+  // Slow calm auto-shuffle every 18 seconds, pauses on hover or touch
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      handleNextQuote();
+    }, 18000);
+    return () => clearInterval(interval);
+  }, [isPaused, handleNextQuote, quote.quote]);
+
+  return (
+    <div
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => {
+        setTimeout(() => setIsPaused(false), 6000);
+      }}
+      className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between gap-3 group/quote"
+    >
+      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+        <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
+          <Quote className="w-3.5 h-3.5" />
+        </span>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={quote.quote}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+            >
+              <p className="text-xs sm:text-[13px] font-medium italic text-slate-700 dark:text-slate-300 leading-snug">
+                &ldquo;{quote.quote}&rdquo;
+              </p>
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>— {quote.author}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                  #{quote.tag}
+                </span>
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Compact Icon Button */}
+      <button
+        type="button"
+        onClick={handleNextQuote}
+        className="p-1.5 sm:p-2 rounded-xl bg-slate-100/90 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer shrink-0 self-center hover:scale-105 active:scale-95 shadow-2xs"
+        title="Shuffle quote (Auto-cycles every 18s • Hover to pause)"
+        aria-label="Shuffle quote for fresh inspiration"
+      >
+        <Shuffle className={'w-3.5 h-3.5 text-indigo-500 transition-transform duration-500 ' + (isSpinning ? 'rotate-180' : '')} />
+      </button>
+    </div>
+  );
+}
+
 export function ChallengeBanner({
   challenge,
   habits,
@@ -26,14 +104,6 @@ export function ChallengeBanner({
   onAbandonChallenge,
 }: ChallengeBannerProps) {
   const [showOptions, setShowOptions] = useState(false);
-  const [quote, setQuote] = useState<MotivationQuote>(getDailyQuote);
-  const [isSpinning, setIsSpinning] = useState(false);
-
-  const handleShuffleQuote = () => {
-    setIsSpinning(true);
-    setQuote(getRandomQuote(quote.quote));
-    setTimeout(() => setIsSpinning(false), 500);
-  };
 
   const progress: ChallengeProgress | null = useMemo(() => {
     if (!challenge) return null;
@@ -82,35 +152,7 @@ export function ChallengeBanner({
         </div>
 
         {/* Motivational / Discipline Quote Strip */}
-        <div className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
-              <Quote className="w-3.5 h-3.5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-[13px] font-medium italic text-slate-700 dark:text-slate-300 leading-snug">
-                &ldquo;{quote.quote}&rdquo;
-              </p>
-              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
-                <span>— {quote.author}</span>
-                <span className="text-slate-300 dark:text-slate-600">•</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
-                  #{quote.tag}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleShuffleQuote}
-            className="self-end sm:self-auto px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95 shadow-xs"
-            title="Shuffle quote for fresh inspiration"
-          >
-            <Shuffle className={'w-3 h-3 text-indigo-500 transition-transform duration-500 ' + (isSpinning ? 'rotate-180' : '')} />
-            <span>Shuffle Quote</span>
-          </button>
-        </div>
+        <MotivationalQuoteStrip />
       </div>
     );
   }
@@ -269,35 +311,7 @@ export function ChallengeBanner({
       </div>
 
         {/* Motivational / Discipline Quote Strip */}
-        <div className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <span className="p-1 rounded-lg bg-amber-500/10 text-amber-500 shrink-0 mt-0.5">
-              <Quote className="w-3.5 h-3.5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs sm:text-[13px] font-medium italic text-slate-700 dark:text-slate-300 leading-snug">
-                &ldquo;{quote.quote}&rdquo;
-              </p>
-              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
-                <span>— {quote.author}</span>
-                <span className="text-slate-300 dark:text-slate-600">•</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
-                  #{quote.tag}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleShuffleQuote}
-            className="self-end sm:self-auto px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer shrink-0 hover:scale-105 active:scale-95 shadow-xs"
-            title="Shuffle quote for fresh inspiration"
-          >
-            <Shuffle className={'w-3 h-3 text-indigo-500 transition-transform duration-500 ' + (isSpinning ? 'rotate-180' : '')} />
-            <span>Shuffle Quote</span>
-          </button>
-        </div>
+        <MotivationalQuoteStrip />
     </div>
   );
 }
