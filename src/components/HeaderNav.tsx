@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -44,7 +44,16 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
 
   return (
     <>
-      <Toaster theme={isDark ? 'dark' : 'light'} position="top-right" richColors closeButton expand />
+      <Toaster
+        theme={isDark ? 'dark' : 'light'}
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{
+          duration: 6000,
+          className: 'font-sans rounded-2xl shadow-2xl backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 text-xs sm:text-sm',
+        }}
+      />
 
       <header className="sticky top-2 sm:top-4 z-40 px-3 sm:px-6 lg:px-8 max-w-[1440px] mx-auto w-full">
         <div className="bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 rounded-2xl sm:rounded-3xl px-3 sm:px-6 py-2.5 sm:py-3.5 shadow-lg dark:shadow-2xl flex items-center justify-between transition-colors duration-300 gap-2">

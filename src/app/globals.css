@@ -164,3 +164,32 @@
     opacity: 1;
   }
 }
+
+/* Smooth, calming transition for Sonner notifications */
+[data-sonner-toaster] {
+  font-family: inherit;
+}
+
+[data-sonner-toast] {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.45s ease !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+[data-sonner-toast][data-mounted='true'] {
+  animation: smoothToastSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothToastSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

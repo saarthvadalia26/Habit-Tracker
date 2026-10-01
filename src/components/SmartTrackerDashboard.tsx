@@ -205,16 +205,21 @@ export function SmartTrackerDashboard({
     return `${upper}'S`;
   }, [customName]);
 
+  // Smooth, non-intrusive authentication notification prompt
+  const handleRequireAuth = (actionDescription: string) => {
+    toast.info('Sign in required', {
+      description: `Please sign in or create an account to ${actionDescription}.`,
+      duration: 6500,
+      action: {
+        label: 'Sign In',
+        onClick: () => setIsAuthModalOpen(true),
+      },
+    });
+  };
+
   const handleTitleClick = () => {
     if (isGuestMode) {
-      toast.info('Sign in required to personalize title', {
-        description: 'Create an account or sign in to set your custom name and track your personal habit matrix.',
-        action: {
-          label: 'Sign In',
-          onClick: () => setIsAuthModalOpen(true),
-        },
-      });
-      setIsAuthModalOpen(true);
+      handleRequireAuth('personalize your habit tracker title');
       return;
     }
     setTempName(customName);
@@ -224,7 +229,7 @@ export function SmartTrackerDashboard({
   const handleSaveName = async () => {
     if (isGuestMode) {
       setIsEditingName(false);
-      setIsAuthModalOpen(true);
+      handleRequireAuth('personalize your habit tracker title');
       return;
     }
     const clean = tempName.trim().slice(0, 18);
@@ -281,14 +286,7 @@ export function SmartTrackerDashboard({
   const handleToggleCell = async (habitId: string, date: string, day?: MonthDay) => {
     // Unauthenticated visitors cannot modify or tick boxes
     if (isGuestMode) {
-      toast.info('Sign in required to track habits', {
-        description: 'Create an account or sign in to track your personal rituals and streaks.',
-        action: {
-          label: 'Sign In',
-          onClick: () => setIsAuthModalOpen(true),
-        },
-      });
-      setIsAuthModalOpen(true);
+      handleRequireAuth('track daily progress and build streaks');
       return;
     }
 
@@ -368,7 +366,7 @@ export function SmartTrackerDashboard({
   // Create Habit
   const handleCreateHabit = async (title: string, colorTheme: string) => {
     if (isGuestMode) {
-      setIsAuthModalOpen(true);
+      handleRequireAuth('create new habits');
       return;
     }
 
@@ -393,13 +391,7 @@ export function SmartTrackerDashboard({
   // Delete Habit with Sonner Confirmation Toast
   const handleDeleteHabit = (habitId: string, title: string) => {
     if (isGuestMode) {
-      toast.info('Sign in required to modify habits', {
-        action: {
-          label: 'Sign In',
-          onClick: () => setIsAuthModalOpen(true),
-        },
-      });
-      setIsAuthModalOpen(true);
+      handleRequireAuth('delete habits');
       return;
     }
 
@@ -433,14 +425,7 @@ export function SmartTrackerDashboard({
   // Reset / Clear active month logs with Sonner Confirmation Toast
   const handleResetMonth = () => {
     if (isGuestMode) {
-      toast.info('Sign in required to modify habits', {
-        description: 'Sign in to customize and track your personal habit matrix.',
-        action: {
-          label: 'Sign In',
-          onClick: () => setIsAuthModalOpen(true),
-        },
-      });
-      setIsAuthModalOpen(true);
+      handleRequireAuth('reset monthly completion checkmarks');
       return;
     }
 
@@ -685,7 +670,7 @@ export function SmartTrackerDashboard({
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 if (isGuestMode) {
-                  setIsAuthModalOpen(true);
+                  handleRequireAuth('create and track new habits');
                 } else {
                   setIsModalOpen(true);
                 }
@@ -824,7 +809,7 @@ export function SmartTrackerDashboard({
                         whileTap={{ scale: 0.96 }}
                         onClick={() => {
                           if (isGuestMode) {
-                            setIsAuthModalOpen(true);
+                            handleRequireAuth('create your first habit');
                           } else {
                             setIsModalOpen(true);
                           }
@@ -880,7 +865,7 @@ export function SmartTrackerDashboard({
                           onClick={(e) => {
                             e.stopPropagation();
                             if (isGuestMode) {
-                              setIsAuthModalOpen(true);
+                              handleRequireAuth('delete habits');
                             } else {
                               handleDeleteHabit(habit.id, habit.title);
                             }
@@ -1222,7 +1207,7 @@ export function SmartTrackerDashboard({
             storageKey={`habit_notes_${selectedYear}_${selectedMonth}`}
             userEmail={userEmail}
             readOnly={isGuestMode}
-            onRequireAuth={() => setIsAuthModalOpen(true)}
+            onRequireAuth={() => handleRequireAuth('save monthly reflections and notes')}
           />
         </div>
       </div>
