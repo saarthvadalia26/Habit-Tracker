@@ -12,12 +12,15 @@ An elite, full-stack habit tracking web application engineered for daily discipl
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_15-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-[Features](#-key-features) • [Architecture](#-architecture--database) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Security & RLS](#-security--integrity-rules) • [Contributing](#-contributing)
+<br/>
+
+[Features](#features) • [Tech Stack](#tech-stack) • [Architecture](#architecture) • [Getting Started](#getting-started) • [Security & RLS](#security)
 
 </div>
 
 ---
 
+<a id="overview"></a>
 ## 🌟 Overview
 
 **Habit Tracker** moves beyond basic to-do checklists by combining a high-density **31-Day Consistency Matrix**, a rigorous **75-Day & 90-Day Challenge Engine**, and **mathematically accurate analytics** (distinguishing between Today's performance and entire Month completion). 
@@ -26,6 +29,7 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
 
 ---
 
+<a id="features"></a>
 ## ⚡ Key Features
 
 ### 🏆 1. 75-Day & 90-Day Challenge Engine
@@ -74,6 +78,7 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
 
 ---
 
+<a id="tech-stack"></a>
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Description |
@@ -90,6 +95,7 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
 
 ---
 
+<a id="architecture"></a>
 ## 🗄️ Architecture & Database
 
 Data is isolated using **PostgreSQL Row Level Security (RLS)** in Supabase. Every row is bound to `auth.uid() = user_id`, guaranteeing zero cross-user data leakage.
@@ -136,6 +142,7 @@ erDiagram
 
 ---
 
+<a id="getting-started"></a>
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
@@ -181,6 +188,7 @@ npm run start
 
 ---
 
+<a id="project-structure"></a>
 ## 📂 Project Structure
 
 ```plaintext
@@ -225,12 +233,14 @@ habit-tracker/
 ├── supabase/
 │   └── schema.sql                 # Complete idempotent PostgreSQL schema & RLS policies
 ├── public/                        # Static assets, multi-res favicons, and manifest
+├── LICENSE                        # MIT License
 ├── README.md                      # Project documentation
 └── package.json
 ```
 
 ---
 
+<a id="security"></a>
 ## 🔒 Security & Integrity Rules
 
 | Rule | Enforcement | Behavior |
@@ -245,18 +255,7 @@ habit-tracker/
 
 ---
 
-## 🤝 Contributing
-
-Contributions, feature suggestions, and improvements are always welcome!
-
-1. **Fork the Project**
-2. **Create your Feature Branch** (`git checkout -b feature/AmazingFeature`)
-3. **Commit your Changes** (`git commit -m 'feat: add AmazingFeature'`)
-4. **Push to the Branch** (`git push origin feature/AmazingFeature`)
-5. **Open a Pull Request**
-
----
-
+<a id="license"></a>
 ## 📄 License
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
