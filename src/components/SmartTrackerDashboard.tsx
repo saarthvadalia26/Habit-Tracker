@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useTransition, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -405,6 +405,7 @@ export function SmartTrackerDashboard({
 
     toast.error(`Remove "${title}"?`, {
       description: 'This will delete the habit and its records across all months.',
+      duration: 10000,
       action: {
         label: 'Delete',
         onClick: () => {
@@ -706,7 +707,7 @@ export function SmartTrackerDashboard({
                 {/* Habit title column */}
                 <th
                   rowSpan={2}
-                  className="sticky left-0 z-30 p-2.5 sm:p-3 bg-purple-100/95 dark:bg-purple-950/95 backdrop-blur-md text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 min-w-[165px] sm:min-w-[210px] max-w-[165px] sm:max-w-[210px] align-bottom transition-colors shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)]"
+                  className="sticky left-0 z-30 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-purple-100/95 dark:bg-purple-950/95 backdrop-blur-md text-purple-900 dark:text-purple-200 border-r border-slate-200 dark:border-slate-800 w-[185px] min-w-[185px] max-w-[185px] sm:w-[220px] sm:min-w-[220px] sm:max-w-[220px] align-bottom transition-colors shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)]"
                 >
                   <div className="text-[11px] uppercase tracking-wider font-extrabold text-purple-800 dark:text-purple-300 font-mono">
                     DAILY HABIT
@@ -851,10 +852,11 @@ export function SmartTrackerDashboard({
                       className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group"
                     >
                     {/* Habit Index & Name */}
-                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200 min-w-[165px] sm:min-w-[210px] max-w-[165px] sm:max-w-[210px] shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-semibold w-4 shrink-0">
+                    <td className="sticky left-0 z-20 p-2 sm:p-2.5 px-2.5 sm:px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-50/95 dark:group-hover:bg-slate-800/95 border-r border-slate-200 dark:border-slate-800 font-medium text-slate-800 dark:text-slate-200 w-[185px] min-w-[185px] max-w-[185px] sm:w-[220px] sm:min-w-[220px] sm:max-w-[220px] shadow-[3px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[3px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
+                      <div className="flex items-center justify-between gap-1.5 w-full">
+                        {/* Habit Title & Color Indicator (min-w-0 flex-1 ensures proper flex shrinkage and text truncation) */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 overflow-hidden">
+                          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-semibold w-3.5 sm:w-4 shrink-0">
                             {habitIndex + 1}.
                           </span>
                           <span
@@ -864,11 +866,15 @@ export function SmartTrackerDashboard({
                               boxShadow: `0 0 8px ${habit.color_theme}60`,
                             }}
                           />
-                          <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-white transition-colors">
+                          <span
+                            className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-white transition-colors"
+                            title={habit.title}
+                          >
                             {habit.title}
                           </span>
                         </div>
 
+                        {/* Delete Habit Button - Permanently visible, high-contrast touch badge across all screens */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -879,11 +885,11 @@ export function SmartTrackerDashboard({
                               handleDeleteHabit(habit.id, habit.title);
                             }
                           }}
-                          className="opacity-80 hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-slate-400 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 p-1.5 -mr-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-all cursor-pointer shrink-0 active:scale-90"
-                          title={isGuestMode ? "Sign in to delete habit" : "Delete habit"}
-                          aria-label={"Delete habit " + habit.title}
+                          className="flex items-center justify-center p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 text-rose-600 dark:text-rose-400 border border-rose-500/20 dark:border-rose-400/25 shrink-0 ml-1.5 transition-all cursor-pointer shadow-xs active:scale-90"
+                          title={isGuestMode ? "Sign in to delete habit" : `Delete ${habit.title}`}
+                          aria-label={`Delete habit ${habit.title}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 stroke-[2.25]" />
                         </button>
                       </div>
                     </td>
