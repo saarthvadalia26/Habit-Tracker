@@ -105,6 +105,71 @@ export const MOTIVATION_QUOTES: MotivationQuote[] = [
     author: "Stoic Wisdom",
     tag: "Mastery",
   },
+  {
+    quote: "Discipline equals freedom. There is no shortcut, no hack. Do the work.",
+    author: "Jocko Willink",
+    tag: "Discipline",
+  },
+  {
+    quote: "Don't stop when you are tired. Stop when you are done.",
+    author: "David Goggins",
+    tag: "Grit",
+  },
+  {
+    quote: "I fear not the man who has practiced 10,000 kicks once, but the man who has practiced one kick 10,000 times.",
+    author: "Bruce Lee",
+    tag: "Mastery",
+  },
+  {
+    quote: "How long are you going to wait before you demand the best for yourself?",
+    author: "Epictetus",
+    tag: "Stoicism",
+  },
+  {
+    quote: "Great things come from hard work and perseverance. No excuses.",
+    author: "Kobe Bryant",
+    tag: "Mamba Mentality",
+  },
+  {
+    quote: "Small daily seemingly unimportant improvements when done consistently over time yield staggering results.",
+    author: "Robin Sharma",
+    tag: "Consistency",
+  },
+  {
+    quote: "What we fear doing most is usually what we most need to do.",
+    author: "Tim Ferriss",
+    tag: "Courage",
+  },
+  {
+    quote: "Clarity about what matters provides clarity about what does not. Go deep.",
+    author: "Cal Newport",
+    tag: "Deep Work",
+  },
+  {
+    quote: "The resistance that you fight physically and in life can only build a strong character.",
+    author: "Arnold Schwarzenegger",
+    tag: "Resilience",
+  },
+  {
+    quote: "You have power over your mind, not outside events. Realize this, and you will find strength.",
+    author: "Marcus Aurelius",
+    tag: "Inner Power",
+  },
+  {
+    quote: "That which we persist in doing becomes easier — not that the task has changed, but that our ability to do it has increased.",
+    author: "Ralph Waldo Emerson",
+    tag: "Persistence",
+  },
+  {
+    quote: "If you don't prioritize your life, someone else will.",
+    author: "Greg McKeown",
+    tag: "Essentialism",
+  },
+  {
+    quote: "The difference between a successful person and others is not a lack of strength, but rather a lack of will.",
+    author: "Vince Lombardi",
+    tag: "Willpower",
+  },
 ];
 
 export function getDailyQuote(): MotivationQuote {
