@@ -61,18 +61,10 @@ export function ChallengeBanner({
               <Trophy className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.25]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
-                  Fixed-Term Milestone
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 hidden xs:inline">
-                  • 75 Hard, 90 Monk, 30 Sprint
-                </span>
-              </div>
-              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight font-sans mt-0.5">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight font-sans">
                 Ready for a 75-Day or 90-Day Challenge?
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+              <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block mt-0.5">
                 Lock in unbroken habits with milestone badges (Bronze, Silver, Gold, Champion).
               </p>
             </div>
