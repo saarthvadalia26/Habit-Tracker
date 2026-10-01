@@ -273,7 +273,7 @@ export function ChallengeBanner({
             <Flame className="w-3.5 h-3.5 fill-amber-500" />
             {progress.isUpcoming
               ? 'Awaiting Start Date'
-              : progress.adherencePercentage + '% Habit Adherence'}
+              : `${progress.adherencePercentage}% Habit Adherence (${progress.totalCompletedChecks}/${progress.totalPossibleChecks})`}
           </span>
         </div>
 
