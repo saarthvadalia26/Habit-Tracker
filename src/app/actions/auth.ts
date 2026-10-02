@@ -2,8 +2,15 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { cleanText, isValidEmail, isValidPassword } from '@/lib/validation';
 
-export async function getCurrentUserAction() {
+interface CurrentUser {
+  id: string;
+  email: string | null;
+  customName: string;
+}
+
+export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null }> {
   try {
     const supabase = await createClient();
     const {
@@ -15,7 +22,13 @@ export async function getCurrentUserAction() {
       return { user: null };
     }
 
-    return { user };
+    return {
+      user: {
+        id: user.id,
+        email: user.email ?? null,
+        customName: typeof user.user_metadata?.custom_name === 'string' ? user.user_metadata.custom_name : '',
+      },
+    };
   } catch {
     return { user: null };
   }
@@ -23,9 +36,9 @@ export async function getCurrentUserAction() {
 
 export async function signInAction(email: string, password: string) {
   try {
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      return { error: 'Email and password are required.' };
+    const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!isValidEmail(cleanEmail) || !isValidPassword(password)) {
+      return { error: 'Invalid email or password.' };
     }
 
     const supabase = await createClient();
@@ -35,25 +48,22 @@ export async function signInAction(email: string, password: string) {
     });
 
     if (error) {
-      return { error: error.message };
+      // Do not expose provider details that could help account enumeration.
+      return { error: 'Invalid email or password.' };
     }
 
     revalidatePath('/');
     return { data, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to sign in.';
-    return { error: message };
+  } catch {
+    return { error: 'Unable to sign in right now. Please try again.' };
   }
 }
 
 export async function signUpAction(email: string, password: string) {
   try {
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      return { error: 'Email and password are required.' };
-    }
-    if (password.length < 6) {
-      return { error: 'Password must be at least 6 characters long.' };
+    const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (!isValidEmail(cleanEmail) || !isValidPassword(password)) {
+      return { error: 'Use a valid email and a password between 6 and 128 characters.' };
     }
 
     const supabase = await createClient();
@@ -70,18 +80,16 @@ export async function signUpAction(email: string, password: string) {
     if (error) {
       if (error.message.toLowerCase().includes('rate limit')) {
         return {
-          error:
-            "Email rate limit exceeded. Supabase free projects limit email sending to 3/hour. Turn OFF 'Confirm email' in your Supabase Dashboard to allow instant signups without limits.",
+          error: 'Too many sign-up attempts. Please wait before trying again.',
         };
       }
-      return { error: error.message };
+      return { error: 'Unable to create an account. Check your details and try again.' };
     }
 
     revalidatePath('/');
     return { data, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to sign up.';
-    return { error: message };
+  } catch {
+    return { error: 'Unable to create an account right now. Please try again.' };
   }
 }
 
@@ -98,10 +106,14 @@ export async function signOutAction() {
 
 /**
  * Permanently deletes the user account, habits, and all database records.
- * Accurately surfaces errors if the deletion procedure fails.
+ * Returns safe, user-facing errors if the deletion procedure fails.
  */
-export async function deleteAccountAction() {
+export async function deleteAccountAction(confirmation: string) {
   try {
+    if (confirmation !== 'DELETE') {
+      return { success: false, error: 'Account deletion was not confirmed.' };
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -128,18 +140,16 @@ export async function deleteAccountAction() {
       .eq('user_id', user.id);
 
     if (habitsDeleteError) {
-      return { success: false, error: `Failed to remove user habits: ${habitsDeleteError.message}` };
+      return { success: false, error: 'Unable to remove account data. Please try again.' };
     }
 
     // 2. Call RPC to delete auth.users record
     const { error: rpcError } = await supabase.rpc('delete_user_account');
 
     if (rpcError) {
-      // If RPC is missing or fails, report accurately
-      console.error('RPC delete_user_account error:', rpcError.message);
       return {
         success: false,
-        error: `Database wiped, but auth account deletion failed: ${rpcError.message}. Please ensure delete_user_account RPC is installed in Supabase.`,
+        error: 'Your account data was removed, but the account could not be closed. Please contact support.',
       };
     }
 
@@ -147,9 +157,8 @@ export async function deleteAccountAction() {
     await supabase.auth.signOut();
     revalidatePath('/');
     return { success: true, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to delete account.';
-    return { success: false, error: message };
+  } catch {
+    return { success: false, error: 'Failed to delete account. Please try again.' };
   }
 }
 
@@ -169,8 +178,12 @@ export async function updateCustomNameAction(customName: string) {
       return { success: false, error: 'Authentication required to save title.' };
     }
 
-    // Sanitize: max 18 chars, strip control characters
-    const clean = customName.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim().slice(0, 18);
+    if (typeof customName !== 'string') {
+      return { success: false, error: 'Invalid tracker title.' };
+    }
+
+    // Empty titles are valid; control characters are never persisted.
+    const clean = cleanText(customName, 18) ?? '';
     const { error } = await supabase.auth.updateUser({
       data: {
         custom_name: clean,
@@ -178,13 +191,12 @@ export async function updateCustomNameAction(customName: string) {
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: 'Failed to save title across devices.' };
     }
 
     revalidatePath('/');
     return { success: true, customName: clean, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to save title across devices.';
-    return { success: false, error: message };
+  } catch {
+    return { success: false, error: 'Failed to save title across devices.' };
   }
 }

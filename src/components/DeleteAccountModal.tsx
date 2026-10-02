@@ -30,7 +30,7 @@ export function DeleteAccountModal({
     setIsDeleting(true);
 
     try {
-      const res = await deleteAccountAction();
+      const res = await deleteAccountAction(confirmText.trim().toUpperCase());
       if (!res.success || res.error) {
         setError(res.error || 'Failed to delete account');
         toast.error('Deletion Failed', { description: res.error || 'Please try again.' });

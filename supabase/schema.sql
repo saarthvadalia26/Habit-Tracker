@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.habits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     title TEXT NOT NULL CONSTRAINT check_habit_title CHECK (char_length(trim(title)) > 0 AND char_length(title) <= 60),
-    color_theme TEXT NOT NULL DEFAULT '#6366F1' CONSTRAINT check_color_theme CHECK (char_length(color_theme) <= 25),
+    color_theme TEXT NOT NULL DEFAULT '#6366F1' CONSTRAINT check_color_theme CHECK (color_theme ~ '^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$'),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -29,10 +29,23 @@ CREATE TABLE IF NOT EXISTS public.challenges (
     title TEXT NOT NULL CONSTRAINT check_challenge_title CHECK (char_length(trim(title)) > 0 AND char_length(title) <= 100),
     duration_days INT NOT NULL CONSTRAINT check_duration CHECK (duration_days >= 7 AND duration_days <= 365),
     start_date DATE NOT NULL,
-    habit_ids UUID[] DEFAULT '{}',
+    habit_ids UUID[] NOT NULL DEFAULT '{}',
     status TEXT NOT NULL DEFAULT 'active' CONSTRAINT check_challenge_status CHECK (status IN ('active', 'completed', 'abandoned')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Direct PostgREST callers can bypass the application, so database constraints
+-- must enforce the same validation rules for existing installations as well.
+ALTER TABLE public.habits DROP CONSTRAINT IF EXISTS check_color_theme;
+ALTER TABLE public.habits
+    ADD CONSTRAINT check_color_theme CHECK (color_theme ~ '^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$');
+
+UPDATE public.challenges SET habit_ids = '{}' WHERE habit_ids IS NULL;
+ALTER TABLE public.challenges ALTER COLUMN habit_ids SET DEFAULT '{}';
+ALTER TABLE public.challenges ALTER COLUMN habit_ids SET NOT NULL;
+ALTER TABLE public.challenges DROP CONSTRAINT IF EXISTS check_challenge_habit_ids_count;
+ALTER TABLE public.challenges
+    ADD CONSTRAINT check_challenge_habit_ids_count CHECK (cardinality(habit_ids) <= 50);
 
 -- 4. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_habits_user_id ON public.habits(user_id);
@@ -40,6 +53,8 @@ CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_id ON public.habit_logs(habit_id
 CREATE INDEX IF NOT EXISTS idx_habit_logs_habit_date ON public.habit_logs(habit_id, date);
 CREATE INDEX IF NOT EXISTS idx_challenges_user_id ON public.challenges(user_id);
 CREATE INDEX IF NOT EXISTS idx_challenges_status ON public.challenges(user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_challenge_per_user
+    ON public.challenges(user_id) WHERE status = 'active';
 
 -- 5. Enable Row Level Security (RLS)
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
@@ -154,12 +169,44 @@ CREATE POLICY "Users can delete their own challenges"
     FOR DELETE
     USING (auth.uid() = user_id);
 
--- 9. Secure Account Deletion RPC Function
+-- 9. Ensure challenge habit IDs can only refer to habits owned by the same user.
+-- This protects direct PostgREST calls as well as Server Action requests.
+CREATE OR REPLACE FUNCTION public.validate_challenge_habit_ids()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM unnest(NEW.habit_ids) AS selected_habit(id)
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM public.habits AS habit
+            WHERE habit.id = selected_habit.id
+              AND habit.user_id = NEW.user_id
+        )
+    ) THEN
+        RAISE EXCEPTION 'Challenge habits must belong to the challenge owner';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.validate_challenge_habit_ids() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS validate_challenge_habit_ids ON public.challenges;
+CREATE TRIGGER validate_challenge_habit_ids
+    BEFORE INSERT OR UPDATE OF habit_ids, user_id ON public.challenges
+    FOR EACH ROW EXECUTE FUNCTION public.validate_challenge_habit_ids();
+
+-- 10. Secure Account Deletion RPC Function
 CREATE OR REPLACE FUNCTION public.delete_user_account()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
     current_user_id UUID;
@@ -187,16 +234,22 @@ $$;
 REVOKE ALL ON FUNCTION public.delete_user_account() FROM public;
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
--- 10. Hardened Role Permissions (Least Privilege)
+-- 11. Hardened Role Permissions (Least Privilege)
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC, anon;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC, anon;
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.habits TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.habit_logs TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.challenges TO authenticated;
 GRANT ALL ON TABLE public.habits TO service_role;
 GRANT ALL ON TABLE public.habit_logs TO service_role;
 GRANT ALL ON TABLE public.challenges TO service_role;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, service_role;
-
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+-- Future public tables must be opted into client access explicitly. PostgreSQL
+-- does not enable RLS on new tables automatically, so broad default grants can
+-- expose data before a policy is written.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;

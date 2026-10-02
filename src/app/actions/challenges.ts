@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Challenge } from '@/types/challenge.types';
+import { cleanText, cleanUuidList, isUuid, isValidDate } from '@/lib/validation';
 
 export interface ActionResponse<T> {
   data: T | null;
@@ -34,13 +35,12 @@ export async function getActiveChallengeAction(): Promise<ActionResponse<Challen
       .maybeSingle();
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to load the active challenge.' };
     }
 
     return { data: (data as unknown as Challenge) ?? null, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to fetch active challenge';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to load the active challenge.' };
   }
 }
 
@@ -54,12 +54,18 @@ export async function createChallengeAction(
   habitIds: string[] = []
 ): Promise<ActionResponse<Challenge>> {
   try {
-    const cleanTitle = title.trim().slice(0, 100);
+    const cleanTitle = cleanText(title, 100);
     if (!cleanTitle) {
       return { data: null, error: 'Challenge title cannot be empty.' };
     }
 
-    const duration = Math.max(7, Math.min(365, Math.round(durationDays)));
+    if (!Number.isInteger(durationDays) || durationDays < 7 || durationDays > 365 || !isValidDate(startDate)) {
+      return { data: null, error: 'Invalid challenge details.' };
+    }
+    const validHabitIds = cleanUuidList(habitIds);
+    if (!validHabitIds) {
+      return { data: null, error: 'Invalid challenge habits.' };
+    }
 
     const supabase = await createClient();
     const {
@@ -74,13 +80,30 @@ export async function createChallengeAction(
       };
     }
 
-    // Enforce single active challenge policy: reject creation if one is currently active
-    const { data: existingActive } = await supabase
+    if (validHabitIds.length > 0) {
+      const { data: ownedHabits, error: ownedHabitsError } = await supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('id', validHabitIds);
+
+      if (ownedHabitsError || !ownedHabits || ownedHabits.length !== validHabitIds.length) {
+        return { data: null, error: 'A selected habit is unavailable.' };
+      }
+    }
+
+    // Fast UX check. The partial unique index in schema.sql is the final,
+    // race-safe enforcement for direct and concurrent database writes.
+    const { data: existingActive, error: existingActiveError } = await supabase
       .from('challenges')
       .select('id, title')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .limit(1);
+
+    if (existingActiveError) {
+      return { data: null, error: 'Unable to create a challenge right now.' };
+    }
 
     if (existingActive && existingActive.length > 0) {
       return {
@@ -95,23 +118,22 @@ export async function createChallengeAction(
       .insert({
         user_id: user.id,
         title: cleanTitle,
-        duration_days: duration,
+        duration_days: durationDays,
         start_date: startDate,
-        habit_ids: habitIds,
+        habit_ids: validHabitIds,
         status: 'active',
       })
       .select()
       .single();
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to create this challenge.' };
     }
 
     revalidatePath('/');
     return { data: (data as unknown as Challenge), error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to create challenge';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to create this challenge.' };
   }
 }
 
@@ -122,6 +144,10 @@ export async function completeChallengeAction(
   challengeId: string
 ): Promise<ActionResponse<{ id: string }>> {
   try {
+    if (!isUuid(challengeId)) {
+      return { data: null, error: 'Invalid challenge.' };
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -139,14 +165,13 @@ export async function completeChallengeAction(
       .eq('user_id', user.id);
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to complete this challenge.' };
     }
 
     revalidatePath('/');
     return { data: { id: challengeId }, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to complete challenge';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to complete this challenge.' };
   }
 }
 
@@ -157,6 +182,10 @@ export async function abandonChallengeAction(
   challengeId: string
 ): Promise<ActionResponse<{ id: string }>> {
   try {
+    if (!isUuid(challengeId)) {
+      return { data: null, error: 'Invalid challenge.' };
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -174,13 +203,12 @@ export async function abandonChallengeAction(
       .eq('user_id', user.id);
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to reset this challenge.' };
     }
 
     revalidatePath('/');
     return { data: { id: challengeId }, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to reset challenge';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to reset this challenge.' };
   }
 }

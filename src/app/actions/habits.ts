@@ -3,13 +3,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Habit, HabitLog, HabitWithLogs } from '@/types/database.types';
+import { cleanHexColor, cleanText, isUuid, isValidDate } from '@/lib/validation';
 
 export interface ActionResponse<T> {
   data: T | null;
   error: string | null;
 }
-
-const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 /**
  * Fetches all habits for the logged-in user, along with their logs in a given date range
@@ -19,6 +18,16 @@ export async function getHabitsWithLogsAction(
   endDate?: string
 ): Promise<ActionResponse<HabitWithLogs[]>> {
   try {
+    if ((startDate !== undefined && !isValidDate(startDate)) || (endDate !== undefined && !isValidDate(endDate))) {
+      return { data: null, error: 'Invalid date range.' };
+    }
+    if (startDate && endDate) {
+      const rangeDays = (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86_400_000;
+      if (rangeDays < 0 || rangeDays > 366) {
+        return { data: null, error: 'Date range must be within one year.' };
+      }
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -40,7 +49,7 @@ export async function getHabitsWithLogsAction(
       .order('created_at', { ascending: true });
 
     if (habitsError) {
-      return { data: null, error: habitsError.message };
+      return { data: null, error: 'Unable to load habits.' };
     }
 
     if (!habits || habits.length === 0) {
@@ -65,7 +74,7 @@ export async function getHabitsWithLogsAction(
     const { data: logs, error: logsError } = await logsQuery;
 
     if (logsError) {
-      return { data: null, error: logsError.message };
+      return { data: null, error: 'Unable to load habit history.' };
     }
 
     // 3. Group logs by habit_id -> Record<date, is_completed>
@@ -87,9 +96,8 @@ export async function getHabitsWithLogsAction(
     }));
 
     return { data: result, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to fetch habits';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to load habits.' };
   }
 }
 
@@ -101,15 +109,13 @@ export async function createHabitAction(
   colorTheme: string = '#6366F1'
 ): Promise<ActionResponse<Habit>> {
   try {
-    const trimmedTitle = title.trim().slice(0, 60);
+    const trimmedTitle = cleanText(title, 60);
     if (!trimmedTitle) {
       return { data: null, error: 'Habit title cannot be empty.' };
     }
 
-    // Validate hex color to prevent CSS or arbitrary injection
-    const validatedColor = HEX_COLOR_REGEX.test(colorTheme.trim())
-      ? colorTheme.trim()
-      : '#6366F1';
+    // Only a hex color can reach inline style attributes.
+    const validatedColor = cleanHexColor(colorTheme) ?? '#6366F1';
 
     const supabase = await createClient();
     const {
@@ -135,14 +141,13 @@ export async function createHabitAction(
       .single();
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to create this habit.' };
     }
 
     revalidatePath('/');
     return { data, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to create habit';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to create this habit.' };
   }
 }
 
@@ -156,13 +161,8 @@ export async function toggleHabitLogAction(
   isCompleted: boolean
 ): Promise<ActionResponse<HabitLog>> {
   try {
-    if (!habitId || !date) {
-      return { data: null, error: 'Habit ID and date are required.' };
-    }
-
-    // Validate date format YYYY-MM-DD
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return { data: null, error: 'Invalid date format. Expected YYYY-MM-DD.' };
+    if (!isUuid(habitId) || !isValidDate(date) || typeof isCompleted !== 'boolean') {
+      return { data: null, error: 'Invalid habit update.' };
     }
 
     const supabase = await createClient();
@@ -220,14 +220,13 @@ export async function toggleHabitLogAction(
       .single();
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to update this habit.' };
     }
 
     revalidatePath('/');
     return { data, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to update habit log';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to update this habit.' };
   }
 }
 
@@ -238,8 +237,8 @@ export async function deleteHabitAction(
   habitId: string
 ): Promise<ActionResponse<{ id: string }>> {
   try {
-    if (!habitId) {
-      return { data: null, error: 'Habit ID is required.' };
+    if (!isUuid(habitId)) {
+      return { data: null, error: 'Invalid habit.' };
     }
 
     const supabase = await createClient();
@@ -262,13 +261,12 @@ export async function deleteHabitAction(
       .eq('user_id', user.id);
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: 'Unable to delete this habit.' };
     }
 
     revalidatePath('/');
     return { data: { id: habitId }, error: null };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to delete habit';
-    return { data: null, error: message };
+  } catch {
+    return { data: null, error: 'Unable to delete this habit.' };
   }
 }

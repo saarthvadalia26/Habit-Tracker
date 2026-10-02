@@ -125,20 +125,6 @@ export function AuthModal({
                     <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                     <span>{error}</span>
                   </div>
-                  {error.toLowerCase().includes('rate limit') && (
-                    <div className="text-[11px] text-rose-800 dark:text-rose-200/90 pl-5.5 space-y-1 pt-1 border-t border-rose-200/60 dark:border-rose-800/60">
-                      <p className="font-bold">How to fix in your Supabase Dashboard:</p>
-                      <ol className="list-decimal pl-4 space-y-0.5">
-                        <li>Go to <strong>Authentication</strong> → <strong>Providers</strong></li>
-                        <li>Click <strong>Email</strong></li>
-                        <li>Toggle <strong>&quot;Confirm email&quot;</strong> to <strong>OFF</strong></li>
-                        <li>Click <strong>Save</strong></li>
-                      </ol>
-                      <p className="text-[10px] text-rose-600 dark:text-rose-400 pt-0.5">
-                        This removes the 3 emails/hour limit and allows instant account creation!
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
 

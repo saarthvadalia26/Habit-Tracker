@@ -14,7 +14,7 @@ An elite, full-stack habit tracking web application engineered for daily discipl
 
 <br/>
 
-[Features](#features) • [Tech Stack](#tech-stack) • [Architecture](#architecture) • [Getting Started](#getting-started) • [Security & RLS](#security)
+[Features](#features) • [Tech Stack](#tech-stack) • [Architecture](#architecture) • [Getting Started](#getting-started) • [Security](#security)
 
 </div>
 
@@ -39,6 +39,7 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
   - **30-Day Consistency Sprint** (30 Days of rapid habit lock-in)
   - **21-Day Habit Builder** (21 Days for fundamental neurological rewiring)
   - **Custom Challenge Studio:** Define custom titles and duration from 7 to 365 days.
+- **Single Active Challenge Rule:** A user cannot create a new challenge while one is active. The "Active Challenge" button opens a dedicated management modal with real-time metrics, milestone badges, enrolled habits, and options to finish or abandon before starting fresh.
 - **Dynamic Countdown & Status:** Real-time day counter (`Day 1 of 90 • 89 Days Left`), with automated upcoming date detection (`Starts in X days • Day 0 of 90`).
 - **Milestone Badges & Rewards:** Unlockable tiered badges:
   - 🥉 **Bronze** (25%)
@@ -98,7 +99,7 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
 <a id="architecture"></a>
 ## 🗄️ Architecture & Database
 
-Data is isolated using **PostgreSQL Row Level Security (RLS)** in Supabase. Every row is bound to `auth.uid() = user_id`, guaranteeing zero cross-user data leakage.
+Data is isolated using **PostgreSQL Row Level Security (RLS)** in Supabase. Every row is bound to `auth.uid() = user_id`, guaranteeing zero cross-user data leakage. A partial unique index enforces the **single active challenge per user** constraint at the database level.
 
 ```mermaid
 erDiagram
@@ -110,7 +111,7 @@ erDiagram
         uuid id PK
         uuid user_id FK
         text title
-        text color_theme
+        text color_theme "regex: #hex only"
         timestamptz created_at
     }
 
@@ -126,19 +127,20 @@ erDiagram
         uuid id PK
         uuid user_id FK
         text title
-        int duration_days
+        int duration_days "7-365"
         date start_date
-        uuid_array habit_ids
-        text status
+        uuid_array habit_ids "max 50, ownership-validated"
+        text status "active | completed | abandoned"
         timestamptz created_at
     }
 ```
 
 ### PostgreSQL Security Policies
-- **`public.habits`**: Users can only `SELECT`, `INSERT`, `UPDATE`, and `DELETE` records where `user_id = auth.uid()`.
+- **`public.habits`**: Users can only `SELECT`, `INSERT`, `UPDATE`, and `DELETE` records where `user_id = auth.uid()`. Color theme column is constrained to valid hex codes via regex check constraint.
 - **`public.habit_logs`**: Validates ownership via parent habit join: `EXISTS (SELECT 1 FROM habits WHERE habits.id = habit_logs.habit_id AND habits.user_id = auth.uid())`.
-- **`public.challenges`**: Isolated strictly to the creator (`auth.uid() = user_id`), constrained by duration ($7 \le \text{days} \le 365$) and status (`active`, `completed`, `abandoned`).
+- **`public.challenges`**: Isolated strictly to the creator (`auth.uid() = user_id`), constrained by duration ($7 \le \text{days} \le 365$) and status (`active`, `completed`, `abandoned`). A partial unique index on `(user_id) WHERE status = 'active'` enforces one active challenge per user at the database level. A trigger (`validate_challenge_habit_ids`) ensures enrolled habit IDs belong to the same user.
 - **Atomic Account Deletion RPC (`delete_user_account`)**: Allows users to permanently purge their account, habits, challenges, logs, sessions, and auth identities in a single atomic database transaction.
+- **Least-Privilege Grants**: Anonymous and public roles have no table access. Only `authenticated` gets scoped DML grants. Default privileges for future tables are revoked to prevent accidental exposure.
 
 ---
 
@@ -172,7 +174,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 1. Navigate to your **Supabase Dashboard** -> **SQL Editor**.
 2. Open [`supabase/schema.sql`](supabase/schema.sql) in this repository.
 3. Paste the contents into the SQL Editor and click **Run**.
-*(Tables, indexes, constraints, RLS policies, and RPC functions will be created idempotently).*
+*(Tables, indexes, constraints, triggers, RLS policies, and RPC functions will be created idempotently).*
 
 ### 6. Start Development Server
 ```bash
@@ -203,6 +205,7 @@ habit-tracker/
 │   │   ├── layout.tsx             # Root layout with Geist font & ThemeProvider
 │   │   └── page.tsx               # Server component page with SSR data hydration
 │   ├── components/                # Modular UI Components
+│   │   ├── ActiveChallengeModal.tsx # Live challenge dashboard with metrics & controls
 │   │   ├── AmbientBackground.tsx  # Dynamic floating ambient orbs and dot matrix
 │   │   ├── AuthModal.tsx          # Login & registration modal dialog
 │   │   ├── ChallengeBanner.tsx    # Active challenge countdown, progress bar & quotes
@@ -225,14 +228,16 @@ habit-tracker/
 │   │   ├── mockData.ts            # Sample habits for guest / preview mode
 │   │   ├── monthUtils.ts          # Monthly days generator, 72h rule calculations
 │   │   ├── quotes.ts              # 33 curated quotes on discipline, focus & grit
+│   │   ├── validation.ts          # Server-only input sanitisation (UUID, hex, email, date)
 │   │   └── supabase/              # Supabase SSR clients (server, browser, and middleware)
+│   ├── proxy.ts                   # Edge proxy with CSP, HSTS & security headers
 │   ├── types/
 │   │   ├── challenge.types.ts     # TypeScript interfaces for challenges & milestones
 │   │   └── database.types.ts      # TypeScript definitions for database entities
-│   └── middleware.ts              # Next.js root middleware for active session refreshing
 ├── supabase/
 │   └── schema.sql                 # Complete idempotent PostgreSQL schema & RLS policies
 ├── public/                        # Static assets, multi-res favicons, and manifest
+├── SECURITY.md                    # Production deployment & hardening checklist
 ├── LICENSE                        # MIT License
 ├── README.md                      # Project documentation
 └── package.json
@@ -241,17 +246,36 @@ habit-tracker/
 ---
 
 <a id="security"></a>
-## 🔒 Security & Integrity Rules
+## 🔒 Security & Integrity
+
+### Application-Level Protections
+
+| Rule | Enforcement | Behavior |
+| :--- | :--- | :--- |
+| **Input Validation** | `src/lib/validation.ts` | All Server Action inputs are validated server-side: UUIDs, dates, hex colors, email format, and text length. No raw user strings reach the database unvalidated. |
+| **Opaque Error Messages** | Server Actions | Internal database errors and provider details are never leaked to the client. Users see safe, actionable messages only. |
+| **Content Security Policy** | Edge Proxy (`src/proxy.ts`) | Strict CSP with nonce-based `script-src`, `object-src 'none'`, `frame-ancestors 'none'`, and `upgrade-insecure-requests`. |
+| **Security Headers** | Edge Proxy | HSTS (2 years, preload), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, restrictive `Permissions-Policy`, and COOP/CORP. |
+| **Server Action Size Limit** | `next.config.ts` | Action request bodies capped at 32 KB to limit memory allocation per request. |
+| **Server-Only Imports** | `server.ts`, `validation.ts` | Supabase server client and validation utilities use `import 'server-only'` to prevent accidental client bundling. |
+| **Account Deletion Confirmation** | Server Action | `deleteAccountAction` requires explicit `'DELETE'` confirmation string before executing the atomic wipe RPC. |
+
+### Database-Level Protections
 
 | Rule | Enforcement | Behavior |
 | :--- | :--- | :--- |
 | **Row Level Security (RLS)** | PostgreSQL Engine | Users can strictly access, mutate, and delete only their own records. |
+| **Single Active Challenge** | Partial Unique Index | `CREATE UNIQUE INDEX ... ON challenges(user_id) WHERE status = 'active'` prevents concurrent active challenges at the database level. |
+| **Habit Ownership Trigger** | `validate_challenge_habit_ids()` | A `BEFORE INSERT OR UPDATE` trigger ensures challenge `habit_ids` can only reference habits owned by the same user. |
+| **Hex Color Check Constraint** | `CHECK (color_theme ~ '^#...')` | Only valid 3- or 6-digit hex codes can be stored, preventing CSS injection via inline styles. |
+| **Least-Privilege Grants** | Schema Permissions | `anon` and `PUBLIC` roles have zero table access. Only `authenticated` receives scoped DML grants. Default privileges for future tables are explicitly revoked. |
 | **72-Hour Edit Window** | Client & Server Action | Habit cells older than 3 calendar days (72h) are locked to maintain authentic discipline. |
 | **Future Date Restriction** | Client & Server Action | Blocks ticking tomorrow or any future date ahead of time. |
 | **Continuous Streaks** | Analytics Engine | Preserves unbroken streaks across month and year transitions. |
 | **Accurate Monthly Denominator** | Analytics Engine | Evaluates monthly percentage against total monthly capacity ($H \times D_{\text{month}}$), separating today's score. |
-| **Account-Scoped Cache** | Client State & Storage | Custom titles and scratchpad notes are isolated per email to prevent leakage on shared computers. |
-| **Guest Sandbox Mode** | Client State | Visitors can explore all matrix views, challenge countdowns, and analytics with instant local persistence. |
+| **Guest Sandbox Mode** | Client State | Visitors can explore all views with instant local persistence; no server data is created. |
+
+> For the full production hardening checklist (Supabase Auth settings, SMTP, CAPTCHA, secrets management), see [`SECURITY.md`](SECURITY.md).
 
 ---
 

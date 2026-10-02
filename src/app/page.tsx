@@ -18,7 +18,7 @@ export default async function HomePage() {
   const isGuestMode = !user;
   // Authenticated users only see their own habits (empty list for new accounts)
   const initialHabits = user ? (habitsRes.data ?? []) : getSampleHabits();
-  const initialCustomName = (user?.user_metadata?.custom_name as string) || '';
+  const initialCustomName = user?.customName || '';
   const initialChallenge = challengeRes?.data ?? null;
 
   return (
