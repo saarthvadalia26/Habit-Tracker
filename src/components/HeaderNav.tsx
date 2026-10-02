@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus } from 'lucide-react';
+import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Sparkles } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
+import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import { signOutAction } from '@/app/actions/auth';
@@ -19,7 +20,24 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
   const { isDark } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+
+  // Automatically show the v2.0 roadmap teaser on first startup
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem('ht_seen_v2_roadmap_v1');
+      if (!hasSeen) {
+        const timer = setTimeout(() => {
+          setIsRoadmapOpen(true);
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Fallback: show modal if localStorage is inaccessible
+      setIsRoadmapOpen(true);
+    }
+  }, []);
 
   const handleSignOut = async () => {
     toast.message('Sign out of your session?', {
@@ -74,6 +92,18 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
 
           {/* Account Controls & Theme Toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 text-xs">
+            {/* Roadmap / What's Next Button */}
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setIsRoadmapOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 hover:from-amber-500/20 hover:to-purple-500/20 text-slate-700 dark:text-slate-200 border border-amber-500/25 dark:border-indigo-500/30 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
+              title="Preview upcoming v2.0 features roadmap"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              <span className="hidden xs:inline">What&apos;s Next</span>
+            </motion.button>
+
             {/* The Light/Dark Animated Switch */}
             <ThemeToggle />
 
@@ -147,6 +177,12 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         userEmail={userEmail}
+      />
+
+      {/* Upcoming v2.0 Roadmap Teaser Modal */}
+      <UpcomingUpdateModal
+        isOpen={isRoadmapOpen}
+        onClose={() => setIsRoadmapOpen(false)}
       />
     </>
   );
