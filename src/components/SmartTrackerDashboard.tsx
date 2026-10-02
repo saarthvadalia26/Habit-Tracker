@@ -39,6 +39,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { updateCustomNameAction } from '@/app/actions/auth';
 import { ChallengeBanner } from '@/components/ChallengeBanner';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
+import { ActiveChallengeModal } from '@/components/ActiveChallengeModal';
+import confetti from 'canvas-confetti';
 import { Challenge } from '@/types/challenge.types';
 import {
   createChallengeAction,
@@ -70,6 +72,7 @@ export function SmartTrackerDashboard({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [challenge, setChallenge] = useState<Challenge | null>(initialChallenge ?? null);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState<boolean>(false);
+  const [isActiveChallengeModalOpen, setIsActiveChallengeModalOpen] = useState<boolean>(false);
 
   // Sync or restore challenge (with guest localStorage fallback)
   useEffect(() => {
@@ -92,6 +95,13 @@ export function SmartTrackerDashboard({
     startDate: string,
     habitIds: string[]
   ) => {
+    if (challenge && challenge.status === 'active') {
+      toast.error('Active Challenge in Progress', {
+        description: `You are already enrolled in "${challenge.title}". Complete or abandon it before starting a new one.`,
+      });
+      return;
+    }
+
     if (isGuestMode) {
       const guestChallenge: Challenge = {
         id: `guest-challenge-${Date.now()}`,
@@ -662,9 +672,15 @@ export function SmartTrackerDashboard({
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setIsChallengeModalOpen(true)}
+              onClick={() => {
+                if (challenge) {
+                  setIsActiveChallengeModalOpen(true);
+                } else {
+                  setIsChallengeModalOpen(true);
+                }
+              }}
               className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-orange-500/25 cursor-pointer transition-all"
-              title="Start or manage 75 Hard, 90-Day Monk Mode, or Custom Challenge"
+              title={challenge ? 'View active challenge details & progress' : 'Start a 75-Day, 90-Day, or Custom Challenge'}
             >
               <Trophy className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{challenge ? 'Active Challenge' : 'Challenges'}</span>
@@ -1230,6 +1246,27 @@ export function SmartTrackerDashboard({
         onClose={() => setIsChallengeModalOpen(false)}
         habits={habits}
         onCreate={handleCreateChallenge}
+        activeChallengeTitle={challenge?.title}
+      />
+
+      {/* Active Challenge Details & Management Modal */}
+      <ActiveChallengeModal
+        isOpen={isActiveChallengeModalOpen}
+        onClose={() => setIsActiveChallengeModalOpen(false)}
+        challenge={challenge}
+        habits={habits}
+        onCompleteChallenge={handleCompleteChallenge}
+        onAbandonChallenge={handleAbandonChallenge}
+        onCelebrate={() => {
+          try {
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.6 },
+              colors: ['#F59E0B', '#EF4444', '#6366F1', '#10B981'],
+            });
+          } catch {}
+        }}
       />
 
       {/* Auth Modal for Guests */}

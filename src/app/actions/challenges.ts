@@ -74,12 +74,20 @@ export async function createChallengeAction(
       };
     }
 
-    // Mark any existing active challenge as completed/superseded
-    await supabase
+    // Enforce single active challenge policy: reject creation if one is currently active
+    const { data: existingActive } = await supabase
       .from('challenges')
-      .update({ status: 'completed' })
+      .select('id, title')
       .eq('user_id', user.id)
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .limit(1);
+
+    if (existingActive && existingActive.length > 0) {
+      return {
+        data: null,
+        error: `An active challenge ("${existingActive[0].title}") is already in progress. Complete or abandon it before starting a new challenge.`,
+      };
+    }
 
     // Insert new challenge
     const { data, error } = await supabase

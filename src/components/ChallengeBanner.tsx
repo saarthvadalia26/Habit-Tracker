@@ -159,7 +159,10 @@ export function ChallengeBanner({
 
   // Active Challenge Hero Card
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-300/60 dark:border-amber-500/30 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xl transition-all">
+    <div
+      id="active-challenge-banner"
+      className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-300/60 dark:border-amber-500/30 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl p-4 sm:p-5 shadow-xl transition-all"
+    >
       {/* Decorative top accent glow */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500" />
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />

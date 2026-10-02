@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, Check, Flame, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Trophy, X, Check, Flame, Sparkles, CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react';
 import { CHALLENGE_PRESETS } from '@/lib/challengeUtils';
 import { HabitWithLogs } from '@/types/database.types';
 import { formatDateToISO } from '@/lib/dateUtils';
@@ -12,6 +12,7 @@ interface CreateChallengeModalProps {
   onClose: () => void;
   habits: HabitWithLogs[];
   onCreate: (title: string, durationDays: number, startDate: string, habitIds: string[]) => Promise<void>;
+  activeChallengeTitle?: string | null;
 }
 
 export function CreateChallengeModal({
@@ -19,6 +20,7 @@ export function CreateChallengeModal({
   onClose,
   habits,
   onCreate,
+  activeChallengeTitle,
 }: CreateChallengeModalProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('75-hard');
   const [customTitle, setCustomTitle] = useState<string>('');
@@ -122,8 +124,23 @@ export function CreateChallengeModal({
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Scrollable Form Body */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 overscroll-contain smooth-scroll">
-              {/* Preset Selector */}
-              <div>
+                {/* Active Challenge Alert Banner */}
+                {activeChallengeTitle && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-2.5 text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-bold uppercase tracking-wider font-mono">
+                        Active Challenge In Progress
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-amber-800/90 dark:text-amber-300/90">
+                        You are currently committed to <span className="font-bold underline">{activeChallengeTitle}</span>. A user cannot create a new challenge while one is active. Complete or abandon your active challenge before starting a new one.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Selector */}
+                <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono mb-2">
                   Choose Challenge Structure
                 </label>
@@ -318,11 +335,17 @@ export function CreateChallengeModal({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-500/25 disabled:opacity-50 cursor-pointer transition-all"
+                  disabled={isSubmitting || Boolean(activeChallengeTitle)}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-500/25 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
                 >
                   <Flame className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Starting...' : `Launch ${durationDays}-Day Challenge`}</span>
+                  <span>
+                    {activeChallengeTitle
+                      ? 'Active Challenge in Progress'
+                      : isSubmitting
+                      ? 'Starting...'
+                      : `Launch ${durationDays}-Day Challenge`}
+                  </span>
                 </button>
               </div>
             </form>
