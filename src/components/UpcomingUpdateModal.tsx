@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
+  Megaphone,
   X,
   ShieldCheck,
   Share2,
@@ -186,8 +186,8 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
               <div className="flex items-center justify-between gap-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  <span>SNEAK PEEK • WHAT&apos;S NEXT</span>
+                  <Megaphone className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>ROADMAP • COMING SOON</span>
                 </div>
 
                 <button

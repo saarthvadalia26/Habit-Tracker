@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Sparkles } from 'lucide-react';
+import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
@@ -92,16 +92,17 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
 
           {/* Account Controls & Theme Toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 text-xs">
-            {/* Roadmap / What's Next Button */}
+            {/* Coming Soon Button */}
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setIsRoadmapOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 hover:from-amber-500/20 hover:to-purple-500/20 text-slate-700 dark:text-slate-200 border border-amber-500/25 dark:border-indigo-500/30 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
-              title="Preview upcoming v2.0 features roadmap"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-slate-700 dark:text-slate-200 border border-indigo-500/25 dark:border-indigo-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
+              title="Preview upcoming features & roadmap"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-              <span className="hidden xs:inline">What&apos;s Next</span>
+              <Megaphone className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              <span className="hidden sm:inline">Coming Soon</span>
+              <span className="sm:hidden">Soon</span>
             </motion.button>
 
             {/* The Light/Dark Animated Switch */}
