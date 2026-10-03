@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, X, Loader2, ShieldAlert } from 'lucide-react';
 import { deleteAccountAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
+import { setPendingAuthToast } from '@/lib/auth-toast';
 
 interface DeleteAccountModalProps {
   isOpen: boolean;
@@ -54,7 +55,9 @@ export function DeleteAccountModal({
         }
         keysToRemove.forEach((k) => localStorage.removeItem(k));
       } catch {}
-      toast.success('Account Deleted', {
+      setPendingAuthToast({
+        type: 'success',
+        message: 'Account Deleted',
         description: 'Your account, habits, and all database records were permanently deleted.',
       });
       onClose();

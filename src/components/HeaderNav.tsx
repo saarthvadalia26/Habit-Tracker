@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone, Loader2, ChevronDown } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
+import { SignOutModal } from '@/components/SignOutModal';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import { signOutAction } from '@/app/actions/auth';
 import { toast, Toaster } from 'sonner';
+import { consumePendingAuthToast, setPendingAuthToast } from '@/lib/auth-toast';
 
 interface HeaderNavProps {
   userEmail?: string | null;
@@ -20,8 +22,46 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
   const { isDark } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close account menu when tapping outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+    if (isAccountMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isAccountMenuOpen]);
+
+  // Consume any pending auth toasts queued before a full page reload (e.g. login, signup, logout)
+  useEffect(() => {
+    const pending = consumePendingAuthToast();
+    if (pending) {
+      const timer = setTimeout(() => {
+        if (pending.type === 'error') {
+          toast.error(pending.message, { description: pending.description });
+        } else if (pending.type === 'info') {
+          toast.info(pending.message, { description: pending.description });
+        } else {
+          toast.success(pending.message, { description: pending.description });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Automatically show the v2.0 roadmap teaser on first startup
   useEffect(() => {
@@ -39,25 +79,28 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
     }
   }, []);
 
-  const handleSignOut = async () => {
-    toast.message('Sign out of your session?', {
-      action: {
-        label: 'Sign Out',
-        onClick: async () => {
-          if (userEmail) {
-            localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
-          }
-          localStorage.removeItem('habit_tracker_custom_name');
-          await signOutAction();
-          toast.success('Signed out successfully');
-          window.location.reload();
-        },
-      },
-      cancel: {
-        label: 'Cancel',
-        onClick: () => {},
-      },
-    });
+  const handleConfirmSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+
+    try {
+      if (userEmail) {
+        localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
+      }
+      localStorage.removeItem('habit_tracker_custom_name');
+      
+      setPendingAuthToast({
+        type: 'success',
+        message: 'Signed out successfully',
+        description: 'See you next time!',
+      });
+
+      await signOutAction();
+      window.location.reload();
+    } catch {
+      setIsSigningOut(false);
+      toast.error('Unable to sign out right now. Please try again.');
+    }
   };
 
   return (
@@ -68,8 +111,13 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
         richColors
         closeButton
         toastOptions={{
-          duration: 6000,
-          className: 'font-sans rounded-2xl shadow-2xl backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 text-xs sm:text-sm',
+          duration: 5000,
+          classNames: {
+            toast: 'font-sans rounded-2xl shadow-2xl backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 text-xs sm:text-sm',
+            actionButton: 'bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors',
+            cancelButton: 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors',
+            closeButton: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200',
+          },
         }}
       />
 
@@ -125,41 +173,81 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
                 </motion.button>
               </div>
             ) : (
-              <div className="flex items-center gap-1 sm:gap-2">
-                {/* User email badge */}
-                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800 font-semibold font-mono shadow-xs transition-colors">
+              <div className="relative" ref={accountMenuRef}>
+                {/* Account Profile Trigger */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100/70 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-200 dark:border-emerald-800 font-semibold font-mono shadow-xs transition-all cursor-pointer text-[11px] sm:text-xs"
+                  aria-expanded={isAccountMenuOpen}
+                  aria-haspopup="true"
+                  title="Account options & settings"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0" />
-                  <User className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span className="truncate max-w-[65px] xs:max-w-[90px] sm:max-w-[130px] md:max-w-[170px] text-[11px] sm:text-xs">
+                  <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="truncate max-w-[55px] xs:max-w-[85px] sm:max-w-[130px] md:max-w-[160px]">
                     {userEmail}
                   </span>
-                  <span className="hidden xs:inline shrink-0" title="100% Private & Isolated Workspace">
-                    <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  </span>
-                </div>
-
-                {/* Delete Account Button */}
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => setIsDeleteModalOpen(true)}
-                  className="flex items-center gap-1 p-1.5 sm:px-2.5 sm:py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-white bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 rounded-xl transition-all cursor-pointer font-medium"
-                  title="Permanently delete account and all records"
-                >
-                  <UserMinus className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline text-[11px]">Delete Account</span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0 transition-transform duration-200 ${
+                      isAccountMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </motion.button>
 
-                {/* Sign Out Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleSignOut}
-                  className="p-1.5 sm:p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
-                  title="Sign out"
-                >
-                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </motion.button>
+                {/* Floating Account Menu */}
+                <AnimatePresence>
+                  {isAccountMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 6 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 top-full mt-2 w-60 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-2xl p-2 shadow-2xl z-50 overflow-hidden"
+                    >
+                      {/* User Account Info */}
+                      <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 mb-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">
+                          Signed in as
+                        </p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={userEmail || ''}>
+                          {userEmail}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          <ShieldCheck className="w-3 h-3 shrink-0" />
+                          <span>100% Private Workspace</span>
+                        </div>
+                      </div>
+
+                      {/* Sign Out Option */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountMenuOpen(false);
+                          setIsSignOutModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-colors cursor-pointer text-left"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                        <span>Sign Out</span>
+                      </button>
+
+                      {/* Delete Account Option */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountMenuOpen(false);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer text-left"
+                      >
+                        <UserMinus className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <span>Delete Account...</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
@@ -178,6 +266,15 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         userEmail={userEmail}
+      />
+
+      {/* Sign Out Confirmation Modal */}
+      <SignOutModal
+        isOpen={isSignOutModalOpen}
+        onClose={() => setIsSignOutModalOpen(false)}
+        onConfirm={handleConfirmSignOut}
+        userEmail={userEmail}
+        isSigningOut={isSigningOut}
       />
 
       {/* Upcoming v2.0 Roadmap Teaser Modal */}

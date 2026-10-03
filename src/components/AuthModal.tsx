@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Mail, ArrowRight, ShieldCheck, UserPlus, LogIn, AlertCircle } from 'lucide-react';
 import { signInAction, signUpAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
+import { setPendingAuthToast } from '@/lib/auth-toast';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -35,7 +36,11 @@ export function AuthModal({
           setError(res.error);
           toast.error(res.error);
         } else {
-          toast.success(`Welcome back, ${email}!`);
+          setPendingAuthToast({
+            type: 'success',
+            message: `Welcome back, ${email}!`,
+            description: 'Your private workspace is loaded.',
+          });
           onClose();
           window.location.reload();
         }
@@ -45,7 +50,11 @@ export function AuthModal({
           setError(res.error);
           toast.error(res.error);
         } else {
-          toast.success('Account created! Your private workspace is ready.');
+          setPendingAuthToast({
+            type: 'success',
+            message: 'Account created!',
+            description: 'Your private workspace is ready.',
+          });
           onClose();
           window.location.reload();
         }
