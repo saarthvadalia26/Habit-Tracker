@@ -124,9 +124,11 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
             <div className="relative p-5 sm:p-6 pb-4 border-b border-slate-200/90 dark:border-slate-800/90">
               <div className="flex items-center justify-between gap-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 text-[11px] font-mono font-semibold text-slate-800 dark:text-slate-200">
-                  <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
-                  <span className="w-2 h-2 -ml-3 rounded-full bg-cyan-500" />
-                  <span className="tracking-wide">v2.0 ROADMAP • 6 STAGED DROPS</span>
+                  <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+                  </span>
+                  <span className="tracking-wide leading-none">v2.0 ROADMAP • 6 STAGED DROPS</span>
                 </div>
 
                 <button

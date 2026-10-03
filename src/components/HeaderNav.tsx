@@ -190,12 +190,12 @@ export function HeaderNav({
               className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-indigo-500/20 text-slate-800 dark:text-slate-200 border border-cyan-500/30 dark:border-cyan-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
               title="v2.0 Roadmap: Drop 1 launching 10th October 2026"
             >
-              <span className="relative flex h-2 w-2">
+              <span className="relative flex items-center justify-center h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
               </span>
-              <span className="hidden sm:inline font-mono">v2.0 Drops</span>
-              <span className="sm:hidden font-mono">v2.0</span>
+              <span className="hidden sm:inline font-mono leading-none">v2.0 Drops</span>
+              <span className="sm:hidden font-mono leading-none">v2.0</span>
             </motion.button>
 
             {/* The Light/Dark Animated Switch */}
