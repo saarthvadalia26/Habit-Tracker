@@ -222,6 +222,13 @@ BEGIN
     -- Explicitly delete all user challenges
     DELETE FROM public.challenges WHERE user_id = current_user_id;
 
+    -- Explicitly delete all user monthly notes (if table exists)
+    BEGIN
+        DELETE FROM public.monthly_notes WHERE user_id = current_user_id;
+    EXCEPTION WHEN undefined_table THEN
+        -- Ignore if table has not been created yet
+    END;
+
     -- Delete auth identities and sessions to guarantee clean cascade
     DELETE FROM auth.identities WHERE user_id = current_user_id;
     DELETE FROM auth.sessions WHERE user_id = current_user_id;
@@ -253,3 +260,36 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC, a
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+
+-- 12. Monthly Notes & Intentions Table (Cross-Device Cloud Sync)
+CREATE TABLE IF NOT EXISTS public.monthly_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    month_key TEXT NOT NULL CONSTRAINT check_month_key CHECK (char_length(month_key) <= 20),
+    content TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT unique_user_month_note UNIQUE (user_id, month_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_monthly_notes_user_month ON public.monthly_notes(user_id, month_key);
+ALTER TABLE public.monthly_notes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own monthly notes" ON public.monthly_notes;
+CREATE POLICY "Users can view their own monthly notes"
+    ON public.monthly_notes FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own monthly notes" ON public.monthly_notes;
+CREATE POLICY "Users can insert their own monthly notes"
+    ON public.monthly_notes FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own monthly notes" ON public.monthly_notes;
+CREATE POLICY "Users can update their own monthly notes"
+    ON public.monthly_notes FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own monthly notes" ON public.monthly_notes;
+CREATE POLICY "Users can delete their own monthly notes"
+    ON public.monthly_notes FOR DELETE USING (auth.uid() = user_id);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.monthly_notes TO authenticated;
+GRANT ALL ON TABLE public.monthly_notes TO service_role;
+

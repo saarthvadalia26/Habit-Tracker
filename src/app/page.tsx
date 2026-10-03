@@ -45,6 +45,7 @@ export default async function HomePage() {
           userEmail={user?.email}
           initialCustomName={initialCustomName}
           initialChallenge={initialChallenge}
+          initialMonthlyNotes={user?.monthlyNotes || {}}
         />
       </main>
 

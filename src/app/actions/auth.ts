@@ -12,6 +12,7 @@ interface CurrentUser {
   lastName?: string;
   fullName?: string;
   profilePromptDismissed?: boolean;
+  monthlyNotes?: Record<string, string>;
 }
 
 export interface SignUpProfile {
@@ -39,6 +40,9 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
       ? user.user_metadata.full_name 
       : [firstName, lastName].filter(Boolean).join(' ');
     const profilePromptDismissed = Boolean(user.user_metadata?.profile_prompt_dismissed);
+    const monthlyNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
+      ? (user.user_metadata.monthly_notes as Record<string, string>)
+      : {};
 
     return {
       user: {
@@ -49,6 +53,7 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
         lastName,
         fullName,
         profilePromptDismissed,
+        monthlyNotes,
       },
     };
   } catch {
@@ -321,4 +326,115 @@ export async function dismissProfilePromptAction() {
     return { success: false };
   }
 }
+
+/**
+ * Persists user's monthly notes & intentions to Supabase user metadata
+ * and/or dedicated table, guaranteeing cross-device cloud sync.
+ */
+export async function saveMonthlyNoteAction(
+  year: number,
+  month: number,
+  content: string
+): Promise<{ success: boolean; error?: string | null }> {
+  try {
+    if (typeof year !== 'number' || typeof month !== 'number' || typeof content !== 'string') {
+      return { success: false, error: 'Invalid note parameters.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'Authentication required to sync notes.' };
+    }
+
+    const cleanContent = content.slice(0, 8000);
+    const noteKey = `${year}_${month}`;
+
+    const currentNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
+      ? (user.user_metadata.monthly_notes as Record<string, string>)
+      : {};
+
+    const updatedNotes = {
+      ...currentNotes,
+      [noteKey]: cleanContent,
+    };
+
+    // 1. Persist to Supabase Auth metadata (instant zero-downtime cross-device sync)
+    const { error: metaError } = await supabase.auth.updateUser({
+      data: {
+        monthly_notes: updatedNotes,
+      },
+    });
+
+    if (metaError) {
+      return { success: false, error: 'Failed to sync note to cloud.' };
+    }
+
+    // 2. Best-effort sync to public.monthly_notes table if it exists
+    try {
+      await supabase.from('monthly_notes').upsert(
+        {
+          user_id: user.id,
+          month_key: noteKey,
+          content: cleanContent,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,month_key' }
+      );
+    } catch {
+      // Table may not exist yet if schema hasn't been run; metadata safely covers it.
+    }
+
+    return { success: true, error: null };
+  } catch {
+    return { success: false, error: 'Failed to sync note across devices.' };
+  }
+}
+
+/**
+ * Retrieves a specific month's note from database table or metadata.
+ */
+export async function getMonthlyNoteAction(
+  year: number,
+  month: number
+): Promise<{ note: string | null; error?: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { note: null, error: 'Not authenticated' };
+    }
+
+    const noteKey = `${year}_${month}`;
+
+    // Try table first
+    try {
+      const { data } = await supabase
+        .from('monthly_notes')
+        .select('content')
+        .eq('user_id', user.id)
+        .eq('month_key', noteKey)
+        .maybeSingle();
+
+      if (data?.content !== undefined) {
+        return { note: data.content, error: null };
+      }
+    } catch {}
+
+    // Fall back to user_metadata
+    const metaNotes = user.user_metadata?.monthly_notes as Record<string, string> | undefined;
+    return { note: metaNotes?.[noteKey] ?? null, error: null };
+  } catch {
+    return { note: null, error: 'Failed to fetch note' };
+  }
+}
+
 

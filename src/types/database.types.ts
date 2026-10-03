@@ -98,6 +98,30 @@ export type Database = {
           },
         ];
       };
+      monthly_notes: {
+        Row: {
+          id: string;
+          user_id: string;
+          month_key: string;
+          content: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          month_key: string;
+          content?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          month_key?: string;
+          content?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

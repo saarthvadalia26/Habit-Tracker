@@ -176,7 +176,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-            className="relative w-full max-w-xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto"
+            className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto"
           >
             {/* Soft Centered Ambient Radial Glow (blur-3xl eliminates harsh cutoffs) */}
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 sm:w-96 h-48 bg-indigo-500/10 dark:bg-indigo-600/15 pointer-events-none blur-3xl rounded-full" />
@@ -220,21 +220,24 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                   <motion.div
                     key={drop.id}
                     whileHover={{ y: -1 }}
-                    className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col gap-2.5"
+                    className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col gap-2"
                   >
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 shadow-xs">
-                          <Icon className="w-4 h-4" />
+                    <div className="flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 shadow-xs">
+                          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono">
+                        <h3
+                          className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white font-mono truncate"
+                          title={drop.title}
+                        >
                           {drop.title}
                         </h3>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <span
-                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${drop.badgeClass}`}
+                          className={`text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-md border shrink-0 ${drop.badgeClass}`}
                         >
                           {drop.badge}
                         </span>
@@ -242,7 +245,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                         <button
                           type="button"
                           onClick={() => handleToggleHype(drop.id)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer border ${
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-medium transition-all cursor-pointer border shrink-0 ${
                             isHyped
                               ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
                               : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -261,7 +264,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans pl-10">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans pl-9 sm:pl-10.5">
                       {drop.description}
                     </p>
                   </motion.div>

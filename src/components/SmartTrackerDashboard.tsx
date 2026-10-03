@@ -54,6 +54,7 @@ interface SmartTrackerDashboardProps {
   userEmail?: string | null;
   initialCustomName?: string;
   initialChallenge?: Challenge | null;
+  initialMonthlyNotes?: Record<string, string>;
 }
 
 export function SmartTrackerDashboard({
@@ -62,6 +63,7 @@ export function SmartTrackerDashboard({
   userEmail,
   initialCustomName = '',
   initialChallenge = null,
+  initialMonthlyNotes = {},
 }: SmartTrackerDashboardProps) {
   const { isDark } = useTheme();
   const currentDate = new Date();
@@ -1225,9 +1227,12 @@ export function SmartTrackerDashboard({
 
           {/* Notes & Intentions Pad with Per-Month Key */}
           <NotesSection
+            year={selectedYear}
+            month={selectedMonth}
             storageKey={`habit_notes_${selectedYear}_${selectedMonth}`}
             userEmail={userEmail}
             readOnly={isGuestMode}
+            serverNotes={initialMonthlyNotes?.[`${selectedYear}_${selectedMonth}`]}
             onRequireAuth={() => handleRequireAuth('save monthly reflections and notes')}
           />
         </div>

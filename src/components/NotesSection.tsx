@@ -1,48 +1,150 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Edit3, Check } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Edit3, Check, Cloud, CloudCheck, CloudOff, Loader2 } from 'lucide-react';
+import { saveMonthlyNoteAction } from '@/app/actions/auth';
 
 interface NotesSectionProps {
+  year?: number;
+  month?: number;
   storageKey?: string;
   userEmail?: string | null;
   readOnly?: boolean;
+  serverNotes?: string | null;
   onRequireAuth?: () => void;
 }
 
+const DEFAULT_NOTES_TEMPLATE =
+  '• Prioritize morning hydration & meditation.\n• Hit at least 4 workouts per week.\n• Keep phone away 45 mins before bedtime.';
+
 export function NotesSection({
+  year = new Date().getFullYear(),
+  month = new Date().getMonth(),
   storageKey = 'habit_tracker_notes',
   userEmail,
   readOnly = false,
+  serverNotes,
   onRequireAuth,
 }: NotesSectionProps) {
   const [notes, setNotes] = useState('');
-  const [saved, setSaved] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'synced' | 'error'>('idle');
+
+  // Track the last text content confirmed synced to prevent redundant cloud writes
+  const lastSyncedRef = useRef<string>('');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // User-scoped storage key prevents cross-account notes leakage on shared devices
   const scopedKey = userEmail ? `${storageKey}_${userEmail}` : `${storageKey}_guest`;
 
+  // Core cloud sync function
+  const syncToCloud = useCallback(
+    async (text: string, targetYear: number, targetMonth: number) => {
+      if (readOnly || !userEmail) return;
+      if (text === lastSyncedRef.current) {
+        setSyncStatus('idle');
+        return;
+      }
+
+      setSyncStatus('saving');
+      try {
+        const res = await saveMonthlyNoteAction(targetYear, targetMonth, text);
+        if (res.success) {
+          lastSyncedRef.current = text;
+          setSyncStatus('synced');
+          setTimeout(() => {
+            setSyncStatus((current) => (current === 'synced' ? 'idle' : current));
+          }, 2500);
+        } else {
+          setSyncStatus('error');
+        }
+      } catch {
+        setSyncStatus('error');
+      }
+    },
+    [readOnly, userEmail]
+  );
+
+  // Load notes on mount and whenever the selected month or storage key changes
   useEffect(() => {
-    const savedText = localStorage.getItem(scopedKey);
-    if (savedText !== null) {
-      setNotes(savedText);
-    } else {
-      setNotes(
-        '• Prioritize morning hydration & meditation.\n• Hit at least 4 workouts per week.\n• Keep phone away 45 mins before bedtime.'
-      );
+    // 1. If server notes exist from cloud, use them and cache locally
+    if (serverNotes !== undefined && serverNotes !== null && serverNotes !== '') {
+      setNotes(serverNotes);
+      lastSyncedRef.current = serverNotes;
+      try {
+        localStorage.setItem(scopedKey, serverNotes);
+      } catch {}
+      setSyncStatus('idle');
+      return;
     }
-  }, [scopedKey]);
+
+    // 2. Check local storage for pre-existing offline/local notes
+    let savedLocal: string | null = null;
+    try {
+      savedLocal = localStorage.getItem(scopedKey);
+    } catch {}
+
+    if (savedLocal !== null && savedLocal.trim() !== '') {
+      setNotes(savedLocal);
+      // Auto-migrate local notes up to the cloud so they instantly sync across devices
+      if (!readOnly && userEmail) {
+        syncToCloud(savedLocal, year, month);
+      }
+      return;
+    }
+
+    // 3. Fallback to default starter template for fresh/empty months
+    if (readOnly) {
+      setNotes(DEFAULT_NOTES_TEMPLATE);
+    } else {
+      setNotes('');
+      lastSyncedRef.current = '';
+    }
+  }, [scopedKey, serverNotes, readOnly, userEmail, year, month, syncToCloud]);
+
+  // Clean up any pending debounced timers when component unmounts or switches
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (readOnly) {
       if (onRequireAuth) onRequireAuth();
       return;
     }
+
     const val = e.target.value;
     setNotes(val);
-    localStorage.setItem(scopedKey, val);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    // 1. Instant local persistence
+    try {
+      localStorage.setItem(scopedKey, val);
+    } catch {}
+
+    // 2. Debounced cross-device cloud sync (750ms after user pauses typing)
+    if (!readOnly && userEmail) {
+      setSyncStatus('saving');
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        syncToCloud(val, year, month);
+      }, 750);
+    }
+  };
+
+  // Immediately flush unsaved debounced changes when user clicks away / unfocuses
+  const handleBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (!readOnly && userEmail && notes !== lastSyncedRef.current) {
+      syncToCloud(notes, year, month);
+    }
   };
 
   return (
@@ -53,24 +155,46 @@ export function NotesSection({
             <Edit3 className="w-3.5 h-3.5" />
           </div>
           <h3 className="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider font-mono">
-            Notes & Intentions
+            Notes &amp; Intentions
           </h3>
         </div>
+
+        {/* Sync & Authorization Status Indicator */}
         {readOnly ? (
           <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-mono">
-            Preview
+            Local Preview
           </span>
-        ) : saved ? (
-          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 rounded-full">
-            <Check className="w-3 h-3" /> Saved
+        ) : syncStatus === 'saving' ? (
+          <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1.5 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/50 px-2.5 py-0.5 rounded-full font-mono animate-pulse">
+            <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
+            <span>Syncing...</span>
           </span>
-        ) : null}
+        ) : syncStatus === 'synced' ? (
+          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-0.5 rounded-full font-mono">
+            <CloudCheck className="w-3 h-3 text-emerald-500" />
+            <span>Synced to Cloud</span>
+          </span>
+        ) : syncStatus === 'error' ? (
+          <span
+            className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/50 px-2.5 py-0.5 rounded-full font-mono"
+            title="Saved on this device. Will retry cloud sync next."
+          >
+            <CloudOff className="w-3 h-3 text-amber-500" />
+            <span>Saved locally</span>
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 font-mono">
+            <Cloud className="w-3 h-3 text-slate-400 dark:text-slate-600" />
+            <span>Synced</span>
+          </span>
+        )}
       </div>
 
       <div className="relative flex-1 mt-3">
         <textarea
           value={notes}
           onChange={handleChange}
+          onBlur={handleBlur}
           readOnly={readOnly}
           onClick={() => {
             if (readOnly && onRequireAuth) onRequireAuth();
