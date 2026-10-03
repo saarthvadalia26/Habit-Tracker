@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Flame, PartyPopper, ChevronRight, RotateCcw, CheckCircle2, Clock, Quote, Shuffle } from 'lucide-react';
+import { Trophy, Flame, ChevronRight, RotateCcw, CheckCircle2, Clock, Quote, Shuffle } from 'lucide-react';
 import { getDailyQuote, getRandomQuote, MotivationQuote } from '@/lib/quotes';
 import { Challenge, ChallengeProgress } from '@/types/challenge.types';
 import { HabitWithLogs } from '@/types/database.types';
@@ -200,15 +200,6 @@ export function ChallengeBanner({
 
         {/* Right side status & controls */}
         <div className="flex items-center gap-2 self-end sm:self-auto text-xs">
-          <button
-            type="button"
-            onClick={handleCelebrate}
-            className="p-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 hover:scale-110 transition-transform cursor-pointer"
-            title="Celebrate progress"
-          >
-            <PartyPopper className="w-3.5 h-3.5" />
-          </button>
-
           <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-mono font-bold text-[11px] flex items-center gap-1">
             {progress.isUpcoming ? (
               <>
@@ -216,7 +207,9 @@ export function ChallengeBanner({
                 <span>Starts {progress.formattedStartDate}</span>
               </>
             ) : (
-              <span>{progress.daysRemaining} days left</span>
+              <span>
+                {progress.daysRemaining} {progress.daysRemaining === 1 ? 'day' : 'days'} left
+              </span>
             )}
           </span>
 

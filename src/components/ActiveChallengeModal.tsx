@@ -6,7 +6,6 @@ import {
   Trophy,
   X,
   Flame,
-  Sparkles,
   CheckCircle2,
   RotateCcw,
   Calendar,
@@ -381,16 +380,6 @@ export function ActiveChallengeModal({
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   <span>View on Dashboard</span>
                 </button>
-                {onCelebrate && (
-                  <button
-                    type="button"
-                    onClick={onCelebrate}
-                    className="p-2 rounded-xl text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:scale-105 transition-transform cursor-pointer"
-                    title="Celebrate with confetti"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
 
               <div className="flex items-center gap-2">

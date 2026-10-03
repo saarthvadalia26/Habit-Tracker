@@ -638,7 +638,9 @@ export function SmartTrackerDashboard({
               </span>
               <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
                 <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{analytics.perfectDaysCount} Perfect Days</span>
+                <span>
+                  {analytics.perfectDaysCount} Perfect {analytics.perfectDaysCount === 1 ? 'Day' : 'Days'}
+                </span>
               </div>
             </div>
           </div>
