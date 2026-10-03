@@ -182,17 +182,20 @@ export function HeaderNav({
 
           {/* Account Controls & Theme Toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 text-xs">
-            {/* Coming Soon Button */}
+            {/* v2.0 Roadmap / Drops Button */}
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setIsRoadmapOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-slate-700 dark:text-slate-200 border border-indigo-500/25 dark:border-indigo-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
-              title="Preview upcoming features & roadmap"
+              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-indigo-500/20 text-slate-800 dark:text-slate-200 border border-cyan-500/30 dark:border-cyan-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
+              title="v2.0 Roadmap: Drop 1 launching 10th October 2026"
             >
-              <Megaphone className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-              <span className="hidden sm:inline">Coming Soon</span>
-              <span className="sm:hidden">Soon</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              <span className="hidden sm:inline font-mono">v2.0 Drops</span>
+              <span className="sm:hidden font-mono">v2.0</span>
             </motion.button>
 
             {/* The Light/Dark Animated Switch */}

@@ -3,98 +3,39 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Megaphone,
-  X,
-  ShieldCheck,
-  Share2,
-  Layers,
-  WifiOff,
   CalendarDays,
   Target,
+  ShieldCheck,
+  Layers,
+  Share2,
+  WifiOff,
   Flame,
-  Quote,
+  CheckCircle2,
+  X,
+  Sparkles,
+  Clock,
+  Layers3,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { V2_DROPS, V2_RELEASE_INFO, type V2Drop } from '@/config/releases';
 
 interface UpcomingUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface FeatureDrop {
-  id: string;
-  icon: typeof ShieldCheck;
-  badge: string;
-  badgeClass: string;
-  title: string;
-  description: string;
-}
-
-const UPCOMING_DROPS: FeatureDrop[] = [
-  {
-    id: 'streak-armor',
-    icon: ShieldCheck,
-    badge: '⚡ IN THE LAB',
-    badgeClass:
-      'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    title: 'Streak Armor & Rest Cadence',
-    description:
-      'Never lose a 60-day flame to an emergency again. Automatic streak shields, recovery days, and flexible 3x/week gym schedules with zero guilt.',
-  },
-  {
-    id: 'flex-cards',
-    icon: Share2,
-    badge: '🎨 TESTING',
-    badgeClass:
-      'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
-    title: 'Aesthetic Milestone Flex Cards',
-    description:
-      'Turn your 75-Hard milestones and 100-day streaks into bespoke 9:16 Instagram Story & X graphics with 1 tap. Let your proof speak for itself.',
-  },
-  {
-    id: 'habit-stacking',
-    icon: Layers,
-    badge: '🔬 ARCHITECTURE',
-    badgeClass:
-      'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
-    title: 'Habit Stacking & Dayflows',
-    description:
-      'Categorize habits into Morning Anchors, Afternoon Focus Sprints, and Evening Wind-Downs to eliminate choice fatigue.',
-  },
-  {
-    id: 'offline-sync',
-    icon: WifiOff,
-    badge: '📡 ENGINE',
-    badgeClass:
-      'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    title: 'Offline-First Engine & Cloud Sync',
-    description:
-      'Track habits on airplanes, remote trails, or spotty networks. 100% offline habit logging that automatically syncs to your account when reconnected.',
-  },
-  {
-    id: 'heatmap-365',
-    icon: CalendarDays,
-    badge: '📊 VISUALS',
-    badgeClass:
-      'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-    title: '365-Day Master Heatmap',
-    description:
-      'A bird\'s-eye GitHub-style contribution matrix visualizing your entire year of consistency, momentum streaks, and annual adherence.',
-  },
-  {
-    id: 'numeric-goals',
-    icon: Target,
-    badge: '🎯 METRICS',
-    badgeClass:
-      'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/20',
-    title: 'Target & Numeric Goals',
-    description:
-      'Track quantitative milestones beyond binary checkmarks—log 3,000ml of water, 25 pages read, or 45-minute workouts with in-cell steppers.',
-  },
-];
+const DROP_ICONS: Record<string, React.ElementType> = {
+  'heatmap-365': CalendarDays,
+  'numeric-goals': Target,
+  'streak-armor': ShieldCheck,
+  'habit-stacking': Layers,
+  'flex-cards': Share2,
+  'offline-sync': WifiOff,
+};
 
 export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProps) {
   const [hypedFeatures, setHypedFeatures] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<'all' | 'spotlight'>('all');
 
   // Close on Escape key
   useEffect(() => {
@@ -131,19 +72,14 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
     });
   };
 
-  const handleLockIn = () => {
+  const handleConfirm = () => {
     try {
       localStorage.setItem('ht_seen_v2_roadmap_v1', 'true');
-    } catch {
-      // Safe fallback
-    }
-
-    try {
       confetti({
-        particleCount: 60,
-        spread: 65,
+        particleCount: 65,
+        spread: 70,
         origin: { y: 0.65 },
-        colors: ['#F59E0B', '#6366F1', '#EC4899', '#10B981'],
+        colors: ['#06B6D4', '#6366F1', '#EC4899', '#F59E0B'],
       });
     } catch {
       // Safe fallback
@@ -151,6 +87,9 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
 
     onClose();
   };
+
+  const spotlightDrop = V2_DROPS[0]; // Drop 1: 365 Heatmap
+  const futureDrops = V2_DROPS.slice(1);
 
   return (
     <AnimatePresence>
@@ -167,7 +106,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity"
+            className="fixed inset-0 bg-slate-950/75 backdrop-blur-md transition-opacity"
           />
 
           {/* Modal Container */}
@@ -176,18 +115,18 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-            className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto"
+            className="relative w-full max-w-2xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto"
           >
-            {/* Soft Centered Ambient Radial Glow (blur-3xl eliminates harsh cutoffs) */}
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 sm:w-96 h-48 bg-indigo-500/10 dark:bg-indigo-600/15 pointer-events-none blur-3xl rounded-full" />
+            {/* Ambient Cyan/Indigo Radial Glow */}
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 bg-gradient-to-r from-cyan-500/15 via-indigo-500/15 to-purple-500/10 pointer-events-none blur-3xl rounded-full" />
 
             {/* Header */}
             <div className="relative p-5 sm:p-6 pb-4 border-b border-slate-200/90 dark:border-slate-800/90">
               <div className="flex items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <Megaphone className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>ROADMAP • COMING SOON</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 text-[11px] font-mono font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
+                  <span className="w-2 h-2 -ml-3 rounded-full bg-cyan-500" />
+                  <span className="tracking-wide">v2.0 ROADMAP • 6 STAGED DROPS</span>
                 </div>
 
                 <button
@@ -199,106 +138,215 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                 </button>
               </div>
 
-              <h2
-                id="modal-roadmap-title"
-                className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-3 font-mono"
-              >
-                Engineered for Daily Mastery.
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 font-sans">
-                A preview of the next major release designed to refine your focus and elevate your daily tracking.
-              </p>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="relative p-4 sm:p-6 space-y-3.5 overflow-y-auto max-h-[50vh] sm:max-h-[54vh] scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
-              {UPCOMING_DROPS.map((drop) => {
-                const Icon = drop.icon;
-                const isHyped = !!hypedFeatures[drop.id];
-
-                return (
-                  <motion.div
-                    key={drop.id}
-                    whileHover={{ y: -1 }}
-                    className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 shadow-xs">
-                          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </div>
-                        <h3
-                          className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white font-mono truncate"
-                          title={drop.title}
-                        >
-                          {drop.title}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                        <span
-                          className={`text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-md border shrink-0 ${drop.badgeClass}`}
-                        >
-                          {drop.badge}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleHype(drop.id)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-medium transition-all cursor-pointer border shrink-0 ${
-                            isHyped
-                              ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
-                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                          }`}
-                          title="Vote if you want this feature first"
-                        >
-                          <Flame
-                            className={`w-3 h-3 ${
-                              isHyped
-                                ? 'text-amber-500 fill-amber-500'
-                                : 'text-slate-400'
-                            }`}
-                          />
-                          <span>{isHyped ? 'Hyped!' : 'Want this'}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans pl-9 sm:pl-10.5">
-                      {drop.description}
-                    </p>
-                  </motion.div>
-                );
-              })}
-
-              {/* Discipline Quote Footer Card */}
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 dark:border-indigo-500/30 flex items-start gap-3">
-                <Quote className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0 mt-0.5" />
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <p className="text-xs sm:text-sm italic font-medium text-slate-800 dark:text-slate-200 leading-snug">
-                    &ldquo;You do not rise to the level of your goals. You fall to the level of your systems.&rdquo;
+                  <h2
+                    id="modal-roadmap-title"
+                    className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono flex items-center gap-2"
+                  >
+                    <span>The v2.0 Release Radar</span>
+                    <Sparkles className="w-4 h-4 text-cyan-500 hidden sm:inline" />
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5 font-sans">
+                    Rolling out 6 dedicated updates one by one. Here is what is arriving next.
                   </p>
-                  <p className="text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 mt-1">
-                    &mdash; James Clear, Atomic Habits
-                  </p>
+                </div>
+
+                {/* Quick Segment Filter */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 self-start sm:self-auto border border-slate-200/60 dark:border-slate-700/60">
+                  <button
+                    onClick={() => setActiveTab('all')}
+                    className={`px-2.5 py-1 text-[11px] font-mono font-semibold rounded-lg transition-all ${
+                      activeTab === 'all'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    All 6 Drops
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('spotlight')}
+                    className={`px-2.5 py-1 text-[11px] font-mono font-semibold rounded-lg transition-all ${
+                      activeTab === 'spotlight'
+                        ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Next Drop Only
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Modal Actions */}
+            {/* Scrollable Content Body */}
+            <div className="relative p-4 sm:p-6 space-y-4 overflow-y-auto max-h-[52vh] sm:max-h-[56vh] scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+              {/* SPOTLIGHT HERO CARD: DROP 1 OF 6 */}
+              <div className="relative rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-cyan-500/10 via-indigo-500/5 to-purple-500/10 border-2 border-cyan-500/40 dark:border-cyan-500/50 shadow-md">
+                {/* Header ribbon */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
+                      {spotlightDrop.versionBadge}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                      {spotlightDrop.category}
+                    </span>
+                  </div>
+
+                  {/* Target Date Pill */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-600 text-white shadow-xs font-mono font-bold text-[11px]">
+                    <Clock className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+                    <span>Launching 10th October 2026</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 dark:bg-cyan-500/30 border border-cyan-500/40 flex items-center justify-center text-cyan-600 dark:text-cyan-300 shrink-0 shadow-xs">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                      {spotlightDrop.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-sans leading-relaxed">
+                      {spotlightDrop.description}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Features Checklist */}
+                <div className="mt-4 pt-3.5 border-t border-cyan-500/20 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {spotlightDrop.highlights.map((highlight, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
+                      <span className="text-slate-700 dark:text-slate-300 font-sans leading-snug">
+                        {highlight}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Hype Vote button for Drop 1 */}
+                <div className="mt-4 pt-3 border-t border-cyan-500/20 flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-cyan-800 dark:text-cyan-300 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                    Drop 1 of 6 • Currently in final testing
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHype(spotlightDrop.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                      hypedFeatures[spotlightDrop.id]
+                        ? 'bg-cyan-500 text-white border-cyan-600 shadow-xs'
+                        : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-cyan-400'
+                    }`}
+                  >
+                    <Flame
+                      className={`w-3.5 h-3.5 ${
+                        hypedFeatures[spotlightDrop.id]
+                          ? 'text-white fill-white'
+                          : 'text-amber-500'
+                      }`}
+                    />
+                    <span>{hypedFeatures[spotlightDrop.id] ? 'Hyped for Oct 10!' : 'I want this!'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* UPCOMING PIPELINE: DROPS 2 THROUGH 6 */}
+              {activeTab === 'all' && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between px-1">
+                    <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Layers3 className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Remaining v2.0 Drops in Queue</span>
+                    </h4>
+                    <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                      Drops 2 &ndash; 6
+                    </span>
+                  </div>
+
+                  {futureDrops.map((drop: V2Drop) => {
+                    const Icon = DROP_ICONS[drop.id] || Sparkles;
+                    const isHyped = !!hypedFeatures[drop.id];
+
+                    return (
+                      <motion.div
+                        key={drop.id}
+                        whileHover={{ y: -1 }}
+                        className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0 shadow-xs">
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                  {drop.versionBadge}
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  &bull; {drop.targetDate}
+                                </span>
+                              </div>
+                              <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white font-mono truncate">
+                                {drop.title}
+                              </h5>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleHype(drop.id)}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-medium transition-all cursor-pointer border shrink-0 ${
+                                isHyped
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
+                                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                              }`}
+                              title="Vote if you want this prioritized"
+                            >
+                              <Flame
+                                className={`w-3 h-3 ${
+                                  isHyped
+                                    ? 'text-amber-500 fill-amber-500'
+                                    : 'text-slate-400'
+                                }`}
+                              />
+                              <span>{isHyped ? 'Hyped!' : 'Vote'}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans pl-10">
+                          {drop.tagline}
+                        </p>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions Footer */}
             <div className="p-4 sm:p-5 pt-3 border-t border-slate-200/90 dark:border-slate-800/90 bg-slate-50/80 dark:bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center sm:text-left">
-                Updates will roll out automatically with zero downtime.
-              </p>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 text-center sm:text-left font-sans">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {V2_RELEASE_INFO.title}:
+                </span>{' '}
+                Zero-downtime, non-breaking rollout.
+              </div>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleLockIn}
-                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-mono font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                onClick={handleConfirm}
+                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-mono font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
-                <span>Lock In &amp; Crush Today</span>
-                <span className="text-amber-300">⚡</span>
+                <span>Ready for Drop 1 (Oct 10)</span>
+                <span className="text-cyan-200">🚀</span>
               </motion.button>
             </div>
           </motion.div>
