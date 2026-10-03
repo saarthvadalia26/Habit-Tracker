@@ -46,16 +46,14 @@ export function HeaderNav({
   const [isPersonalizeModalOpen, setIsPersonalizeModalOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
-  // One-time prompt for existing users who do not have a name configured yet
+  // One-time prompt for existing users who do not have their personal name configured yet
   useEffect(() => {
     if (isGuestMode || !userId) return;
 
-    // Has user already provided a name?
-    const hasName = Boolean(
-      (userName && userName.trim()) ||
-      (userFirstName && userFirstName.trim()) ||
-      (userCustomName && userCustomName.trim())
-    );
+    // Has user already provided their personal first name?
+    // We check userFirstName specifically so that users who only set a board title earlier
+    // are still prompted to complete their profile with their real name.
+    const hasFirstName = Boolean(userFirstName && userFirstName.trim());
 
     // Has the user dismissed this prompt previously?
     let hasDismissed = Boolean(profilePromptDismissed);
@@ -65,13 +63,13 @@ export function HeaderNav({
       }
     } catch {}
 
-    if (!hasName && !hasDismissed) {
+    if (!hasFirstName && !hasDismissed) {
       const timer = setTimeout(() => {
         setIsPersonalizeModalOpen(true);
-      }, 800);
+      }, 700);
       return () => clearTimeout(timer);
     }
-  }, [isGuestMode, userId, userName, userFirstName, userCustomName, profilePromptDismissed]);
+  }, [isGuestMode, userId, userFirstName, profilePromptDismissed]);
 
   // Close account menu when tapping outside
   useEffect(() => {

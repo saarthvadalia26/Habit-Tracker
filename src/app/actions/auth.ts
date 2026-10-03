@@ -110,6 +110,7 @@ export async function signUpAction(
           first_name: cleanFirst,
           last_name: cleanLast,
           full_name: fullName,
+          profile_prompt_dismissed: true,
         },
       },
     });
