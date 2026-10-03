@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone, Loader2, ChevronDown } from 'lucide-react';
+import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone, Loader2, ChevronDown, UserCog } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { SignOutModal } from '@/components/SignOutModal';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
+import { PersonalizeProfileModal } from '@/components/PersonalizeProfileModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
 import { signOutAction } from '@/app/actions/auth';
@@ -14,12 +15,26 @@ import { toast, Toaster } from 'sonner';
 import { consumePendingAuthToast, setPendingAuthToast } from '@/lib/auth-toast';
 
 interface HeaderNavProps {
+  userId?: string | null;
   userEmail?: string | null;
   userName?: string | null;
+  userFirstName?: string;
+  userLastName?: string;
+  userCustomName?: string;
+  profilePromptDismissed?: boolean;
   isGuestMode: boolean;
 }
 
-export function HeaderNav({ userEmail, userName, isGuestMode }: HeaderNavProps) {
+export function HeaderNav({
+  userId,
+  userEmail,
+  userName,
+  userFirstName,
+  userLastName,
+  userCustomName,
+  profilePromptDismissed,
+  isGuestMode,
+}: HeaderNavProps) {
   const { isDark } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -28,7 +43,35 @@ export function HeaderNav({ userEmail, userName, isGuestMode }: HeaderNavProps) 
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isPersonalizeModalOpen, setIsPersonalizeModalOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // One-time prompt for existing users who do not have a name configured yet
+  useEffect(() => {
+    if (isGuestMode || !userId) return;
+
+    // Has user already provided a name?
+    const hasName = Boolean(
+      (userName && userName.trim()) ||
+      (userFirstName && userFirstName.trim()) ||
+      (userCustomName && userCustomName.trim())
+    );
+
+    // Has the user dismissed this prompt previously?
+    let hasDismissed = Boolean(profilePromptDismissed);
+    try {
+      if (localStorage.getItem(`habit_tracker_name_prompt_dismissed_${userId}`) === 'true') {
+        hasDismissed = true;
+      }
+    } catch {}
+
+    if (!hasName && !hasDismissed) {
+      const timer = setTimeout(() => {
+        setIsPersonalizeModalOpen(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isGuestMode, userId, userName, userFirstName, userCustomName, profilePromptDismissed]);
 
   // Close account menu when tapping outside
   useEffect(() => {
@@ -232,6 +275,19 @@ export function HeaderNav({ userEmail, userName, isGuestMode }: HeaderNavProps) 
                         </div>
                       </div>
 
+                      {/* Edit Profile / Name Option */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountMenuOpen(false);
+                          setIsPersonalizeModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition-colors cursor-pointer text-left"
+                      >
+                        <UserCog className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <span>Edit Name / Profile...</span>
+                      </button>
+
                       {/* Sign Out Option */}
                       <button
                         type="button"
@@ -293,6 +349,16 @@ export function HeaderNav({ userEmail, userName, isGuestMode }: HeaderNavProps) 
       <UpcomingUpdateModal
         isOpen={isRoadmapOpen}
         onClose={() => setIsRoadmapOpen(false)}
+      />
+
+      {/* Personalize Profile Name Modal */}
+      <PersonalizeProfileModal
+        isOpen={isPersonalizeModalOpen}
+        onClose={() => setIsPersonalizeModalOpen(false)}
+        userId={userId}
+        initialFirstName={userFirstName}
+        initialLastName={userLastName}
+        initialNickname={userCustomName}
       />
     </>
   );

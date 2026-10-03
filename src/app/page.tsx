@@ -27,8 +27,13 @@ export default async function HomePage() {
 
       {/* Floating Dark Navigation Header with Individual Account Controls */}
       <HeaderNav
+        userId={user?.id}
         userEmail={user?.email}
         userName={user?.fullName || user?.firstName || user?.customName}
+        userFirstName={user?.firstName}
+        userLastName={user?.lastName}
+        userCustomName={user?.customName}
+        profilePromptDismissed={user?.profilePromptDismissed}
         isGuestMode={isGuestMode}
       />
 

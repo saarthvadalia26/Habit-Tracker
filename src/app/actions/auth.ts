@@ -11,6 +11,7 @@ interface CurrentUser {
   firstName?: string;
   lastName?: string;
   fullName?: string;
+  profilePromptDismissed?: boolean;
 }
 
 export interface SignUpProfile {
@@ -37,6 +38,7 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
     const fullName = typeof user.user_metadata?.full_name === 'string' 
       ? user.user_metadata.full_name 
       : [firstName, lastName].filter(Boolean).join(' ');
+    const profilePromptDismissed = Boolean(user.user_metadata?.profile_prompt_dismissed);
 
     return {
       user: {
@@ -46,6 +48,7 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
         firstName,
         lastName,
         fullName,
+        profilePromptDismissed,
       },
     };
   } catch {
@@ -234,3 +237,87 @@ export async function updateCustomNameAction(customName: string) {
     return { success: false, error: 'Failed to save title across devices.' };
   }
 }
+
+/**
+ * Updates full user profile details (First Name, Last Name, Tracker Title/Nickname)
+ * and marks the profile prompt as completed.
+ */
+export async function updateProfileAction(profile: {
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
+}) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'Authentication required to update profile.' };
+    }
+
+    const cleanFirst = cleanText(profile.firstName, 15) ?? '';
+    const cleanLast = cleanText(profile.lastName, 20) ?? '';
+    const cleanNick = cleanText(profile.nickname, 15) ?? '';
+
+    // Prefer nickname if given; otherwise fall back to first name
+    const trackerName = cleanNick || cleanFirst;
+    const fullName = [cleanFirst, cleanLast].filter(Boolean).join(' ');
+
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        first_name: cleanFirst,
+        last_name: cleanLast,
+        custom_name: trackerName,
+        full_name: fullName,
+        profile_prompt_dismissed: true,
+      },
+    });
+
+    if (error) {
+      return { success: false, error: 'Failed to update profile. Please try again.' };
+    }
+
+    revalidatePath('/');
+    return {
+      success: true,
+      firstName: cleanFirst,
+      lastName: cleanLast,
+      customName: trackerName,
+      fullName,
+      error: null,
+    };
+  } catch {
+    return { success: false, error: 'Failed to update profile. Please try again.' };
+  }
+}
+
+/**
+ * Records that the user clicked 'Maybe later' so the prompt is never shown again.
+ */
+export async function dismissProfilePromptAction() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false };
+    }
+
+    await supabase.auth.updateUser({
+      data: {
+        profile_prompt_dismissed: true,
+      },
+    });
+
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+}
+
