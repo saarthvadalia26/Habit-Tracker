@@ -21,8 +21,25 @@ export function AuthModal({
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Live preview for dashboard header title (capped to 15 chars so it never overflows)
+  const previewTitle = (() => {
+    const chosen = (nickname.trim() || firstName.trim()).slice(0, 15);
+    if (!chosen) return 'HABIT TRACKER';
+    const upper = chosen.toUpperCase();
+    if (upper.endsWith("'S") || upper.endsWith('’S')) {
+      return `${upper} TRACKER`;
+    }
+    if (upper.endsWith('S')) {
+      return `${upper}' TRACKER`;
+    }
+    return `${upper}'S TRACKER`;
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,14 +62,19 @@ export function AuthModal({
           window.location.reload();
         }
       } else {
-        const res = await signUpAction(email, password);
+        const res = await signUpAction(email, password, {
+          firstName,
+          lastName,
+          nickname,
+        });
         if (res.error) {
           setError(res.error);
           toast.error(res.error);
         } else {
+          const welcomeName = firstName.trim() || nickname.trim();
           setPendingAuthToast({
             type: 'success',
-            message: 'Account created!',
+            message: welcomeName ? `Welcome, ${welcomeName}!` : 'Account created!',
             description: 'Your private workspace is ready.',
           });
           onClose();
@@ -133,6 +155,70 @@ export function AuthModal({
                   <div className="font-semibold flex items-center gap-1.5">
                     <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                     <span>{error}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Profile Details for Sign Up */}
+              {mode === 'signup' && (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80">
+                  {/* First Name & Last Name (Side by Side) */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 font-mono">
+                        First Name <span className="text-slate-400 lowercase font-normal">(opt)</span>
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 font-mono">
+                        Last Name <span className="text-slate-400 lowercase font-normal">(opt)</span>
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Nickname / Custom Tracker Name */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
+                        Tracker Title / Nickname <span className="text-slate-400 lowercase font-normal">(opt)</span>
+                      </label>
+                      <span className="text-[9px] text-slate-400 font-mono">Max 15 chars</span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={15}
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder={firstName.trim() ? `Defaults to "${firstName.trim()}"` : 'Nickname or custom title'}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                    />
+
+                    {/* Live Tracker Title Preview Badge */}
+                    <div className="mt-2 px-2.5 py-1 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center justify-between text-xs">
+                      <span className="text-[10px] font-mono text-indigo-700 dark:text-indigo-300">
+                        Board Title:
+                      </span>
+                      <span className="font-mono font-black text-indigo-900 dark:text-indigo-100 text-[11px] tracking-tight">
+                        {previewTitle}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

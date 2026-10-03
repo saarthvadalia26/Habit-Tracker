@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -8,6 +8,15 @@ interface CurrentUser {
   id: string;
   email: string | null;
   customName: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+}
+
+export interface SignUpProfile {
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
 }
 
 export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null }> {
@@ -22,11 +31,21 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
       return { user: null };
     }
 
+    const customName = typeof user.user_metadata?.custom_name === 'string' ? user.user_metadata.custom_name : '';
+    const firstName = typeof user.user_metadata?.first_name === 'string' ? user.user_metadata.first_name : '';
+    const lastName = typeof user.user_metadata?.last_name === 'string' ? user.user_metadata.last_name : '';
+    const fullName = typeof user.user_metadata?.full_name === 'string' 
+      ? user.user_metadata.full_name 
+      : [firstName, lastName].filter(Boolean).join(' ');
+
     return {
       user: {
         id: user.id,
         email: user.email ?? null,
-        customName: typeof user.user_metadata?.custom_name === 'string' ? user.user_metadata.custom_name : '',
+        customName,
+        firstName,
+        lastName,
+        fullName,
       },
     };
   } catch {
@@ -59,12 +78,24 @@ export async function signInAction(email: string, password: string) {
   }
 }
 
-export async function signUpAction(email: string, password: string) {
+export async function signUpAction(
+  email: string,
+  password: string,
+  profile?: SignUpProfile
+) {
   try {
     const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     if (!isValidEmail(cleanEmail) || !isValidPassword(password)) {
       return { error: 'Use a valid email and a password between 6 and 128 characters.' };
     }
+
+    const cleanFirst = cleanText(profile?.firstName, 15) ?? '';
+    const cleanLast = cleanText(profile?.lastName, 20) ?? '';
+    const cleanNick = cleanText(profile?.nickname, 15) ?? '';
+
+    // Prefer nickname if given; otherwise fall back to first name
+    const trackerName = cleanNick || cleanFirst;
+    const fullName = [cleanFirst, cleanLast].filter(Boolean).join(' ');
 
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -72,7 +103,10 @@ export async function signUpAction(email: string, password: string) {
       password,
       options: {
         data: {
-          custom_name: '',
+          custom_name: trackerName,
+          first_name: cleanFirst,
+          last_name: cleanLast,
+          full_name: fullName,
         },
       },
     });

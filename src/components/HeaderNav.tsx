@@ -15,10 +15,11 @@ import { consumePendingAuthToast, setPendingAuthToast } from '@/lib/auth-toast';
 
 interface HeaderNavProps {
   userEmail?: string | null;
+  userName?: string | null;
   isGuestMode: boolean;
 }
 
-export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
+export function HeaderNav({ userEmail, userName, isGuestMode }: HeaderNavProps) {
   const { isDark } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -187,7 +188,7 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0" />
                   <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span className="truncate max-w-[55px] xs:max-w-[85px] sm:max-w-[130px] md:max-w-[160px]">
-                    {userEmail}
+                    {userName || userEmail}
                   </span>
                   <ChevronDown
                     className={`w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0 transition-transform duration-200 ${
@@ -211,9 +212,20 @@ export function HeaderNav({ userEmail, isGuestMode }: HeaderNavProps) {
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">
                           Signed in as
                         </p>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={userEmail || ''}>
-                          {userEmail}
-                        </p>
+                        {userName ? (
+                          <>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5">
+                              {userName}
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate" title={userEmail || ''}>
+                              {userEmail}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5" title={userEmail || ''}>
+                            {userEmail}
+                          </p>
+                        )}
                         <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                           <ShieldCheck className="w-3 h-3 shrink-0" />
                           <span>100% Private Workspace</span>

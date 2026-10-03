@@ -494,7 +494,7 @@ export function SmartTrackerDashboard({
                       if (e.key === 'Enter') handleSaveName();
                       if (e.key === 'Escape') setIsEditingName(false);
                     }}
-                    placeholder="Enter your name (e.g. Saarth)..."
+                    placeholder="Enter your name..."
                     maxLength={18}
                     autoFocus
                     className="w-full text-center bg-transparent border-b-2 border-rose-500 font-mono text-base sm:text-lg font-black uppercase text-slate-900 dark:text-white outline-none focus:ring-0 px-1 py-0.5"
