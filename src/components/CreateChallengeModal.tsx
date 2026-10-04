@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, X, Check, Flame, Sparkles, CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Trophy, X, Check, Flame, SlidersHorizontal, CheckCircle2, ChevronRight, AlertTriangle } from 'lucide-react';
 import { CHALLENGE_PRESETS } from '@/lib/challengeUtils';
 import { HabitWithLogs } from '@/types/database.types';
 import { formatDateToISO } from '@/lib/dateUtils';
@@ -195,7 +195,7 @@ export function CreateChallengeModal({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-500" />
+                      <SlidersHorizontal className="w-4 h-4 text-purple-500" />
                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         Custom Challenge (Set Your Own Duration)
                       </span>

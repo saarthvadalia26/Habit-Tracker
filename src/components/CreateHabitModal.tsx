@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Sparkles, Pipette, Palette } from 'lucide-react';
+import { X, Plus, Pipette, Palette } from 'lucide-react';
 import { COLOR_THEMES, ColorTheme, getColorThemeByHex } from '@/lib/constants';
 
 interface CreateHabitModalProps {
@@ -158,7 +158,7 @@ export function CreateHabitModal({
                   style={{ backgroundColor: `${selectedTheme.hex}25`, color: selectedTheme.hex }}
                   className="p-2.5 rounded-2xl flex items-center justify-center transition-colors duration-300 border border-slate-200 dark:border-slate-700/50"
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Plus className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">

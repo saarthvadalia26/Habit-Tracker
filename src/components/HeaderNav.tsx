@@ -7,6 +7,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { SignOutModal } from '@/components/SignOutModal';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
+import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
 import { PersonalizeProfileModal } from '@/components/PersonalizeProfileModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
@@ -22,7 +23,7 @@ interface HeaderNavProps {
   userLastName?: string;
   userCustomName?: string;
   profilePromptDismissed?: boolean;
-  isGuestMode: boolean;
+  isGuestMode?: boolean;
 }
 
 export function HeaderNav({
@@ -46,9 +47,13 @@ export function HeaderNav({
   const [isPersonalizeModalOpen, setIsPersonalizeModalOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
+  const handleCloseRoadmap = () => {
+    setIsRoadmapOpen(false);
+  };
+
   // One-time prompt for existing users who do not have their personal name configured yet
   useEffect(() => {
-    if (isGuestMode || !userId) return;
+    if (isGuestMode || !userId || isRoadmapOpen) return;
 
     // Has user already provided their personal first name?
     // We check userFirstName specifically so that users who only set a board title earlier
@@ -66,10 +71,10 @@ export function HeaderNav({
     if (!hasFirstName && !hasDismissed) {
       const timer = setTimeout(() => {
         setIsPersonalizeModalOpen(true);
-      }, 700);
+      }, 600);
       return () => clearTimeout(timer);
     }
-  }, [isGuestMode, userId, userFirstName, profilePromptDismissed]);
+  }, [isGuestMode, userId, userFirstName, profilePromptDismissed, isRoadmapOpen]);
 
   // Close account menu when tapping outside
   useEffect(() => {
@@ -105,21 +110,7 @@ export function HeaderNav({
     }
   }, []);
 
-  // Automatically show the v2.0 roadmap teaser on first startup
-  useEffect(() => {
-    try {
-      const hasSeen = localStorage.getItem('ht_seen_v2_roadmap_v1');
-      if (!hasSeen) {
-        const timer = setTimeout(() => {
-          setIsRoadmapOpen(true);
-        }, 150);
-        return () => clearTimeout(timer);
-      }
-    } catch {
-      // Fallback: show modal if localStorage is inaccessible
-      setIsRoadmapOpen(true);
-    }
-  }, []);
+
 
   const handleConfirmSignOut = async () => {
     if (isSigningOut) return;
@@ -190,9 +181,9 @@ export function HeaderNav({
               className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-indigo-500/20 text-slate-800 dark:text-slate-200 border border-cyan-500/30 dark:border-cyan-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
               title="v2.0 Roadmap: Drop 1 launching 10th October 2026"
             >
-              <span className="relative flex items-center justify-center h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
+                <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-75 pointer-events-none"></span>
+                <span className="relative block w-2 h-2 rounded-full bg-emerald-500"></span>
               </span>
               <span className="hidden sm:inline font-mono leading-none">v2.0 Drops</span>
               <span className="sm:hidden font-mono leading-none">v2.0</span>
@@ -346,10 +337,22 @@ export function HeaderNav({
         isSigningOut={isSigningOut}
       />
 
+      {/* Floating Non-Intrusive Release Announcement Toast */}
+      <UpcomingReleaseToast
+        onOpenRoadmap={() => setIsRoadmapOpen(true)}
+        suppressed={
+          isPersonalizeModalOpen ||
+          isAuthOpen ||
+          isDeleteModalOpen ||
+          isSignOutModalOpen ||
+          isRoadmapOpen
+        }
+      />
+
       {/* Upcoming v2.0 Roadmap Teaser Modal */}
       <UpcomingUpdateModal
         isOpen={isRoadmapOpen}
-        onClose={() => setIsRoadmapOpen(false)}
+        onClose={handleCloseRoadmap}
       />
 
       {/* Personalize Profile Name Modal */}

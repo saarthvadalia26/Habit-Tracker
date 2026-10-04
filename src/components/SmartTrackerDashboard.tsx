@@ -6,7 +6,6 @@ import {
   Plus,
   Trash2,
   RotateCcw,
-  Sparkles,
   Check,
   X as CloseIcon,
   Trophy,
@@ -637,7 +636,7 @@ export function SmartTrackerDashboard({
                 Today: {analytics.todayCompleted}/{analytics.todayTotal} ({analytics.todayPercentage}%)
               </span>
               <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 justify-end">
-                <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                <Flame className="w-2.5 h-2.5 text-amber-500 shrink-0" />
                 <span>
                   {analytics.perfectDaysCount} Perfect {analytics.perfectDaysCount === 1 ? 'Day' : 'Days'}
                 </span>

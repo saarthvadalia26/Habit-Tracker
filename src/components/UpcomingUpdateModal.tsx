@@ -12,7 +12,6 @@ import {
   Flame,
   CheckCircle2,
   X,
-  Sparkles,
   Clock,
   Layers3,
 } from 'lucide-react';
@@ -74,7 +73,10 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
 
   const handleConfirm = () => {
     try {
-      localStorage.setItem('ht_seen_v2_roadmap_v1', 'true');
+      localStorage.setItem('ht_v2_release_toast_dismissed_drop1', 'true');
+      sessionStorage.removeItem('ht_show_v2_roadmap');
+      sessionStorage.removeItem('ht_v2_roadmap_dismissed');
+      localStorage.removeItem('ht_seen_v2_roadmap_v1');
       confetti({
         particleCount: 65,
         spread: 70,
@@ -98,7 +100,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-roadmap-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
         >
           {/* Backdrop */}
           <motion.div
@@ -125,8 +127,8 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
               <div className="flex items-center justify-between gap-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 text-[11px] font-mono font-semibold text-slate-800 dark:text-slate-200">
                   <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+                    <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-75 pointer-events-none" />
+                    <span className="relative block w-2 h-2 rounded-full bg-emerald-500" />
                   </span>
                   <span className="tracking-wide leading-none">v2.0 ROADMAP • 6 STAGED DROPS</span>
                 </div>
@@ -144,10 +146,9 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                 <div>
                   <h2
                     id="modal-roadmap-title"
-                    className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono flex items-center gap-2"
+                    className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono"
                   >
-                    <span>The v2.0 Release Radar</span>
-                    <Sparkles className="w-4 h-4 text-cyan-500 hidden sm:inline" />
+                    The v2.0 Release Radar
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5 font-sans">
                     Rolling out 6 dedicated updates one by one. Here is what is arriving next.
@@ -270,7 +271,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                   </div>
 
                   {futureDrops.map((drop: V2Drop) => {
-                    const Icon = DROP_ICONS[drop.id] || Sparkles;
+                    const Icon = DROP_ICONS[drop.id] || Layers;
                     const isHyped = !!hypedFeatures[drop.id];
 
                     return (

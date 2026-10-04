@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { X, User, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import { updateProfileAction, dismissProfilePromptAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 
@@ -173,7 +173,7 @@ export function PersonalizeProfileModal({
             {/* Header */}
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-[10px] font-mono font-bold tracking-wider text-indigo-700 dark:text-indigo-300 uppercase mb-2">
-                <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <User className="w-3 h-3 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <span>Personalize Your Board</span>
               </div>
               <h2
