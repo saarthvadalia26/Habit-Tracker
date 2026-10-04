@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, Megaphone, Loader2, ChevronDown, UserCog } from 'lucide-react';
+import { Orbit, User, LogOut, LogIn, ShieldCheck, UserMinus, ChevronDown, UserCog } from 'lucide-react';
 import { AuthModal } from '@/components/AuthModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { SignOutModal } from '@/components/SignOutModal';

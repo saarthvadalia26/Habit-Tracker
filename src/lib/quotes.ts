@@ -170,6 +170,156 @@ export const MOTIVATION_QUOTES: MotivationQuote[] = [
     author: "Vince Lombardi",
     tag: "Willpower",
   },
+  {
+    quote: "Every action you take is a vote for the type of person you wish to become.",
+    author: "James Clear",
+    tag: "Identity",
+  },
+  {
+    quote: "A journey of a thousand miles begins with a single step.",
+    author: "Lao Tzu",
+    tag: "Beginning",
+  },
+  {
+    quote: "Impatience with actions, patience with results. Work intensely today and let compounding do the rest.",
+    author: "Naval Ravikant",
+    tag: "Compounding",
+  },
+  {
+    quote: "First say to yourself what you would be; and then do what you have to do.",
+    author: "Epictetus",
+    tag: "Self-Mastery",
+  },
+  {
+    quote: "At dawn, when you have trouble getting out of bed, tell yourself: 'I have to go to work — as a human being.'",
+    author: "Marcus Aurelius",
+    tag: "Morning Ritual",
+  },
+  {
+    quote: "There is nothing outside of yourself that can ever enable you to get better, stronger, or faster. Everything is within.",
+    author: "Miyamoto Musashi",
+    tag: "The Way",
+  },
+  {
+    quote: "Don't count on motivation; count on discipline. Motivation is fickle; discipline is reliable.",
+    author: "Jocko Willink",
+    tag: "Discipline",
+  },
+  {
+    quote: "You are in danger of living a life so comfortable and soft, that you will die without ever realizing your true potential.",
+    author: "David Goggins",
+    tag: "Accountability",
+  },
+  {
+    quote: "Dedication makes dreams come true. Focus on the craft day in and day out.",
+    author: "Kobe Bryant",
+    tag: "Mamba Mentality",
+  },
+  {
+    quote: "Between stimulus and response there is a space. In that space is our power to choose our response.",
+    author: "Viktor Frankl",
+    tag: "Agency",
+  },
+  {
+    quote: "Victorious warriors win first and then go to war, while defeated warriors go to war first and then seek to win.",
+    author: "Sun Tzu",
+    tag: "Strategy",
+  },
+  {
+    quote: "Do what you can, with what you have, where you are.",
+    author: "Theodore Roosevelt",
+    tag: "Resourcefulness",
+  },
+  {
+    quote: "The work works. Put your head down, do the repetitions, and ignore the scoreboard for six months.",
+    author: "Alex Hormozi",
+    tag: "Execution",
+  },
+  {
+    quote: "Continuous effort — not strength or intelligence — is the key to unlocking our potential.",
+    author: "Winston Churchill",
+    tag: "Grit",
+  },
+  {
+    quote: "I've failed over and over and over again in my life. And that is why I succeed.",
+    author: "Michael Jordan",
+    tag: "Resilience",
+  },
+  {
+    quote: "You can't go back and change the beginning, but you can start where you are and change the ending.",
+    author: "C.S. Lewis",
+    tag: "New Start",
+  },
+  {
+    quote: "Mastery is not a question of genetics or luck, but of following through on an intense focus applied over time.",
+    author: "Robert Greene",
+    tag: "Mastery",
+  },
+  {
+    quote: "Day by day, what you choose, what you think and what you do is who you become.",
+    author: "Heraclitus",
+    tag: "Habits",
+  },
+  {
+    quote: "Energy and persistence conquer all things.",
+    author: "Benjamin Franklin",
+    tag: "Persistence",
+  },
+  {
+    quote: "The amateur tweets. The pro works. Defeat resistance through daily ritual.",
+    author: "Steven Pressfield",
+    tag: "War of Art",
+  },
+  {
+    quote: "The obstacle in the path becomes the path. Within every obstacle is an opportunity to improve.",
+    author: "Ryan Holiday",
+    tag: "Stoicism",
+  },
+  {
+    quote: "Luck is what happens when preparation meets opportunity. Stay prepared every single day.",
+    author: "Seneca",
+    tag: "Preparation",
+  },
+  {
+    quote: "Waste no more time arguing about what a good person should be. Be one.",
+    author: "Marcus Aurelius",
+    tag: "Action",
+  },
+  {
+    quote: "No man is free who is not master of himself.",
+    author: "Epictetus",
+    tag: "Self-Mastery",
+  },
+  {
+    quote: "Don't tell me how hard you work. Tell me how much you get done.",
+    author: "Tim Grover",
+    tag: "Relentless",
+  },
+  {
+    quote: "There are two choices: You can either make it happen, or you can make excuses.",
+    author: "Jocko Willink",
+    tag: "Ownership",
+  },
+  {
+    quote: "The most important conversation is the one you have with yourself every morning.",
+    author: "David Goggins",
+    tag: "Mindset",
+  },
+  {
+    quote: "Consistency is what transforms average into excellence.",
+    author: "Tony Dungy",
+    tag: "Consistency",
+  },
+  {
+    quote: "Through discipline comes genuine freedom.",
+    author: "Aristotle",
+    tag: "Discipline",
+  },
+  {
+    quote: "If you want to achieve greatness, stop asking for permission.",
+    author: "Eddie Colla",
+    tag: "Audacity",
+  },
 ];
 
 export function getDailyQuote(): MotivationQuote {

@@ -346,7 +346,7 @@ export function ActiveChallengeModal({
                     <span>Reset / Abandon this challenge?</span>
                   </div>
                   <p className="text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed">
-                    This will close your active challenge and free your slot so you can start a new challenge. Your habit history in the matrix will not be deleted.
+                    This will close your active challenge and free your slot so you can start a new challenge. Your habit history and checkmarks will not be deleted.
                   </p>
                   <div className="flex items-center gap-2 pt-1">
                     <button

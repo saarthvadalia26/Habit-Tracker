@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, X, Loader2, ShieldCheck, Cloud } from 'lucide-react';
+import { LogOut, X, Loader2, Cloud } from 'lucide-react';
 
 interface SignOutModalProps {
   isOpen: boolean;

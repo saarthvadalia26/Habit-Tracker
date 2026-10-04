@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDays, ArrowRight, X } from 'lucide-react';
-import { V2_DROPS } from '@/config/releases';
+import { V2_DROPS, isDrop1Unlocked, getDrop1DaysRemaining } from '@/config/releases';
 
 interface UpcomingReleaseToastProps {
   onOpenRoadmap: () => void;
@@ -17,19 +17,13 @@ export function UpcomingReleaseToast({
   suppressed = false,
 }: UpcomingReleaseToastProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const spotlightDrop = V2_DROPS[0];
+  const daysRemaining = getDrop1DaysRemaining();
 
-  // Calculate days remaining dynamically until Drop 1 (October 10, 2026)
-  const daysRemaining = (() => {
-    try {
-      const target = new Date('2026-10-10T00:00:00');
-      const now = new Date();
-      const diffMs = target.getTime() - now.getTime();
-      return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    } catch {
-      return 6;
-    }
-  })();
+  useEffect(() => {
+    setIsUnlocked(isDrop1Unlocked());
+  }, []);
 
   useEffect(() => {
     try {
@@ -122,7 +116,7 @@ export function UpcomingReleaseToast({
               </h4>
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
                 {spotlightDrop?.tagline ||
-                  'Panoramic 52-week visual matrix & annual streak tracking are arriving Oct 10.'}
+                  'Panoramic 52-week annual heatmap & consistency tracking are arriving Oct 10.'}
               </p>
             </div>
 
@@ -136,14 +130,32 @@ export function UpcomingReleaseToast({
                 Maybe later
               </button>
 
-              <button
-                type="button"
-                onClick={handleOpen}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <span>Explore What&apos;s Coming</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                {isUnlocked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDismiss();
+                      window.dispatchEvent(
+                        new CustomEvent('ht-switch-view', { detail: 'annual-365' })
+                      );
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 border border-cyan-200 dark:border-cyan-800/60 transition-all cursor-pointer"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>View 365 Grid</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleOpen}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <span>Radar</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </motion.aside>

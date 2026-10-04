@@ -14,8 +14,12 @@ import {
   XCircle,
   Lock,
   Pencil,
+  Calendar,
+  CalendarDays,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
+import { YearHeatmapMatrix } from '@/components/YearHeatmapMatrix';
+import { isDrop1Unlocked } from '@/config/releases';
 import {
   getDaysForMonth,
   groupDaysIntoWeeks,
@@ -74,6 +78,26 @@ export function SmartTrackerDashboard({
   const [challenge, setChallenge] = useState<Challenge | null>(initialChallenge ?? null);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState<boolean>(false);
   const [isActiveChallengeModalOpen, setIsActiveChallengeModalOpen] = useState<boolean>(false);
+  const [dashboardView, setDashboardView] = useState<'monthly' | 'annual-365'>('monthly');
+  const [isDrop1Available, setIsDrop1Available] = useState<boolean>(false);
+
+  // Sync release status on client mount
+  useEffect(() => {
+    setIsDrop1Available(isDrop1Unlocked());
+  }, []);
+
+  // Support jumping to 365-day heatmap via custom event from teasers/modals
+  useEffect(() => {
+    const handleSwitchView = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail === 'annual-365' || customEvent.detail === 'monthly') {
+        if (customEvent.detail === 'annual-365' && !isDrop1Unlocked()) return;
+        setDashboardView(customEvent.detail);
+      }
+    };
+    window.addEventListener('ht-switch-view', handleSwitchView);
+    return () => window.removeEventListener('ht-switch-view', handleSwitchView);
+  }, []);
 
   // Sync or restore challenge (with guest localStorage fallback)
   useEffect(() => {
@@ -476,10 +500,62 @@ export function SmartTrackerDashboard({
         onCompleteChallenge={handleCompleteChallenge}
         onAbandonChallenge={handleAbandonChallenge}
       />
-      {/* ========================================================================= */}
-      {/* 1. TOP SECTION (Habit Tracker Title / Month Picker / Wave Chart / Donut) */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4">
+
+      {/* Primary Dashboard View Switcher: Monthly View vs 365-Day Panoramic Heatmap (unlocked in dev and on Oct 10+) */}
+      {isDrop1Available && (
+        <div className="flex items-center justify-between gap-3 flex-wrap bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-2 rounded-2xl border border-slate-200/90 dark:border-slate-800/90 shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setDashboardView('monthly')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                dashboardView === 'monthly'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Monthly View</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDashboardView('annual-365')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                dashboardView === 'annual-365'
+                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md shadow-cyan-500/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5 text-cyan-300" />
+              <span>365-Day Heatmap</span>
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono hidden sm:flex items-center gap-2">
+            <span>{habits.length} habits active</span>
+            <span>·</span>
+            <span>
+              {dashboardView === 'monthly'
+                ? `${MONTH_NAMES[selectedMonth]} ${selectedYear}`
+                : `${selectedYear} 52-Week Panorama`}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {dashboardView === 'annual-365' ? (
+        <YearHeatmapMatrix
+          habits={habits}
+          initialYear={selectedYear}
+          isGuestMode={isGuestMode}
+        />
+      ) : (
+        <>
+          {/* ========================================================================= */}
+          {/* 1. TOP SECTION (Habit Tracker Title / Month Picker / Wave Chart / Donut) */}
+          {/* ========================================================================= */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4">
         {/* Top-Left: Brand & Date Controls */}
         <div className="md:col-span-1 lg:col-span-3 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800/90 shadow-xl dark:shadow-2xl flex flex-col justify-between transition-colors">
           <div>
@@ -654,7 +730,7 @@ export function SmartTrackerDashboard({
         <div className="px-4 sm:px-6 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/60 flex flex-wrap items-center justify-between gap-2.5 transition-colors">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-mono">
-              {MONTH_NAMES[selectedMonth]} {selectedYear} Consistency Matrix
+              {MONTH_NAMES[selectedMonth]} {selectedYear} Habit Board
             </span>
             <span className="px-2.5 py-0.5 text-[10px] font-bold bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 rounded-full shadow-xs">
               {habits.length} Habits
@@ -672,6 +748,20 @@ export function SmartTrackerDashboard({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Quick Shortcut to 365-Day Heatmap (when unlocked) */}
+            {isDrop1Available && (
+              <button
+                type="button"
+                onClick={() => setDashboardView('annual-365')}
+                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
+                title="Open full 52-week 365-day annual heatmap"
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-cyan-500" />
+                <span className="hidden sm:inline">365-Day Heatmap</span>
+                <span className="sm:hidden">365</span>
+              </button>
+            )}
+
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -1238,6 +1328,8 @@ export function SmartTrackerDashboard({
           />
         </div>
       </div>
+      </>
+      )}
 
       {/* Habit Creation Modal */}
       <CreateHabitModal

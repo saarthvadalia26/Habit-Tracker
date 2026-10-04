@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Edit3, Check, Cloud, CloudCheck, CloudOff, Loader2 } from 'lucide-react';
+import { Edit3, Cloud, CloudCheck, CloudOff, Loader2 } from 'lucide-react';
 import { saveMonthlyNoteAction } from '@/app/actions/auth';
 
 interface NotesSectionProps {

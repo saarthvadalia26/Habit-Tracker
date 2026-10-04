@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Habit Tracker | Smart Matrix Consistency & Performance",
+  title: "Habit Tracker | Daily Discipline & Consistency Tracking",
   description: "Track your daily habits, monthly trends, and performance streaks in a sleek light and dark workspace.",
   icons: {
     icon: [

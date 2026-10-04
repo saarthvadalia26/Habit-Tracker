@@ -24,6 +24,49 @@ export const V2_RELEASE_INFO = {
   nextDropDate: '10th October 2026',
 };
 
+export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
+
+/**
+ * Checks whether Drop 1 (365-Day Heatmap) is unlocked.
+ * - Always unlocked on localhost (NODE_ENV === 'development')
+ * - Unlocked if ?preview=true or ?beta=true query param is present
+ * - Automatically unlocks on production when reaching Oct 10, 2026 00:00
+ */
+export function isDrop1Unlocked(): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      if (search.includes('preview=true') || search.includes('drop1=true') || search.includes('beta=true')) {
+        return true;
+      }
+    } catch {}
+  }
+
+  try {
+    const launchTimestamp = new Date(DROP_1_RELEASE_DATE).getTime();
+    return Date.now() >= launchTimestamp;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns days remaining until Drop 1 launch
+ */
+export function getDrop1DaysRemaining(): number {
+  try {
+    const target = new Date(DROP_1_RELEASE_DATE).getTime();
+    const diffMs = target - Date.now();
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  } catch {
+    return 6;
+  }
+}
+
 export const V2_DROPS: V2Drop[] = [
   {
     id: 'heatmap-365',
@@ -35,9 +78,9 @@ export const V2_DROPS: V2Drop[] = [
     status: 'up_next',
     statusBadge: 'SPOTLIGHT • RELEASING OCT 10',
     category: '📊 VISUALS & ANALYTICS',
-    tagline: 'A panoramic 52-week annual matrix visualizing every single day of consistency.',
+    tagline: 'A panoramic 52-week annual heatmap visualizing every single day of consistency.',
     description:
-      'Gain a high-altitude perspective on your discipline. Track your entire year with a responsive contribution matrix, zoom in on specific habits, and celebrate your annual adherence rate.',
+      'Gain a high-altitude perspective on your discipline. Track your entire year with a responsive contribution grid, zoom in on specific habits, and celebrate your annual adherence rate.',
     highlights: [
       '52-week panoramic contribution grid mapping all 365 days',
       'Per-habit isolation with theme-colored intensity levels',

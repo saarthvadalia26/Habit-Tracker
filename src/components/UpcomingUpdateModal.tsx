@@ -16,7 +16,13 @@ import {
   Layers3,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { V2_DROPS, V2_RELEASE_INFO, type V2Drop } from '@/config/releases';
+import {
+  V2_DROPS,
+  V2_RELEASE_INFO,
+  type V2Drop,
+  isDrop1Unlocked,
+  getDrop1DaysRemaining,
+} from '@/config/releases';
 
 interface UpcomingUpdateModalProps {
   isOpen: boolean;
@@ -35,6 +41,12 @@ const DROP_ICONS: Record<string, React.ElementType> = {
 export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProps) {
   const [hypedFeatures, setHypedFeatures] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<'all' | 'spotlight'>('all');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const daysRemaining = getDrop1DaysRemaining();
+
+  useEffect(() => {
+    setIsUnlocked(isDrop1Unlocked());
+  }, []);
 
   // Close on Escape key
   useEffect(() => {
@@ -199,7 +211,11 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                   {/* Target Date Pill */}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-600 text-white shadow-xs font-mono font-bold text-[11px]">
                     <Clock className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
-                    <span>Launching 10th October 2026</span>
+                    <span>
+                      {daysRemaining > 0
+                        ? `Launching 10th October 2026 (${daysRemaining}d left)`
+                        : 'Launching Today!'}
+                    </span>
                   </div>
                 </div>
 
@@ -229,31 +245,49 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                   ))}
                 </div>
 
-                {/* Hype Vote button for Drop 1 */}
-                <div className="mt-4 pt-3 border-t border-cyan-500/20 flex items-center justify-between">
+                {/* Hype Vote & Launch button for Drop 1 */}
+                <div className="mt-4 pt-3 border-t border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[11px] font-mono text-cyan-800 dark:text-cyan-300 font-semibold flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                    Drop 1 of 6 • Currently in final testing
+                    {isUnlocked ? 'Drop 1 • Live Preview Available' : `Drop 1 • Arriving in ${daysRemaining} days`}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => handleToggleHype(spotlightDrop.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                      hypedFeatures[spotlightDrop.id]
-                        ? 'bg-cyan-500 text-white border-cyan-600 shadow-xs'
-                        : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-cyan-400'
-                    }`}
-                  >
-                    <Flame
-                      className={`w-3.5 h-3.5 ${
+                  <div className="flex items-center gap-2">
+                    {isUnlocked && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          window.dispatchEvent(
+                            new CustomEvent('ht-switch-view', { detail: 'annual-365' })
+                          );
+                        }}
+                        className="flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-xs cursor-pointer transition-all active:scale-95"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        <span>Launch 365 Heatmap →</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleHype(spotlightDrop.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
                         hypedFeatures[spotlightDrop.id]
-                          ? 'text-white fill-white'
-                          : 'text-amber-500'
+                          ? 'bg-cyan-500 text-white border-cyan-600 shadow-xs'
+                          : 'bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-cyan-400'
                       }`}
-                    />
-                    <span>{hypedFeatures[spotlightDrop.id] ? 'Hyped for Oct 10!' : 'I want this!'}</span>
-                  </button>
+                    >
+                      <Flame
+                        className={`w-3.5 h-3.5 ${
+                          hypedFeatures[spotlightDrop.id]
+                            ? 'text-white fill-white'
+                            : 'text-amber-500'
+                        }`}
+                      />
+                      <span>{hypedFeatures[spotlightDrop.id] ? 'Hyped!' : 'I want this!'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

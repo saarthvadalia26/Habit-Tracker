@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { X, User, ArrowRight, AlertCircle } from 'lucide-react';
 import { updateProfileAction, dismissProfilePromptAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 
