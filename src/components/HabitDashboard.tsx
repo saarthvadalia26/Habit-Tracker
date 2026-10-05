@@ -1050,28 +1050,43 @@ export function HabitDashboard({
       {/* ============================================================== */}
       {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
       {/* ============================================================== */}
-      <header className="lg:hidden flex items-center justify-between p-4 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30">
-        <h1 className="font-clash font-bold text-2xl tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
+      {/* ============================================================== */}
+      {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
+      {/* ============================================================== */}
+      <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
+        <h1 className="font-clash font-bold text-xl sm:text-2xl tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
           Habit Tracker<span className="text-[#ff5a1f]">.</span>
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Direct Mobile Dark/Light Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-all cursor-pointer"
+            title="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
           <button
             onClick={() => setIsRoadmapOpen(true)}
-            className="px-2.5 py-1 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[11px] font-bold"
+            className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[10.5px] sm:text-[11px] font-bold tracking-tight hover:bg-[#ff5a1f]/15 transition-colors cursor-pointer"
           >
             v2.0
           </button>
+
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ff5a1f] text-white text-xs font-semibold shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Habit</span>
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span className="hidden min-[360px]:inline">Habit</span>
           </button>
+
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] cursor-pointer"
+            aria-label="Toggle navigation menu"
+            className="p-1.5 sm:p-2 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] cursor-pointer hover:border-[#ff5a1f]/40 transition-colors"
           >
             <Menu className="w-4 h-4" />
           </button>
@@ -1085,8 +1100,47 @@ export function HabitDashboard({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden p-4 bg-[#fbf8f1] dark:bg-[#1c1a16] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col gap-2 z-20"
+            className="lg:hidden p-3.5 sm:p-4 bg-[#fbf8f1] dark:bg-[#1c1a16] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col gap-2 z-20 shadow-lg"
           >
+            {/* Account Quick Row on Mobile */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 mb-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs shrink-0 shadow-xs">
+                  {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
+                    {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
+                  </span>
+                  <span className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                    {userEmail || 'Local workspace'}
+                  </span>
+                </div>
+              </div>
+
+              {isGuestMode ? (
+                <button
+                  onClick={() => {
+                    setIsAuthModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-xs font-semibold text-[#ff5a1f] bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/20 px-2.5 py-1 rounded-full transition-colors shrink-0 cursor-pointer"
+                >
+                  Sign In
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsProfileModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-xs font-semibold text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] px-2.5 py-1 rounded-full border border-[#15130f]/10 dark:border-[#fbf8f1]/10 transition-colors shrink-0 cursor-pointer"
+                >
+                  Profile
+                </button>
+              )}
+            </div>
+
             {[
               { id: 'today', label: 'Today', icon: Home },
               { id: 'calendar', label: 'Calendar Matrix & Heatmap', icon: CalendarDays },
@@ -1100,13 +1154,13 @@ export function HabitDashboard({
                   setActiveTab(tab.id as typeof activeTab);
                   setMobileMenuOpen(false);
                 }}
-                className={`flex items-center gap-3 w-full p-2.5 rounded-lg text-sm font-medium ${
+                className={`flex items-center gap-3 w-full p-2.5 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f]'
-                    : 'text-[#15130f]/80 dark:text-[#fbf8f1]/80 hover:bg-[#15130f]/5'
+                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                    : 'text-[#15130f]/80 dark:text-[#fbf8f1]/80 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
                 }`}
               >
-                <tab.icon className="w-4 h-4 text-[#ff5a1f]" />
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[#ff5a1f]' : 'text-[#ff5a1f]'}`} />
                 <span>{tab.label}</span>
               </button>
             ))}
@@ -1116,7 +1170,7 @@ export function HabitDashboard({
                 setIsRoadmapOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center justify-between w-full p-2.5 rounded-lg bg-[#ff5a1f]/10 text-[#ff5a1f] text-sm font-semibold"
+              className="flex items-center justify-between w-full p-2.5 rounded-xl bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/15 text-[#ff5a1f] text-sm font-semibold transition-colors mt-0.5"
             >
               <div className="flex items-center gap-2">
                 <Rocket className="w-4 h-4" />
@@ -1131,27 +1185,27 @@ export function HabitDashboard({
       {/* ============================================================== */}
       {/* 3. MAIN WORKSPACE CONTENT */}
       {/* ============================================================== */}
-      <main className="flex-1 max-w-[1020px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col gap-6 sm:gap-7">
+      <main className="flex-1 max-w-[1020px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-7 lg:py-8 flex flex-col gap-5 sm:gap-7">
         {/* VIEW 1: TODAY (Framer Layout & Motion) */}
         {activeTab === 'today' && (
           <>
             {/* Header Row */}
-            <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 w-full">
-              <div className="flex flex-col gap-1.5">
-                <p className="text-[12px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo">
+            <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 w-full">
+              <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
+                <p className="text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
                   {headerDateString}
                 </p>
-                <h2 className="font-clash font-semibold text-3xl sm:text-[38px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-3xl sm:text-[36px] lg:text-[38px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1] break-words">
                   {headerTitle}
                 </h2>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
-                  className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>New habit</span>
@@ -1174,17 +1228,17 @@ export function HabitDashboard({
             )}
 
             {/* Stats Row (3 Cards Grid) */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full">
               {/* Card 1: Progress Ring Card (Dark Ink #15130f) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-5 sm:p-6 flex items-center gap-5 shadow-sm"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-4 sm:p-5 lg:p-6 flex items-center gap-3.5 sm:gap-5 shadow-sm"
               >
-                {/* Conic Ring */}
+                {/* Responsive Conic Ring */}
                 <div
-                  className="w-[88px] h-[88px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
+                  className="w-[74px] h-[74px] min-[380px]:w-[82px] min-[380px]:h-[82px] lg:w-[88px] lg:h-[88px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
                   style={{
                     background: `conic-gradient(#ff5a1f 0deg ${Math.round(
                       (todayPercentage / 100) * 360
@@ -1193,19 +1247,19 @@ export function HabitDashboard({
                     )}deg)`,
                   }}
                 >
-                  <div className="w-[70px] h-[70px] rounded-full bg-[#15130f] flex items-center justify-center">
-                    <span className="font-clash font-semibold text-[20px] text-[#fbf8f1]">
+                  <div className="w-[58px] h-[58px] min-[380px]:w-[66px] min-[380px]:h-[66px] lg:w-[70px] lg:h-[70px] rounded-full bg-[#15130f] flex items-center justify-center">
+                    <span className="font-clash font-semibold text-[17px] min-[380px]:text-[19px] lg:text-[20px] text-[#fbf8f1]">
                       {todayPercentage}%
                     </span>
                   </div>
                 </div>
 
                 {/* Progress Text */}
-                <div className="flex flex-col gap-1 min-w-0">
-                  <h3 className="font-clash font-semibold text-[22px] tracking-tight leading-tight text-[#fbf8f1] truncate">
+                <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
+                  <h3 className="font-clash font-semibold text-lg min-[380px]:text-xl sm:text-[22px] tracking-tight leading-tight text-[#fbf8f1] truncate">
                     {doneCount} of {totalCount} done
                   </h3>
-                  <p className="text-[13.5px] text-[#fbf8f1]/65 leading-snug">
+                  <p className="text-[12.5px] sm:text-[13.5px] text-[#fbf8f1]/65 leading-snug">
                     {remainingCount === 0
                       ? 'All habits completed for today! 🎉'
                       : remainingCount === 1
@@ -1220,19 +1274,19 @@ export function HabitDashboard({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.08 }}
-                className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col justify-between min-h-[136px] shadow-framer-card"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Flame className="w-6 h-6 text-[#ff5a1f]" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                  <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-[#ff5a1f]" />
+                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                     Streak
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-3">
-                  <p className="font-clash font-semibold text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                <div className="flex flex-col gap-0.5 mt-2.5 sm:mt-3">
+                  <p className="font-clash font-semibold text-[30px] min-[380px]:text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
                     {longestStreak} days
                   </p>
-                  <p className="text-[14px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
+                  <p className="text-[13px] sm:text-[14px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
                     Longest current streak
                   </p>
                 </div>
@@ -1243,19 +1297,19 @@ export function HabitDashboard({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.16 }}
-                className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col justify-between min-h-[136px] shadow-framer-card"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Target className="w-6 h-6 text-[#15130f] dark:text-[#fbf8f1]" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-[#15130f] dark:text-[#fbf8f1]" />
+                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                     Monthly
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-3">
-                  <p className="font-clash font-semibold text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                <div className="flex flex-col gap-0.5 mt-2.5 sm:mt-3">
+                  <p className="font-clash font-semibold text-[30px] min-[380px]:text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
                     {monthlyCompletionRate}%
                   </p>
-                  <p className="text-[13.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
+                  <p className="text-[12.5px] sm:text-[13.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
                     {monthlyCompletedChecks} of {monthlyPossibleChecks} done this month
                   </p>
                 </div>
@@ -1263,11 +1317,11 @@ export function HabitDashboard({
             </section>
 
             {/* Body Section: Habits List (Left) & This Week Card (Right) */}
-            <section className="flex flex-col lg:flex-row items-start gap-6 w-full">
+            <section className="flex flex-col xl:flex-row items-start gap-5 sm:gap-6 w-full">
               {/* Left Column: Today’s habits */}
               <div className="flex-1 w-full flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-clash font-semibold text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
+                  <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     Today’s habits
                   </h3>
                   <span className="text-xs font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
@@ -1276,7 +1330,7 @@ export function HabitDashboard({
                 </div>
 
                 {habits.length === 0 ? (
-                  <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-8 sm:p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-7 sm:p-10 flex flex-col items-center justify-center text-center gap-3">
                     <Target className="w-8 h-8 text-[#ff5a1f]" />
                     <h4 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
                       No habits tracked yet
@@ -1313,7 +1367,7 @@ export function HabitDashboard({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.98 }}
                           transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          className={`relative group rounded-[22px] p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-4 transition-all duration-300 border ${
+                          className={`relative group rounded-[20px] sm:rounded-[22px] p-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-2.5 sm:gap-4 transition-all duration-300 border ${
                             openMenuHabitId === habit.id ? 'z-30' : 'z-10'
                           } ${
                             isDone
@@ -1322,9 +1376,9 @@ export function HabitDashboard({
                           }`}
                         >
                           {/* Left: Icon Chip + Title / Subtitle */}
-                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
                             <div
-                              className={`w-11 h-11 rounded-[15px] flex items-center justify-center shrink-0 transition-colors ${
+                              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[13px] sm:rounded-[15px] flex items-center justify-center shrink-0 transition-colors ${
                                 isDone
                                   ? 'bg-[#fbf8f1]/10 text-[#fbf8f1]'
                                   : 'bg-[#f2ecdf] dark:bg-[#2b2721] text-[#15130f] dark:text-[#fbf8f1]'
@@ -1335,7 +1389,7 @@ export function HabitDashboard({
 
                             <div className="flex flex-col min-w-0">
                               <h4
-                                className={`font-clash font-semibold text-[17px] sm:text-[18px] tracking-[-0.01em] truncate transition-all ${
+                                className={`font-clash font-semibold text-[16px] sm:text-[18px] tracking-[-0.01em] truncate transition-all ${
                                   isDone
                                     ? 'line-through text-[#fbf8f1]/90'
                                     : 'text-[#15130f] dark:text-[#fbf8f1]'
@@ -1344,7 +1398,7 @@ export function HabitDashboard({
                                 {displayTitle}
                               </h4>
                               <p
-                                className={`text-[13px] sm:text-[13.5px] truncate font-normal ${
+                                className={`text-[12.5px] sm:text-[13.5px] truncate font-normal ${
                                   isDone
                                     ? 'text-[#fbf8f1]/55'
                                     : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
@@ -1356,12 +1410,12 @@ export function HabitDashboard({
                           </div>
 
                           {/* Right: Streak Flame + Interactive Check Button */}
-                          <div className="flex items-center gap-3.5 shrink-0">
+                          <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
                             {/* Streak Badge */}
-                            <div className="flex items-center gap-1.5 select-none" title={`${currentStreak} day streak`}>
-                              <Flame className="w-4 h-4 text-[#ff5a1f]" />
+                            <div className="flex items-center gap-1 sm:gap-1.5 select-none" title={`${currentStreak} day streak`}>
+                              <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ff5a1f]" />
                               <span
-                                className={`font-semibold text-[14px] font-archivo ${
+                                className={`font-semibold text-[13px] sm:text-[14px] font-archivo ${
                                   isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
                                 }`}
                               >
@@ -1374,7 +1428,7 @@ export function HabitDashboard({
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.92 }}
                               onClick={(e) => handleToggleHabit(habit.id, e)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                                 isDone
                                   ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
                                   : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
@@ -1382,7 +1436,7 @@ export function HabitDashboard({
                               title={isDone ? 'Mark as todo' : 'Mark as done'}
                             >
                               <Check
-                                className={`w-4 h-4 stroke-[3] transition-transform ${
+                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
                                   isDone ? 'scale-100' : 'scale-75'
                                 }`}
                               />
@@ -1503,10 +1557,10 @@ export function HabitDashboard({
                 )}
               </div>
 
-              {/* Right Column: This week (320px) */}
-              <div className="w-full lg:w-[320px] rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col gap-5 shadow-framer-card shrink-0">
+              {/* Right Column: This week (Centered when stacked on tablet/mobile, fixed 320px on xl desktop) */}
+              <div className="w-full xl:w-[320px] max-w-xl mx-auto xl:mx-0 rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 flex flex-col gap-5 shadow-framer-card shrink-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-clash font-semibold text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
+                  <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     This week
                   </h3>
                   <span className="text-[11px] font-semibold text-[#15130f]/40 dark:text-[#fbf8f1]/40 uppercase tracking-wider">
@@ -1682,7 +1736,7 @@ export function HabitDashboard({
             </div>
 
             {calendarSubView === 'annual-365' && drop1Unlocked ? (
-              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 shadow-framer-card">
+              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 shadow-framer-card">
                 <YearHeatmapMatrix
                   habits={habits}
                   selectedYear={heatmapYear}
@@ -1691,10 +1745,10 @@ export function HabitDashboard({
                 />
               </div>
             ) : (
-              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 shadow-framer-card overflow-x-auto">
-                <div className="flex items-center justify-between mb-5">
+              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 shadow-framer-card overflow-x-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h3 className="font-clash font-semibold text-xl text-[#15130f] dark:text-[#fbf8f1]">
+                    <h3 className="font-clash font-semibold text-lg sm:text-xl text-[#15130f] dark:text-[#fbf8f1]">
                       {MONTH_NAMES[selectedMonth]} {selectedYear}
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20">
@@ -1702,7 +1756,7 @@ export function HabitDashboard({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
                     <button
                       onClick={() =>
                         setSelectedMonth((prev) => (prev === 0 ? 11 : prev - 1))
@@ -1722,11 +1776,18 @@ export function HabitDashboard({
                   </div>
                 </div>
 
-                {/* Interactive Monthly Table with Checkbox Toggles */}
+                {/* Mobile Swipe Hint */}
+                <div className="flex items-center justify-between text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 sm:hidden mb-2.5 font-medium">
+                  <span>← Swipe across 31 days →</span>
+                </div>
+
+                {/* Interactive Monthly Table with Checkbox Toggles & Sticky Habit Column */}
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/60 dark:text-[#fbf8f1]/60">
-                      <th className="py-2.5 pr-4 font-semibold min-w-[140px]">Habit</th>
+                      <th className="sticky left-0 z-20 bg-[#fbf8f1] dark:bg-[#1c1a16] py-2.5 pr-4 pl-1 font-semibold min-w-[125px] sm:min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)]">
+                        Habit
+                      </th>
                       {Array.from({ length: daysInSelectedMonth }).map((_, i) => (
                         <th key={i} className="p-1 text-center font-semibold w-7">
                           {i + 1}
@@ -1737,7 +1798,7 @@ export function HabitDashboard({
                   <tbody>
                     {habits.map((h) => (
                       <tr key={h.id} className="border-b border-[#15130f]/5 dark:border-[#fbf8f1]/5 hover:bg-[#15130f]/2 transition-colors">
-                        <td className="py-3 pr-4 font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate max-w-[150px]">
+                        <td className="sticky left-0 z-10 bg-[#fbf8f1] dark:bg-[#1c1a16] py-3 pr-4 pl-1 font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate max-w-[125px] sm:max-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.4)]">
                           {h.title}
                         </td>
                         {Array.from({ length: daysInSelectedMonth }).map((_, i) => {
@@ -1807,7 +1868,7 @@ export function HabitDashboard({
           <section className="flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="font-clash font-semibold text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Goals & Challenges
                 </h2>
                 <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
@@ -1818,7 +1879,7 @@ export function HabitDashboard({
               {!challenge && (
                 <button
                   onClick={handleOpenChallengeModal}
-                  className="px-5 py-2.5 rounded-full bg-[#ff5a1f] text-white text-xs font-semibold shadow-sm shrink-0 cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm shrink-0 cursor-pointer self-start sm:self-auto"
                 >
                   + Launch challenge
                 </button>
@@ -1826,13 +1887,13 @@ export function HabitDashboard({
             </div>
 
             {challenge ? (
-              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-6 sm:p-8 shadow-framer-card flex flex-col gap-4">
+              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-8 shadow-framer-card flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#ff5a1f] text-white flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-2xl bg-[#ff5a1f] text-white flex items-center justify-center font-bold shrink-0">
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-clash font-semibold text-xl text-[#15130f] dark:text-[#fbf8f1]">
+                    <h3 className="font-clash font-semibold text-lg sm:text-xl text-[#15130f] dark:text-[#fbf8f1]">
                       {challenge.title}
                     </h3>
                     <p className="text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60">
@@ -1841,7 +1902,7 @@ export function HabitDashboard({
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-4">
+                <div className="flex gap-3 mt-2">
                   <button
                     onClick={() => setIsActiveChallengeModalOpen(true)}
                     className="px-4 py-2 rounded-xl bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-xs font-semibold cursor-pointer"
@@ -1851,9 +1912,9 @@ export function HabitDashboard({
                 </div>
               </div>
             ) : (
-              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-framer-card">
+              <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-7 sm:p-12 text-center flex flex-col items-center gap-3 shadow-framer-card">
                 <Trophy className="w-10 h-10 text-[#ff5a1f]" />
-                <h3 className="font-clash font-semibold text-xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h3 className="font-clash font-semibold text-lg sm:text-xl text-[#15130f] dark:text-[#fbf8f1]">
                   No active challenge
                 </h3>
                 <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60 max-w-md">
@@ -1861,7 +1922,7 @@ export function HabitDashboard({
                 </p>
                 <button
                   onClick={handleOpenChallengeModal}
-                  className="mt-3 px-5 py-2.5 rounded-full bg-[#ff5a1f] text-white font-semibold text-xs shadow-sm cursor-pointer"
+                  className="mt-3 px-5 py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white font-semibold text-xs shadow-sm cursor-pointer"
                 >
                   Start a Challenge
                 </button>
@@ -1872,10 +1933,10 @@ export function HabitDashboard({
 
         {/* VIEW 4: REFLECTION JOURNAL */}
         {activeTab === 'journal' && (
-          <section className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <section className="flex flex-col gap-5 sm:gap-6 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div>
-                <h2 className="font-clash font-semibold text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Journal
                 </h2>
                 <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
@@ -1936,7 +1997,7 @@ export function HabitDashboard({
         {activeTab === 'settings' && (
           <section className="flex flex-col gap-6 w-full max-w-2xl">
             <div>
-              <h2 className="font-clash font-semibold text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+              <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                 Settings & Workspace
               </h2>
               <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
@@ -1946,13 +2007,13 @@ export function HabitDashboard({
 
             <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col gap-5 shadow-framer-card">
               {/* Profile Card */}
-              <div className="flex items-center justify-between pb-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-lg">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-base sm:text-lg shrink-0">
                     {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
+                    <h3 className="font-clash font-semibold text-base sm:text-lg text-[#15130f] dark:text-[#fbf8f1]">
                       {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected User')}
                     </h3>
                     <p className="text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50">
@@ -1963,14 +2024,14 @@ export function HabitDashboard({
 
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
-                  className="px-4 py-2 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-colors cursor-pointer text-center"
                 >
                   Personalize Profile
                 </button>
               </div>
 
               {/* Theme Settings */}
-              <div className="flex items-center justify-between py-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2">
                 <div>
                   <h4 className="font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
                     Appearance
@@ -1981,7 +2042,7 @@ export function HabitDashboard({
                 </div>
                 <button
                   onClick={toggleTheme}
-                  className="px-4 py-2 rounded-full bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-xs font-semibold flex items-center gap-2 cursor-pointer"
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
@@ -1989,7 +2050,7 @@ export function HabitDashboard({
               </div>
 
               {/* v2.0 Roadmap Teaser */}
-              <div className="flex items-center justify-between py-3 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
                 <div>
                   <h4 className="font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
                     v2.0 Evolution Cycle
@@ -2000,23 +2061,23 @@ export function HabitDashboard({
                 </div>
                 <button
                   onClick={() => setIsRoadmapOpen(true)}
-                  className="px-4 py-2 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
                 >
                   View 6 Drops
                 </button>
               </div>
 
               {/* Account Controls */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
                 {isGuestMode ? (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="px-5 py-2.5 rounded-full bg-[#ff5a1f] text-white text-xs font-semibold shadow-sm cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#ff5a1f] text-white text-xs font-semibold shadow-sm cursor-pointer"
                   >
                     Create Free Account to Sync Cloud
                   </button>
                 ) : (
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <button
                       onClick={() => setIsSignOutModalOpen(true)}
                       className="flex items-center gap-2 px-4 py-2 rounded-full text-[#15130f]/80 dark:text-[#fbf8f1]/80 bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-xs font-semibold hover:bg-[#15130f]/15 transition-colors cursor-pointer"

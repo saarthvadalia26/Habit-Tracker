@@ -137,7 +137,9 @@ export function YearHeatmapMatrix({
     const relX = rect.left - containerRect.left + rect.width / 2;
     const relY = rect.top - containerRect.top;
     const containerWidth = containerRect.width || 800;
-    const clampedX = Math.max(75, Math.min(containerWidth - 75, relX));
+    const minX = Math.min(75, Math.floor(containerWidth / 2));
+    const maxX = Math.max(minX, containerWidth - minX);
+    const clampedX = Math.max(minX, Math.min(maxX, relX));
     const openBelow = relY < 40;
 
     return { x: clampedX, y: relY, openBelow };
@@ -155,7 +157,10 @@ export function YearHeatmapMatrix({
     const relX = rect.left - containerRect.left + rect.width / 2;
     const relY = rect.top - containerRect.top;
     const containerWidth = containerRect.width || 800;
-    const clampedX = Math.max(145, Math.min(containerWidth - 145, relX));
+    const popoverHalf = Math.min(145, Math.max(80, Math.floor(containerWidth / 2) - 12));
+    const minX = popoverHalf;
+    const maxX = Math.max(minX, containerWidth - popoverHalf);
+    const clampedX = Math.max(minX, Math.min(maxX, relX));
     const openBelow = relY < 230;
 
     return { x: clampedX, y: relY, openBelow };
@@ -241,26 +246,26 @@ export function YearHeatmapMatrix({
       {/* ========================================================================= */}
       {/* 1. TOP STAT CARDS (Warm Aesthetic) */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 lg:gap-4">
         {/* Card 1: Annual Consistency */}
-        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[22px] p-4 sm:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
+        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-4 lg:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
+            <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
               Annual Adherence
             </span>
-            <span className="w-7 h-7 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center">
+            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center">
               <TrendingUp className="w-3.5 h-3.5" />
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
+          <div className="mt-2.5 sm:mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-[26px] lg:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
               {analytics.annualRate}%
             </span>
             <span className="text-xs text-[#15130f]/45 dark:text-[#fbf8f1]/45">
               of target
             </span>
           </div>
-          <div className="mt-3 w-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 rounded-full h-1.5 overflow-hidden">
+          <div className="mt-2.5 sm:mt-3 w-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 rounded-full h-1.5 overflow-hidden">
             <div
               className="bg-[#ff5a1f] h-1.5 rounded-full transition-all duration-500"
               style={{ width: `${Math.min(100, analytics.annualRate)}%` }}
@@ -269,70 +274,70 @@ export function YearHeatmapMatrix({
         </div>
 
         {/* Card 2: Total Completions */}
-        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[22px] p-4 sm:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
+        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-4 lg:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
+            <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
               Total Completions
             </span>
-            <span className="w-7 h-7 rounded-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 text-[#15130f] dark:text-[#fbf8f1] flex items-center justify-center">
+            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 text-[#15130f] dark:text-[#fbf8f1] flex items-center justify-center">
               <CheckCircle2 className="w-3.5 h-3.5" />
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
+          <div className="mt-2.5 sm:mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-[26px] lg:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
               {analytics.totalCompletions.toLocaleString()}
             </span>
             <span className="text-xs text-[#15130f]/45 dark:text-[#fbf8f1]/45">
               checkmarks
             </span>
           </div>
-          <p className="mt-3 text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
+          <p className="mt-2.5 sm:mt-3 text-[10.5px] sm:text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
             Across {habits.length} {habits.length === 1 ? 'habit' : 'habits'} in {selectedYear}
           </p>
         </div>
 
         {/* Card 3: Longest Yearly Streak */}
-        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[22px] p-4 sm:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
+        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-4 lg:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
+            <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
               Longest Streak
             </span>
-            <span className="w-7 h-7 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center">
+            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] flex items-center justify-center">
               <Flame className="w-3.5 h-3.5" />
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
+          <div className="mt-2.5 sm:mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-[26px] lg:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
               {analytics.longestStreak}
             </span>
             <span className="text-xs text-[#15130f]/45 dark:text-[#fbf8f1]/45">
               {analytics.longestStreak === 1 ? 'day' : 'days'}
             </span>
           </div>
-          <p className="mt-3 text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
+          <p className="mt-2.5 sm:mt-3 text-[10.5px] sm:text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
             Current unbroken streak: <strong className="text-[#ff5a1f] font-semibold">{analytics.currentStreak}d</strong>
           </p>
         </div>
 
         {/* Card 4: Perfect Days */}
-        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[22px] p-4 sm:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
+        <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[20px] sm:rounded-[22px] p-3.5 sm:p-4 lg:p-5 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
+            <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#15130f]/55 dark:text-[#fbf8f1]/55 font-archivo">
               Perfect Days
             </span>
-            <span className="w-7 h-7 rounded-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 text-[#15130f] dark:text-[#fbf8f1] flex items-center justify-center">
+            <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#15130f]/8 dark:bg-[#fbf8f1]/8 text-[#15130f] dark:text-[#fbf8f1] flex items-center justify-center">
               <Award className="w-3.5 h-3.5" />
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
+          <div className="mt-2.5 sm:mt-3 flex items-baseline gap-1.5">
+            <span className="text-2xl sm:text-[26px] lg:text-[28px] font-clash font-semibold tracking-tight text-[#15130f] dark:text-[#fbf8f1]">
               {analytics.perfectDaysCount}
             </span>
             <span className="text-xs text-[#15130f]/45 dark:text-[#fbf8f1]/45">
               days
             </span>
           </div>
-          <p className="mt-3 text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
+          <p className="mt-2.5 sm:mt-3 text-[10.5px] sm:text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55 truncate">
             Best month: <strong className="text-[#ff5a1f] font-semibold">{analytics.bestMonthName} ({analytics.bestMonthRate}% avg)</strong>
           </p>
         </div>
@@ -341,18 +346,18 @@ export function YearHeatmapMatrix({
       {/* ========================================================================= */}
       {/* 2. HEATMAP MATRIX CONTAINER & TOOLBAR */}
       {/* ========================================================================= */}
-      <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[26px] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card p-5 sm:p-6 transition-colors">
+      <div className="bg-[#fbf8f1] dark:bg-[#1c1a16] rounded-[22px] sm:rounded-[26px] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card p-4 sm:p-6 transition-colors">
         {/* Controls Toolbar: Year Switcher + Habit Filter + Legend */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-5 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 sm:pb-5 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
           {/* Left: Year Switcher */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center bg-[#f2ecdf] dark:bg-[#11100d] p-1 rounded-full border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            <div className="flex items-center bg-[#f2ecdf] dark:bg-[#11100d] p-0.5 sm:p-1 rounded-full border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
               {availableYears.map((yr) => (
                 <button
                   key={yr}
                   type="button"
                   onClick={() => handleSelectYear(yr)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     selectedYear === yr
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
@@ -364,7 +369,7 @@ export function YearHeatmapMatrix({
             </div>
 
             {isLeapYear(selectedYear) && (
-              <span className="px-2.5 py-1 rounded-full text-[10.5px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/25 tracking-tight flex items-center gap-1.5 shrink-0">
+              <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[10.5px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/25 tracking-tight flex items-center gap-1.5 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse" />
                 366 Days · Leap Year
               </span>
@@ -372,15 +377,15 @@ export function YearHeatmapMatrix({
           </div>
 
           {/* Right: Habit Filter Dropdown & Legend */}
-          <div className="flex items-center gap-3.5 flex-wrap">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 flex-wrap">
             {/* Habit Filter Dropdown */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5 text-[#15130f]/40 dark:text-[#fbf8f1]/40" />
+            <div className="flex items-center gap-1.5 w-full min-[480px]:w-auto">
+              <Filter className="w-3.5 h-3.5 text-[#15130f]/40 dark:text-[#fbf8f1]/40 shrink-0" />
               <select
                 aria-label="Filter heatmap by habit"
                 value={selectedHabitId}
                 onChange={(e) => setSelectedHabitId(e.target.value)}
-                className="bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] text-xs font-semibold rounded-full px-3.5 py-1.5 outline-none cursor-pointer focus:border-[#ff5a1f] transition-colors"
+                className="w-full min-[480px]:w-auto bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] text-xs font-semibold rounded-full px-3 py-1.5 outline-none cursor-pointer focus:border-[#ff5a1f] transition-colors"
               >
                 <option value="all">All Habits (Combined Overview)</option>
                 {habits.map((h) => (
@@ -392,7 +397,7 @@ export function YearHeatmapMatrix({
             </div>
 
             {/* Matrix Legend */}
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#15130f]/55 dark:text-[#fbf8f1]/55">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-[#15130f]/55 dark:text-[#fbf8f1]/55">
               <span>Less</span>
               <div className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-[3px] bg-[#15130f]/6 dark:bg-[#fbf8f1]/6 border border-[#15130f]/10 dark:border-[#fbf8f1]/10" />
@@ -409,7 +414,12 @@ export function YearHeatmapMatrix({
         {/* ========================================================================= */}
         {/* 3. THE 52-WEEK PANORAMIC GRID */}
         {/* ========================================================================= */}
-        <div className="mt-5 overflow-x-auto pb-2">
+        <div className="mt-4 sm:mt-5 overflow-x-auto pb-2">
+          {/* Mobile Swipe Hint */}
+          <div className="flex items-center gap-1.5 text-[11px] text-[#ff5a1f] sm:hidden mb-2 font-medium">
+            <span>↔ Swipe across 52 weeks</span>
+          </div>
+
           <div className="min-w-[820px] max-w-full">
             {/* Month Labels Row */}
             <div className="flex text-[11px] font-semibold text-[#15130f]/50 dark:text-[#fbf8f1]/50 mb-1.5 pl-8">
@@ -431,10 +441,10 @@ export function YearHeatmapMatrix({
               ))}
             </div>
 
-            {/* Grid Body: Day of Week labels + Week Columns */}
+            {/* Grid Body: Sticky Day of Week labels + Week Columns */}
             <div className="flex gap-1.5 items-start">
-              {/* Day Labels (Mon, Wed, Fri) */}
-              <div className="flex flex-col gap-1 text-[9.5px] font-semibold text-[#15130f]/45 dark:text-[#fbf8f1]/45 pr-1 select-none">
+              {/* Day Labels (Mon, Wed, Fri) - Sticky left on horizontal scroll */}
+              <div className="sticky left-0 bg-[#fbf8f1] dark:bg-[#1c1a16] z-10 flex flex-col gap-1 text-[9.5px] font-semibold text-[#15130f]/45 dark:text-[#fbf8f1]/45 pr-2 pl-0.5 select-none shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_4px_-2px_rgba(0,0,0,0.4)]">
                 <span className="h-3 sm:h-3.5 leading-none flex items-center">Mon</span>
                 <span className="h-3 sm:h-3.5 leading-none flex items-center opacity-0">Tue</span>
                 <span className="h-3 sm:h-3.5 leading-none flex items-center">Wed</span>
@@ -597,7 +607,7 @@ export function YearHeatmapMatrix({
                 ? 'translate(-50%, 0%)'
                 : 'translate(-50%, -100%)',
             }}
-            className="absolute z-50 pointer-events-auto w-72 max-w-[92vw]"
+            className="absolute z-50 pointer-events-auto w-72 max-w-[calc(100vw-2rem)]"
           >
             <div className="bg-[#15130f] dark:bg-[#1c1a16] border border-[#fbf8f1]/15 dark:border-[#fbf8f1]/15 shadow-2xl rounded-[22px] p-4 text-[#fbf8f1]">
               {/* Popover Header */}

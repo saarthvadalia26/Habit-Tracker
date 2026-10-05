@@ -588,7 +588,7 @@ export function NotesSection({
   const charCount = notes.length;
 
   return (
-    <div className="rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-6 sm:p-8 shadow-framer-card flex flex-col gap-6 text-[#15130f] dark:text-[#fbf8f1]">
+    <div className="rounded-[24px] sm:rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 lg:p-8 shadow-framer-card flex flex-col gap-5 sm:gap-6 text-[#15130f] dark:text-[#fbf8f1]">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
         <div className="flex items-center gap-3.5">

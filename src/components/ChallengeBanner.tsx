@@ -230,17 +230,19 @@ export function ChallengeBanner({
 
       {/* Progress Bar & Milestones Track */}
       <div className="mt-4 space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-archivo">
+        <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center justify-between gap-1 text-xs font-archivo">
           <span className="font-medium text-[#15130f]/60 dark:text-[#fbf8f1]/60">
             {progress.isUpcoming
               ? '0% Elapsed (Starts in ' + progress.daysUntilStart + (progress.daysUntilStart === 1 ? ' day)' : ' days)')
               : progress.percentElapsed + '% Elapsed'}
           </span>
-          <span className="font-semibold text-[#ff5a1f] flex items-center gap-1.5">
-            <Flame className="w-3.5 h-3.5 fill-[#ff5a1f]" />
-            {progress.isUpcoming
-              ? 'Awaiting Start Date'
-              : `${progress.adherencePercentage}% Habit Adherence (${progress.totalCompletedChecks}/${progress.totalPossibleChecks})`}
+          <span className="font-semibold text-[#ff5a1f] flex items-center gap-1.5 flex-wrap">
+            <Flame className="w-3.5 h-3.5 fill-[#ff5a1f] shrink-0" />
+            <span>
+              {progress.isUpcoming
+                ? 'Awaiting Start Date'
+                : `${progress.adherencePercentage}% Habit Adherence (${progress.totalCompletedChecks}/${progress.totalPossibleChecks})`}
+            </span>
           </span>
         </div>
 
@@ -255,7 +257,7 @@ export function ChallengeBanner({
         </div>
 
         {/* Milestone Badges Strip */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 pt-2">
+        <div className="grid grid-cols-2 min-[420px]:grid-cols-4 gap-2 sm:gap-3 pt-2">
           {progress.milestones.map((m) => {
             const icon =
               m.threshold <= 25 ? (
