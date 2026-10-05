@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS public.habits (
     user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
     title TEXT NOT NULL CONSTRAINT check_habit_title CHECK (char_length(trim(title)) > 0 AND char_length(title) <= 60),
     color_theme TEXT NOT NULL DEFAULT '#6366F1' CONSTRAINT check_color_theme CHECK (color_theme ~ '^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$'),
+    target_type TEXT NOT NULL DEFAULT 'boolean' CONSTRAINT check_target_type CHECK (target_type IN ('boolean', 'numeric')),
+    target_value NUMERIC(10,2) DEFAULT NULL CONSTRAINT check_target_value CHECK (target_value IS NULL OR target_value > 0),
+    unit TEXT DEFAULT NULL CONSTRAINT check_unit CHECK (unit IS NULL OR char_length(unit) <= 20),
+    step_increment NUMERIC(10,2) DEFAULT NULL CONSTRAINT check_step_increment CHECK (step_increment IS NULL OR step_increment > 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -17,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.habit_logs (
     habit_id UUID NOT NULL REFERENCES public.habits(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     is_completed BOOLEAN NOT NULL DEFAULT false,
+    current_value NUMERIC(10,2) DEFAULT NULL CONSTRAINT check_current_value CHECK (current_value IS NULL OR current_value >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- Ensure only 1 log entry exists per habit per date
     CONSTRAINT unique_habit_date UNIQUE (habit_id, date)
@@ -46,6 +51,13 @@ ALTER TABLE public.challenges ALTER COLUMN habit_ids SET NOT NULL;
 ALTER TABLE public.challenges DROP CONSTRAINT IF EXISTS check_challenge_habit_ids_count;
 ALTER TABLE public.challenges
     ADD CONSTRAINT check_challenge_habit_ids_count CHECK (cardinality(habit_ids) <= 50);
+
+-- Drop 2: Target & Numeric Goals column migrations for existing instances
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS target_type TEXT NOT NULL DEFAULT 'boolean';
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS target_value NUMERIC(10,2) DEFAULT NULL;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS unit TEXT DEFAULT NULL;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS step_increment NUMERIC(10,2) DEFAULT NULL;
+ALTER TABLE public.habit_logs ADD COLUMN IF NOT EXISTS current_value NUMERIC(10,2) DEFAULT NULL;
 
 -- 4. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_habits_user_id ON public.habits(user_id);

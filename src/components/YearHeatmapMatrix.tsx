@@ -662,7 +662,14 @@ export function YearHeatmapMatrix({
                         </span>
                       </div>
 
-                      {habit.completed ? (
+                      {habit.isNumeric ? (
+                        <span className="px-2 py-0.5 rounded-full bg-[#fbf8f1]/10 text-[10px] font-bold font-mono flex items-center gap-1 shrink-0">
+                          {habit.completed && <Check className="w-3 h-3 text-[#ff5a1f] stroke-[2.5]" />}
+                          <span>
+                            {(habit.currentValue ?? 0).toLocaleString()} / {(habit.targetValue ?? 0).toLocaleString()} {habit.unit || ''}
+                          </span>
+                        </span>
+                      ) : habit.completed ? (
                         <span className="px-2 py-0.5 rounded-full bg-[#ff5a1f]/20 text-[#ff5a1f] text-[10px] font-bold flex items-center gap-1 shrink-0">
                           <Check className="w-3 h-3 stroke-[2.5]" />
                           Done

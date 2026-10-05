@@ -97,8 +97,8 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Target & Numeric Goals',
     versionBadge: 'v2.0 • DROP 2',
     targetDate: 'Late October 2026',
-    status: 'planned',
-    statusBadge: 'NEXT IN QUEUE',
+    status: 'in_development',
+    statusBadge: 'DROP 2 • NOW AVAILABLE',
     category: '🎯 QUANTITATIVE METRICS',
     tagline: 'Track measurable milestones beyond binary checkmarks.',
     description:

@@ -8,7 +8,14 @@ import { COLOR_THEMES, ColorTheme, getColorThemeByHex } from '@/lib/constants';
 interface CreateHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (title: string, colorTheme: string) => Promise<void>;
+  onCreate: (
+    title: string,
+    colorTheme: string,
+    targetType?: 'boolean' | 'numeric',
+    targetValue?: number | null,
+    unit?: string | null,
+    stepIncrement?: number | null
+  ) => Promise<void>;
 }
 
 function isLightHex(hexColor: string): boolean {
@@ -39,12 +46,25 @@ const QUICK_COLORS = [
   '#8B5CF6', // Purple
 ];
 
+const UNIT_PRESETS = [
+  { label: 'ml (Water)', unit: 'ml', defaultTarget: 2500, defaultStep: 250 },
+  { label: 'pages (Reading)', unit: 'pages', defaultTarget: 20, defaultStep: 5 },
+  { label: 'mins (Focus)', unit: 'mins', defaultTarget: 45, defaultStep: 15 },
+  { label: 'steps (Walking)', unit: 'steps', defaultTarget: 10000, defaultStep: 1000 },
+  { label: 'reps (Workout)', unit: 'reps', defaultTarget: 50, defaultStep: 10 },
+  { label: 'km (Distance)', unit: 'km', defaultTarget: 5, defaultStep: 1 },
+];
+
 export function CreateHabitModal({
   isOpen,
   onClose,
   onCreate,
 }: CreateHabitModalProps) {
   const [title, setTitle] = useState('');
+  const [targetType, setTargetType] = useState<'boolean' | 'numeric'>('boolean');
+  const [targetValue, setTargetValue] = useState('2500');
+  const [unit, setUnit] = useState('ml');
+  const [stepIncrement, setStepIncrement] = useState('250');
   const [selectedTheme, setSelectedTheme] = useState<ColorTheme>(COLOR_THEMES[0]);
   const [isCustom, setIsCustom] = useState(false);
   const [customHex, setCustomHex] = useState('#EC4899');
@@ -94,6 +114,12 @@ export function CreateHabitModal({
     }
   };
 
+  const handleSelectPreset = (preset: typeof UNIT_PRESETS[0]) => {
+    setUnit(preset.unit);
+    setTargetValue(String(preset.defaultTarget));
+    setStepIncrement(String(preset.defaultStep));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -104,10 +130,39 @@ export function CreateHabitModal({
       return;
     }
 
+    let parsedTargetValue: number | null = null;
+    let parsedStepIncrement: number | null = null;
+    let parsedUnit: string | null = null;
+
+    if (targetType === 'numeric') {
+      const numTarget = parseFloat(targetValue);
+      if (isNaN(numTarget) || numTarget <= 0) {
+        setError('Please enter a valid numeric target greater than zero.');
+        return;
+      }
+      parsedTargetValue = numTarget;
+      parsedUnit = unit.trim() || 'units';
+
+      const numStep = parseFloat(stepIncrement);
+      if (!isNaN(numStep) && numStep > 0) {
+        parsedStepIncrement = numStep;
+      } else {
+        parsedStepIncrement = Math.max(1, Math.round(numTarget / 10));
+      }
+    }
+
     try {
       setIsSubmitting(true);
-      await onCreate(trimmedTitle, selectedTheme.hex);
+      await onCreate(
+        trimmedTitle,
+        selectedTheme.hex,
+        targetType,
+        parsedTargetValue,
+        parsedUnit,
+        parsedStepIncrement
+      );
       setTitle('');
+      setTargetType('boolean');
       setSelectedTheme(COLOR_THEMES[0]);
       setIsCustom(false);
       onClose();
@@ -195,12 +250,126 @@ export function CreateHabitModal({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Read 20 pages, Morning Run, Meditate..."
+                  placeholder="e.g. Read 20 pages, Drink water, Meditate..."
                   autoFocus
                   maxLength={60}
                   className="w-full px-4 py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-2xl text-[#15130f] dark:text-[#fbf8f1] placeholder-[#15130f]/40 dark:placeholder-[#fbf8f1]/40 font-medium focus:outline-none focus:ring-2 focus:ring-[#ff5a1f]/50 focus:border-[#ff5a1f] transition-all text-sm"
                 />
               </div>
+
+              {/* Goal Type Switcher: Drop 2 Quantitative Goals */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-2 font-archivo">
+                  Tracking Goal Type
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+                  <button
+                    type="button"
+                    onClick={() => setTargetType('boolean')}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      targetType === 'boolean'
+                        ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                        : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f]'
+                    }`}
+                  >
+                    <span>Checkmark (Yes/No)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetType('numeric')}
+                    className={`py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      targetType === 'numeric'
+                        ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                        : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f]'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f]" />
+                    <span>Numeric Target (Drop 2)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Numeric Goal Configuration Fields */}
+              {targetType === 'numeric' && (
+                <div className="p-3.5 rounded-2xl bg-[#f2ecdf]/80 dark:bg-[#11100d]/80 border border-[#ff5a1f]/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#ff5a1f]">
+                      Quantitative Target
+                    </span>
+                    <span className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                      In-cell steppers & progress rings
+                    </span>
+                  </div>
+
+                  {/* Preset Chips */}
+                  <div>
+                    <span className="block text-[10px] font-semibold text-[#15130f]/50 dark:text-[#fbf8f1]/50 mb-1.5">
+                      Popular Presets:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {UNIT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.unit}
+                          type="button"
+                          onClick={() => handleSelectPreset(preset)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer border ${
+                            unit === preset.unit
+                              ? 'bg-[#ff5a1f] text-white border-[#ff5a1f] shadow-xs'
+                              : 'bg-white dark:bg-[#1c1a16] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-[#ff5a1f]/40'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Inputs: Target & Unit & Step */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Daily Target
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="any"
+                        value={targetValue}
+                        onChange={(e) => setTargetValue(e.target.value)}
+                        placeholder="2500"
+                        className="w-full px-3 py-2 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Metric Unit
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        value={unit}
+                        onChange={(e) => setUnit(e.target.value)}
+                        placeholder="ml, pages..."
+                        className="w-full px-3 py-2 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Step (+/-)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="any"
+                        value={stepIncrement}
+                        onChange={(e) => setStepIncrement(e.target.value)}
+                        placeholder="250"
+                        className="w-full px-3 py-2 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Color Theme Selector */}
               <div>

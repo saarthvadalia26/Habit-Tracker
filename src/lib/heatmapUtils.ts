@@ -22,6 +22,10 @@ export interface DayCompletionData {
     title: string;
     color: string;
     completed: boolean;
+    isNumeric?: boolean;
+    currentValue?: number;
+    targetValue?: number;
+    unit?: string;
   }[];
 }
 
@@ -182,22 +186,43 @@ export function computeHeatmapData(
   days.forEach((day) => {
     const { dateString, isFuture, month } = day;
 
-    const habitStatuses = activeHabits.map((habit) => ({
-      id: habit.id,
-      title: habit.title,
-      color: habit.color_theme,
-      completed: Boolean(habit.logs?.[dateString]),
-    }));
+    const habitStatuses = activeHabits.map((habit) => {
+      const isNum = habit.target_type === 'numeric';
+      const targetVal = habit.target_value ?? 1;
+      const currentVal = habit.numericLogs?.[dateString] ?? (habit.logs?.[dateString] ? targetVal : 0);
+      return {
+        id: habit.id,
+        title: habit.title,
+        color: habit.color_theme,
+        completed: Boolean(habit.logs?.[dateString]),
+        isNumeric: isNum,
+        currentValue: isNum ? currentVal : undefined,
+        targetValue: isNum ? targetVal : undefined,
+        unit: habit.unit ?? undefined,
+      };
+    });
 
     const completedCount = habitStatuses.filter((h) => h.completed).length;
     const rate = totalHabitsCount > 0 ? completedCount / totalHabitsCount : 0;
 
     let intensityLevel: 0 | 1 | 2 | 3 | 4 = 0;
-    if (completedCount > 0) {
-      if (rate >= 0.85) intensityLevel = 4;
-      else if (rate >= 0.6) intensityLevel = 3;
-      else if (rate >= 0.35) intensityLevel = 2;
-      else intensityLevel = 1;
+    const singleHabit = activeHabits.length === 1 ? activeHabits[0] : null;
+
+    if (singleHabit && singleHabit.target_type === 'numeric' && singleHabit.target_value) {
+      const currentVal = singleHabit.numericLogs?.[dateString] ?? (singleHabit.logs?.[dateString] ? singleHabit.target_value : 0);
+      const ratio = currentVal / singleHabit.target_value;
+      if (ratio >= 1.0) intensityLevel = 4;
+      else if (ratio >= 0.66) intensityLevel = 3;
+      else if (ratio >= 0.33) intensityLevel = 2;
+      else if (ratio > 0) intensityLevel = 1;
+      else intensityLevel = 0;
+    } else {
+      if (completedCount > 0) {
+        if (rate >= 0.85) intensityLevel = 4;
+        else if (rate >= 0.6) intensityLevel = 3;
+        else if (rate >= 0.35) intensityLevel = 2;
+        else intensityLevel = 1;
+      }
     }
 
     dayDataMap[dateString] = {

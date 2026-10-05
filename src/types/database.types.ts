@@ -15,6 +15,10 @@ export type Database = {
           user_id: string;
           title: string;
           color_theme: string;
+          target_type: 'boolean' | 'numeric';
+          target_value: number | null;
+          unit: string | null;
+          step_increment: number | null;
           created_at: string;
         };
         Insert: {
@@ -22,6 +26,10 @@ export type Database = {
           user_id: string;
           title: string;
           color_theme?: string;
+          target_type?: 'boolean' | 'numeric';
+          target_value?: number | null;
+          unit?: string | null;
+          step_increment?: number | null;
           created_at?: string;
         };
         Update: {
@@ -29,6 +37,10 @@ export type Database = {
           user_id?: string;
           title?: string;
           color_theme?: string;
+          target_type?: 'boolean' | 'numeric';
+          target_value?: number | null;
+          unit?: string | null;
+          step_increment?: number | null;
           created_at?: string;
         };
         Relationships: [];
@@ -72,6 +84,7 @@ export type Database = {
           habit_id: string;
           date: string;
           is_completed: boolean;
+          current_value: number | null;
           created_at: string;
         };
         Insert: {
@@ -79,6 +92,7 @@ export type Database = {
           habit_id: string;
           date: string;
           is_completed?: boolean;
+          current_value?: number | null;
           created_at?: string;
         };
         Update: {
@@ -86,6 +100,7 @@ export type Database = {
           habit_id?: string;
           date?: string;
           is_completed?: boolean;
+          current_value?: number | null;
           created_at?: string;
         };
         Relationships: [
@@ -150,6 +165,7 @@ export type ChallengeInsert = Database['public']['Tables']['challenges']['Insert
 
 export interface HabitWithLogs extends Habit {
   logs: Record<string, boolean>; // date (YYYY-MM-DD) -> is_completed
+  numericLogs?: Record<string, number>; // date (YYYY-MM-DD) -> current_value
   currentStreak?: number;
   completionRate?: number;
   subtitle?: string;

@@ -46,13 +46,19 @@ import {
   Apple,
   Music,
   Bike,
+  Minus,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
 import { formatDateToISO, getTodayDateString, isLeapYear, getDaysInYear } from '@/lib/dateUtils';
 import { calculateContinuousStreak, computeMonthlyAnalytics } from '@/lib/analytics';
 import { getDaysForMonth, MONTH_NAMES } from '@/lib/monthUtils';
-import { toggleHabitLogAction, deleteHabitAction, createHabitAction } from '@/app/actions/habits';
+import {
+  toggleHabitLogAction,
+  deleteHabitAction,
+  createHabitAction,
+  updateHabitNumericLogAction,
+} from '@/app/actions/habits';
 import {
   createChallengeAction,
   completeChallengeAction,
@@ -196,6 +202,10 @@ export function HabitDashboard({
   const [newSubtitle, setNewSubtitle] = useState('');
   const [newTargetTime, setNewTargetTime] = useState('');
   const [newIcon, setNewIcon] = useState('brain');
+  const [newTargetType, setNewTargetType] = useState<'boolean' | 'numeric'>('boolean');
+  const [newTargetValue, setNewTargetValue] = useState('2500');
+  const [newUnit, setNewUnit] = useState('ml');
+  const [newStepIncrement, setNewStepIncrement] = useState('250');
   const [isCreating, setIsCreating] = useState(false);
   const [openMenuHabitId, setOpenMenuHabitId] = useState<string | null>(null);
   const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null);
@@ -682,6 +692,11 @@ export function HabitDashboard({
     const habit = habits.find((h) => h.id === habitId);
     if (!habit) return;
 
+    if (habit.target_type === 'numeric') {
+      await handleUpdateNumericHabit(habitId, 'toggle', event, targetDate);
+      return;
+    }
+
     const isCurrentlyDone = Boolean(habit.logs?.[targetDate]);
     const nextState = !isCurrentlyDone;
 
@@ -733,6 +748,119 @@ export function HabitDashboard({
     }
   };
 
+  // Drop 2: Update numeric habit progress (steppers +/- or full toggle)
+  const handleUpdateNumericHabit = async (
+    habitId: string,
+    delta: number | 'toggle',
+    event?: React.MouseEvent,
+    targetDate: string = todayStr
+  ) => {
+    if (isGuestMode) {
+      toast.info('Sign in required', {
+        description: 'Guest users cannot modify or log habits. Please sign in or create a free account.',
+      });
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const [y, m, d] = targetDate.split('-').map(Number);
+    const targetD = new Date(Date.UTC(y, m - 1, d));
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const diffDays = Math.round((todayUTC.getTime() - targetD.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      toast.error('Future date locked', {
+        description: 'Cannot log habits for future dates. Please wait until the day arrives.',
+      });
+      return;
+    }
+
+    if (diffDays > 3) {
+      toast.error('72-Hour edit window expired', {
+        description: `Day ${targetDate} is older than 72 hours (3 days). Past records are permanently locked.`,
+      });
+      return;
+    }
+
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+
+    const targetVal = habit.target_value || 1;
+    const currentVal = habit.numericLogs?.[targetDate] ?? (habit.logs?.[targetDate] ? targetVal : 0);
+
+    let nextVal: number;
+    if (delta === 'toggle') {
+      nextVal = currentVal >= targetVal ? 0 : targetVal;
+    } else {
+      nextVal = Math.max(0, currentVal + delta);
+    }
+
+    const isCompleted = nextVal >= targetVal && targetVal > 0;
+    const wasCompleted = currentVal >= targetVal;
+
+    // Optimistic UI update
+    setHabits((prev) =>
+      prev.map((h) => {
+        if (h.id === habitId) {
+          const updatedLogs = { ...h.logs, [targetDate]: isCompleted };
+          const updatedNumericLogs = { ...(h.numericLogs || {}), [targetDate]: nextVal };
+          const baseStreak = h.currentStreak || 1;
+          const updatedStreak =
+            isCompleted && !wasCompleted
+              ? baseStreak + 1
+              : !isCompleted && wasCompleted
+              ? Math.max(1, baseStreak - 1)
+              : baseStreak;
+          return {
+            ...h,
+            logs: updatedLogs,
+            numericLogs: updatedNumericLogs,
+            currentStreak: updatedStreak,
+          };
+        }
+        return h;
+      })
+    );
+
+    if (isCompleted && !wasCompleted && targetDate === todayStr && event) {
+      try {
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = (rect.top + rect.height / 2) / window.innerHeight;
+        confetti({
+          particleCount: 30,
+          spread: 55,
+          origin: { x, y },
+          colors: [habit.color_theme || '#ff5a1f', '#fbf8f1', '#15130f', '#06b6d4'],
+          ticks: 180,
+          gravity: 1.1,
+          scalar: 0.8,
+        });
+      } catch {}
+    }
+
+    try {
+      const res = await updateHabitNumericLogAction(habitId, targetDate, nextVal, targetVal);
+      if (res?.error) {
+        toast.error(res.error);
+        setHabits((prev) =>
+          prev.map((h) =>
+            h.id === habitId
+              ? {
+                  ...h,
+                  logs: { ...h.logs, [targetDate]: wasCompleted },
+                  numericLogs: { ...(h.numericLogs || {}), [targetDate]: currentVal },
+                }
+              : h
+          )
+        );
+      }
+    } catch {
+      toast.error('Sync error', { description: 'Could not sync numeric progress to server.' });
+    }
+  };
+
   // Create Habit (Guest Guarded)
   const handleCreateHabit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -749,10 +877,20 @@ export function HabitDashboard({
     const titleVal = newTitle.trim();
     const subtitleVal = newSubtitle.trim() || 'Daily routine';
     const timeVal = newTargetTime.trim() || 'All day';
+    const targetValNum = newTargetType === 'numeric' ? parseFloat(newTargetValue) || 2500 : null;
+    const unitVal = newTargetType === 'numeric' ? newUnit.trim() || 'units' : null;
+    const stepValNum = newTargetType === 'numeric' ? parseFloat(newStepIncrement) || 250 : null;
 
     try {
       const compoundTitle = `${titleVal} | ${subtitleVal}`;
-      const res = await createHabitAction(compoundTitle, '#ff5a1f');
+      const res = await createHabitAction(
+        compoundTitle,
+        '#ff5a1f',
+        newTargetType,
+        targetValNum,
+        unitVal,
+        stepValNum
+      );
       if (res.error) {
         toast.error('Could not create habit', { description: res.error });
       } else if (res.data) {
@@ -762,7 +900,12 @@ export function HabitDashboard({
           subtitle: subtitleVal,
           icon: newIcon,
           targetTime: timeVal,
+          target_type: newTargetType,
+          target_value: targetValNum,
+          unit: unitVal,
+          step_increment: stepValNum,
           logs: { [todayStr]: false },
+          numericLogs: { [todayStr]: 0 },
           currentStreak: 1,
         };
         setHabits((prev) => [created, ...prev]);
@@ -770,6 +913,7 @@ export function HabitDashboard({
         setNewTitle('');
         setNewSubtitle('');
         setNewTargetTime('');
+        setNewTargetType('boolean');
         toast.success('Habit created!', { description: `${titleVal} added to your tracker.` });
       }
     } catch {
@@ -1355,8 +1499,8 @@ export function HabitDashboard({
                             </div>
                           </div>
 
-                          {/* Right: Streak Flame + Interactive Check Button */}
-                          <div className="flex items-center gap-3.5 shrink-0">
+                          {/* Right: Streak Flame + Interactive Check Button or Numeric Stepper */}
+                          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0 flex-wrap sm:flex-nowrap justify-end">
                             {/* Streak Badge */}
                             <div className="flex items-center gap-1.5 select-none" title={`${currentStreak} day streak`}>
                               <Flame className="w-4 h-4 text-[#ff5a1f]" />
@@ -1369,24 +1513,112 @@ export function HabitDashboard({
                               </span>
                             </div>
 
-                            {/* Check Button */}
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.92 }}
-                              onClick={(e) => handleToggleHabit(habit.id, e)}
-                              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                                isDone
-                                  ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
-                                  : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
-                              }`}
-                              title={isDone ? 'Mark as todo' : 'Mark as done'}
-                            >
-                              <Check
-                                className={`w-4 h-4 stroke-[3] transition-transform ${
-                                  isDone ? 'scale-100' : 'scale-75'
+                            {/* Drop 2: If Numeric, render precision stepper and circular progress ring */}
+                            {habit.target_type === 'numeric' && habit.target_value ? (() => {
+                              const targetVal = habit.target_value;
+                              const currentVal = habit.numericLogs?.[todayStr] ?? (habit.logs?.[todayStr] ? targetVal : 0);
+                              const stepVal = habit.step_increment || Math.max(1, Math.round(targetVal / 10));
+                              const unitStr = habit.unit || 'units';
+                              const pct = Math.min(100, Math.round((currentVal / targetVal) * 100));
+                              const radius = 13;
+                              const circumference = 2 * Math.PI * radius;
+                              const strokeDashoffset = circumference - (pct / 100) * circumference;
+
+                              return (
+                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                  {/* Compact in-cell +/- stepper */}
+                                  <div
+                                    className={`flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-semibold select-none ${
+                                      isDone
+                                        ? 'bg-[#fbf8f1]/15 border-white/20 text-[#fbf8f1]'
+                                        : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1]'
+                                    }`}
+                                  >
+                                    <button
+                                      type="button"
+                                      title={`Decrease by ${stepVal} ${unitStr}`}
+                                      onClick={(e) => handleUpdateNumericHabit(habit.id, -stepVal, e)}
+                                      className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#15130f]/10 dark:hover:bg-[#fbf8f1]/15 transition-colors cursor-pointer"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+
+                                    <span className="font-mono px-1 min-w-[62px] text-center text-[11px] sm:text-[11.5px]">
+                                      {currentVal.toLocaleString()} / {targetVal.toLocaleString()} {unitStr}
+                                    </span>
+
+                                    <button
+                                      type="button"
+                                      title={`Increase by ${stepVal} ${unitStr}`}
+                                      onClick={(e) => handleUpdateNumericHabit(habit.id, stepVal, e)}
+                                      className="w-5 h-5 rounded-full flex items-center justify-center bg-[#ff5a1f] text-white hover:bg-[#e04a12] transition-colors cursor-pointer shadow-xs"
+                                    >
+                                      <Plus className="w-3 h-3 stroke-[2.5]" />
+                                    </button>
+                                  </div>
+
+                                  {/* Circular Progress Ring with 1-tap toggle */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleUpdateNumericHabit(habit.id, 'toggle', e)}
+                                    title={isDone ? 'Mark as reset' : 'Mark full target complete'}
+                                    className="relative w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95 shrink-0"
+                                  >
+                                    <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
+                                      <circle
+                                        cx="16"
+                                        cy="16"
+                                        r={radius}
+                                        className="stroke-[#15130f]/10 dark:stroke-[#fbf8f1]/15 fill-none"
+                                        strokeWidth="2.5"
+                                      />
+                                      <circle
+                                        cx="16"
+                                        cy="16"
+                                        r={radius}
+                                        className="stroke-[#ff5a1f] fill-none transition-all duration-300"
+                                        strokeWidth="2.5"
+                                        strokeDasharray={circumference}
+                                        strokeDashoffset={strokeDashoffset}
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                    {isDone ? (
+                                      <span className="absolute inset-0 m-auto w-5 h-5 rounded-full bg-[#ff5a1f] flex items-center justify-center text-white shadow-xs">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className={`absolute text-[9px] font-bold font-mono ${
+                                          isDone ? 'text-white' : 'text-[#ff5a1f]'
+                                        }`}
+                                      >
+                                        {pct}%
+                                      </span>
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })() : (
+                              /* Standard Boolean Check Button */
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.92 }}
+                                onClick={(e) => handleToggleHabit(habit.id, e)}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                                  isDone
+                                    ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
+                                    : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
                                 }`}
-                              />
-                            </motion.button>
+                                title={isDone ? 'Mark as todo' : 'Mark as done'}
+                              >
+                                <Check
+                                  className={`w-4 h-4 stroke-[3] transition-transform ${
+                                    isDone ? 'scale-100' : 'scale-75'
+                                  }`}
+                                />
+                              </motion.button>
+                            )}
 
                             {/* Habit Context Actions */}
                             <div className="relative" data-habit-menu>
@@ -1735,66 +1967,94 @@ export function HabitDashboard({
                     </tr>
                   </thead>
                   <tbody>
-                    {habits.map((h) => (
-                      <tr key={h.id} className="border-b border-[#15130f]/5 dark:border-[#fbf8f1]/5 hover:bg-[#15130f]/2 transition-colors">
-                        <td className="py-3 pr-4 font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate max-w-[150px]">
-                          {h.title}
-                        </td>
-                        {Array.from({ length: daysInSelectedMonth }).map((_, i) => {
-                          const mm = String(selectedMonth + 1).padStart(2, '0');
-                          const dd = String(i + 1).padStart(2, '0');
-                          const dateKey = `${selectedYear}-${mm}-${dd}`;
-                          const isDone = Boolean(h.logs?.[dateKey]);
-                          const isCellToday = dateKey === todayStr;
+                    {habits.map((h) => {
+                      const isNum = h.target_type === 'numeric';
+                      const targetVal = h.target_value || 1;
+                      const unitStr = h.unit || 'units';
 
-                          const cellDate = new Date(Date.UTC(selectedYear, selectedMonth, i + 1));
-                          const now = new Date();
-                          const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-                          const diffDays = Math.round((todayUTC.getTime() - cellDate.getTime()) / (1000 * 60 * 60 * 24));
-                          const isFuture = diffDays < 0;
-                          const isExpired = diffDays > 3;
-                          const isEditable = !isFuture && !isExpired && !isGuestMode;
+                      return (
+                        <tr key={h.id} className="border-b border-[#15130f]/5 dark:border-[#fbf8f1]/5 hover:bg-[#15130f]/2 transition-colors">
+                          <td className="py-3 pr-4 font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate max-w-[160px]">
+                            <div className="flex flex-col min-w-0">
+                              <span className="truncate">{h.title}</span>
+                              {isNum && h.target_value && (
+                                <span className="text-[10px] text-[#ff5a1f] font-mono font-medium truncate">
+                                  {h.target_value.toLocaleString()} {unitStr}/day
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {Array.from({ length: daysInSelectedMonth }).map((_, i) => {
+                            const mm = String(selectedMonth + 1).padStart(2, '0');
+                            const dd = String(i + 1).padStart(2, '0');
+                            const dateKey = `${selectedYear}-${mm}-${dd}`;
+                            const isDone = Boolean(h.logs?.[dateKey]);
+                            const currentVal = h.numericLogs?.[dateKey] ?? (isDone ? targetVal : 0);
+                            const pct = Math.min(100, Math.round((currentVal / targetVal) * 100));
+                            const isCellToday = dateKey === todayStr;
 
-                          let titleText = `${h.title} on ${dateKey}: ${isDone ? 'Done' : 'Incomplete'}`;
-                          if (isGuestMode) {
-                            titleText = `${h.title} on ${dateKey}: Sign in required to log habits`;
-                          } else if (isFuture) {
-                            titleText = `${h.title} on ${dateKey}: Future date locked`;
-                          } else if (isExpired) {
-                            titleText = `${h.title} on ${dateKey}: ${isDone ? 'Completed' : 'Missed'} (Locked after 72h)`;
-                          }
-                          let cellButtonClasses = 'w-[22px] h-[22px] sm:w-6 sm:h-6 rounded-[7px] transition-all inline-flex items-center justify-center shrink-0 ';
-                          if (isDone) {
-                            cellButtonClasses += isEditable
-                              ? 'bg-[#ff5a1f] hover:bg-[#e04a12] text-white shadow-sm cursor-pointer hover:scale-110 active:scale-95'
-                              : 'bg-[#ff5a1f] text-white cursor-not-allowed shadow-xs';
-                          } else {
-                            if (isFuture) {
-                              cellButtonClasses += 'opacity-25 cursor-not-allowed bg-[#15130f]/3 dark:bg-[#fbf8f1]/4 border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15';
-                            } else if (!isEditable) {
-                              cellButtonClasses += 'cursor-not-allowed bg-[#15130f]/6 dark:bg-[#fbf8f1]/8 border border-[#15130f]/10 dark:border-[#fbf8f1]/10';
-                            } else {
-                              cellButtonClasses += 'cursor-pointer bg-[#15130f]/8 dark:bg-[#fbf8f1]/10 hover:bg-[#ff5a1f]/20 hover:border-[#ff5a1f]/40 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:scale-110 active:scale-95';
+                            const cellDate = new Date(Date.UTC(selectedYear, selectedMonth, i + 1));
+                            const now = new Date();
+                            const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+                            const diffDays = Math.round((todayUTC.getTime() - cellDate.getTime()) / (1000 * 60 * 60 * 24));
+                            const isFuture = diffDays < 0;
+                            const isExpired = diffDays > 3;
+                            const isEditable = !isFuture && !isExpired && !isGuestMode;
+
+                            let titleText = isNum
+                              ? `${h.title} on ${dateKey}: ${currentVal.toLocaleString()} / ${targetVal.toLocaleString()} ${unitStr} (${pct}%)`
+                              : `${h.title} on ${dateKey}: ${isDone ? 'Done' : 'Incomplete'}`;
+                            if (isGuestMode) {
+                              titleText = `${h.title} on ${dateKey}: Sign in required to log habits`;
+                            } else if (isFuture) {
+                              titleText = `${h.title} on ${dateKey}: Future date locked`;
+                            } else if (isExpired) {
+                              titleText = `${h.title} on ${dateKey}: ${isDone ? 'Completed' : 'Missed'} (Locked after 72h)`;
                             }
-                          }
-                          if (isCellToday) {
-                            cellButtonClasses += ' ring-2 ring-[#ff5a1f] ring-offset-1 dark:ring-offset-[#1c1a16]';
-                          }
 
-                          return (
-                            <td key={i} className="p-1 text-center">
-                              <button
-                                onClick={(e) => handleToggleHabit(h.id, e, dateKey)}
-                                className={cellButtonClasses}
-                                title={titleText}
-                              >
-                                {isDone && <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />}
-                              </button>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                            let cellButtonClasses = 'w-[22px] h-[22px] sm:w-6 sm:h-6 rounded-[7px] transition-all inline-flex items-center justify-center shrink-0 ';
+                            if (isDone) {
+                              cellButtonClasses += isEditable
+                                ? 'bg-[#ff5a1f] hover:bg-[#e04a12] text-white shadow-sm cursor-pointer hover:scale-110 active:scale-95'
+                                : 'bg-[#ff5a1f] text-white cursor-not-allowed shadow-xs';
+                            } else if (isNum && currentVal > 0) {
+                              cellButtonClasses += isEditable
+                                ? 'bg-[#ff5a1f]/20 border border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/35 text-[#ff5a1f] shadow-xs cursor-pointer hover:scale-110 active:scale-95'
+                                : 'bg-[#ff5a1f]/15 border border-[#ff5a1f]/30 text-[#ff5a1f] cursor-not-allowed';
+                            } else {
+                              if (isFuture) {
+                                cellButtonClasses += 'opacity-25 cursor-not-allowed bg-[#15130f]/3 dark:bg-[#fbf8f1]/4 border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15';
+                              } else if (!isEditable) {
+                                cellButtonClasses += 'cursor-not-allowed bg-[#15130f]/6 dark:bg-[#fbf8f1]/8 border border-[#15130f]/10 dark:border-[#fbf8f1]/10';
+                              } else {
+                                cellButtonClasses += 'cursor-pointer bg-[#15130f]/8 dark:bg-[#fbf8f1]/10 hover:bg-[#ff5a1f]/20 hover:border-[#ff5a1f]/40 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:scale-110 active:scale-95';
+                              }
+                            }
+                            if (isCellToday) {
+                              cellButtonClasses += ' ring-2 ring-[#ff5a1f] ring-offset-1 dark:ring-offset-[#1c1a16]';
+                            }
+
+                            return (
+                              <td key={i} className="p-1 text-center">
+                                <button
+                                  onClick={(e) => handleToggleHabit(h.id, e, dateKey)}
+                                  className={cellButtonClasses}
+                                  title={titleText}
+                                >
+                                  {isDone ? (
+                                    <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />
+                                  ) : isNum && currentVal > 0 ? (
+                                    <span className="text-[8.5px] font-bold font-mono text-[#ff5a1f] leading-none">
+                                      {pct}%
+                                    </span>
+                                  ) : null}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -2092,6 +2352,83 @@ export function HabitDashboard({
                     className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
                   />
                 </div>
+
+                {/* Drop 2: Goal Type Selector */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    Goal Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+                    <button
+                      type="button"
+                      onClick={() => setNewTargetType('boolean')}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        newTargetType === 'boolean'
+                          ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                          : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f]'
+                      }`}
+                    >
+                      Checkmark
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTargetType('numeric')}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                        newTargetType === 'numeric'
+                          ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                          : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f]'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f]" />
+                      <span>Numeric Target</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Numeric Goal Input Fields */}
+                {newTargetType === 'numeric' && (
+                  <div className="p-3 rounded-2xl bg-[#f2ecdf]/80 dark:bg-[#11100d]/80 border border-[#ff5a1f]/20 grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Target
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newTargetValue}
+                        onChange={(e) => setNewTargetValue(e.target.value)}
+                        placeholder="2500"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Unit
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        value={newUnit}
+                        onChange={(e) => setNewUnit(e.target.value)}
+                        placeholder="ml, pages..."
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-1">
+                        Step (+/-)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newStepIncrement}
+                        onChange={(e) => setNewStepIncrement(e.target.value)}
+                        placeholder="250"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-xl text-xs font-bold text-[#15130f] dark:text-[#fbf8f1] focus:outline-none focus:ring-1 focus:ring-[#ff5a1f]"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">

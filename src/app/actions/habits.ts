@@ -77,15 +77,20 @@ export async function getHabitsWithLogsAction(
       return { data: null, error: 'Unable to load habit history.' };
     }
 
-    // 3. Group logs by habit_id -> Record<date, is_completed>
+    // 3. Group logs by habit_id -> Record<date, is_completed> and Record<date, current_value>
     const logsByHabit: Record<string, Record<string, boolean>> = {};
+    const numericLogsByHabit: Record<string, Record<string, number>> = {};
     habitIds.forEach((id) => {
       logsByHabit[id] = {};
+      numericLogsByHabit[id] = {};
     });
 
     (logs || []).forEach((log: HabitLog) => {
       if (logsByHabit[log.habit_id]) {
         logsByHabit[log.habit_id][log.date] = log.is_completed;
+        if (log.current_value !== null && log.current_value !== undefined) {
+          numericLogsByHabit[log.habit_id][log.date] = Number(log.current_value);
+        }
       }
     });
 
@@ -93,6 +98,7 @@ export async function getHabitsWithLogsAction(
     const result: HabitWithLogs[] = habits.map((habit) => ({
       ...habit,
       logs: logsByHabit[habit.id] || {},
+      numericLogs: numericLogsByHabit[habit.id] || {},
     }));
 
     return { data: result, error: null };
@@ -106,7 +112,11 @@ export async function getHabitsWithLogsAction(
  */
 export async function createHabitAction(
   title: string,
-  colorTheme: string = '#6366F1'
+  colorTheme: string = '#6366F1',
+  targetType: 'boolean' | 'numeric' = 'boolean',
+  targetValue?: number | null,
+  unit?: string | null,
+  stepIncrement?: number | null
 ): Promise<ActionResponse<Habit>> {
   try {
     const trimmedTitle = cleanText(title, 60);
@@ -116,6 +126,19 @@ export async function createHabitAction(
 
     // Only a hex color can reach inline style attributes.
     const validatedColor = cleanHexColor(colorTheme) ?? '#6366F1';
+    const validatedType = targetType === 'numeric' ? 'numeric' : 'boolean';
+    let validatedTargetValue: number | null = null;
+    let validatedUnit: string | null = null;
+    let validatedStepIncrement: number | null = null;
+
+    if (validatedType === 'numeric') {
+      if (!targetValue || isNaN(targetValue) || targetValue <= 0) {
+        return { data: null, error: 'Target value must be greater than zero.' };
+      }
+      validatedTargetValue = Number(targetValue);
+      validatedUnit = unit ? cleanText(unit, 20) : null;
+      validatedStepIncrement = stepIncrement && stepIncrement > 0 ? Number(stepIncrement) : null;
+    }
 
     const supabase = await createClient();
     const {
@@ -136,6 +159,10 @@ export async function createHabitAction(
         user_id: user.id,
         title: trimmedTitle,
         color_theme: validatedColor,
+        target_type: validatedType,
+        target_value: validatedTargetValue,
+        unit: validatedUnit,
+        step_increment: validatedStepIncrement,
       })
       .select()
       .single();
@@ -270,3 +297,80 @@ export async function deleteHabitAction(
     return { data: null, error: 'Unable to delete this habit.' };
   }
 }
+
+/**
+ * Updates or logs numeric progress for a quantitative habit.
+ * Automatically marks completion when current_value >= target_value.
+ */
+export async function updateHabitNumericLogAction(
+  habitId: string,
+  date: string,
+  currentValue: number,
+  targetValue: number
+): Promise<ActionResponse<HabitLog>> {
+  try {
+    if (!isUuid(habitId) || !isValidDate(date) || typeof currentValue !== 'number' || isNaN(currentValue)) {
+      return { data: null, error: 'Invalid numeric habit update.' };
+    }
+
+    const safeValue = Math.max(0, currentValue);
+    const isCompleted = safeValue >= targetValue && targetValue > 0;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        data: null,
+        error: 'Authentication required. Please log in to update habits.',
+      };
+    }
+
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(y, m - 1, d));
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const diffDays = Math.round((todayUTC.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < -1) {
+      return {
+        data: null,
+        error: 'Cannot log habits for future dates. Please wait until the day arrives.',
+      };
+    }
+
+    if (diffDays > 3) {
+      return {
+        data: null,
+        error: '72-hour edit window expired: Habit logs older than 3 days cannot be modified.',
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('habit_logs')
+      .upsert(
+        {
+          habit_id: habitId,
+          date,
+          current_value: safeValue,
+          is_completed: isCompleted,
+        },
+        { onConflict: 'habit_id, date' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, error: 'Unable to update numeric habit log.' };
+    }
+
+    revalidatePath('/');
+    return { data, error: null };
+  } catch {
+    return { data: null, error: 'Unable to update numeric habit log.' };
+  }
+}
+
