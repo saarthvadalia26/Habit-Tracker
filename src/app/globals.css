@@ -1,21 +1,61 @@
+@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..700;1,400..700&display=swap');
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Clash Grotesk Fallback";
+  src: url("https://framerusercontent.com/third-party-assets/fontshare/wf/MKEEQN57GWBZOSYWCRODNJOOZNPLMAKN/5SPTSZGHEACWWLF34DQ4WAA4OGU6PQIF/KN7DX4F6PXB74R6L2K2Y4NH3CB7FC53Q.woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Clash Grotesk Fallback";
+  src: url("https://framerusercontent.com/third-party-assets/fontshare/wf/P6VJ47S3OYMUC7HYSJLTK7PEIK5O2NPQ/TK62VLUWA76PMTK2XWBNDZB7QVXJGYE3/I5W5NEJGYVFUC5I4XOXVET63OE5PSVHJ.woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Archivo Fallback";
+  src: url("https://framerusercontent.com/third-party-assets/fontshare/wf/5ISYWGR43XD57J2U5VEYATNUZO57OCPH/UIED7ZBTCD42AJ7GJT5NWKWHCOVDRNAP/EPHSF4UBJRLGUILEFJVCMY7ET4W5HPUF.woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --background: #F8FAFC;
-    --foreground: #0F172A;
-    --card: #FFFFFF;
-    --border: #E2E8F0;
+    --background: #f2ecdf;
+    --foreground: #15130f;
+    --card: #fbf8f1;
+    --card-dark: #15130f;
+    --border: rgba(21, 19, 15, 0.12);
+    --border-muted: rgba(21, 19, 15, 0.08);
+    --muted: rgba(21, 19, 15, 0.55);
+    --muted-dark: rgba(251, 248, 241, 0.55);
+    --chip-bg: #f2ecdf;
+    --chip-dark-bg: rgba(251, 248, 241, 0.1);
+    --accent: #ff5a1f;
+    --accent-hover: #e04a12;
     color-scheme: light;
   }
 
   .dark {
-    --background: #090D16;
-    --foreground: #F8FAFC;
-    --card: #0F172A;
-    --border: #1E293B;
+    --background: #11100d;
+    --foreground: #fbf8f1;
+    --card: #1c1a16;
+    --card-dark: #0d0c0a;
+    --border: rgba(251, 248, 241, 0.12);
+    --border-muted: rgba(251, 248, 241, 0.08);
+    --muted: rgba(251, 248, 241, 0.55);
+    --muted-dark: rgba(251, 248, 241, 0.55);
+    --chip-bg: rgba(251, 248, 241, 0.08);
+    --chip-dark-bg: rgba(251, 248, 241, 0.15);
+    --accent: #ff5a1f;
+    --accent-hover: #e04a12;
     color-scheme: dark;
   }
 
@@ -29,23 +69,31 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Archivo", "Archivo Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: 'tnum' on;
     overflow-x: hidden;
     min-height: 100vh;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    /* Body background handled smoothly via View Transitions */
   }
 
-  /* Prevent 300ms double-tap zoom delay on touch devices */
   button, input, select, textarea, a {
     touch-action: manipulation;
   }
 }
 
-/* Ambient floating animation keyframes */
+.font-clash {
+  font-family: "Clash Grotesk", "Clash Grotesk Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.font-archivo {
+  font-family: "Archivo", "Archivo Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: 'tnum' on;
+}
+
+/* Ambient keyframes */
 @keyframes ambientFloatSlow {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);
@@ -87,130 +135,89 @@
   animation: gentleGlow 4s ease-in-out infinite;
 }
 
-/* Dark Ambient Depth Shadows */
-.shadow-ambient-dark {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+/* Subtle organic card shadow */
+.shadow-framer-card {
+  box-shadow: 0 1px 3px rgba(21, 19, 15, 0.04), 0 4px 12px rgba(21, 19, 15, 0.03);
 }
 
-.shadow-ambient-dark-hover {
-  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7), 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+.shadow-framer-hover {
+  box-shadow: 0 4px 12px rgba(21, 19, 15, 0.06), 0 12px 28px rgba(21, 19, 15, 0.05);
 }
 
-/* Enhanced smooth scrolling container utility */
+/* Smooth scrolling container */
 .smooth-scroll {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Scrollbar styling for wide matrix and tables */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
-  height: 6px;
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: rgba(21, 19, 15, 0.15);
   border-radius: 9999px;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: #1E293B;
-}
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: rgba(21, 19, 15, 0.3);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
-
-
-/* Silky smooth View Transition for light/dark theme switching */
+/* View transitions */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.35s;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 0.3s;
 }
 
-::view-transition-old(root) {
-  animation-name: theme-fade-out;
-}
-
-::view-transition-new(root) {
-  animation-name: theme-fade-in;
-}
-
-@keyframes theme-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes theme-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Smooth, calming transition for Sonner notifications */
+/* Enhanced Sonner toast override matching Framer aesthetics */
 [data-sonner-toaster] {
-  font-family: inherit;
+  font-family: "Archivo", -apple-system, sans-serif !important;
 }
 
 [data-sonner-toast] {
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.45s ease !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 32px rgba(21, 19, 15, 0.12) !important;
+  font-family: inherit !important;
+  border: 1px solid rgba(21, 19, 15, 0.12) !important;
+  background: #fbf8f1 !important;
+  color: #15130f !important;
 }
 
 [data-sonner-toast] [data-button] {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 11px !important;
+  border-radius: 8px !important;
   font-weight: 600 !important;
+  font-size: 13px !important;
   padding: 6px 12px !important;
-  border-radius: 10px !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   line-height: 1 !important;
 }
 
 [data-sonner-toast] [data-action] {
-  background: #6366f1 !important;
+  background: #ff5a1f !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 90, 31, 0.2) !important;
 }
 
 [data-sonner-toast] [data-action]:hover {
-  background: #4f46e5 !important;
+  background: #e04a12 !important;
 }
 
 [data-sonner-toast] [data-cancel] {
-  background: rgba(148, 163, 184, 0.18) !important;
+  background: rgba(21, 19, 15, 0.08) !important;
   color: inherit !important;
   margin-right: 6px !important;
-  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border: 1px solid rgba(21, 19, 15, 0.12) !important;
 }
 
 [data-sonner-toast] [data-cancel]:hover {
-  background: rgba(148, 163, 184, 0.3) !important;
+  background: rgba(21, 19, 15, 0.15) !important;
 }
 
 [data-sonner-toast] [data-close-button] {
@@ -233,4 +240,3 @@
     transform: translateY(0) scale(1);
   }
 }
-

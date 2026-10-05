@@ -57,3 +57,17 @@ export function parseISODate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
+
+/**
+ * Determines whether a given year is a leap year (366 days)
+ */
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/**
+ * Returns total days in a given year (366 for leap years, 365 otherwise)
+ */
+export function getDaysInYear(year: number): number {
+  return isLeapYear(year) ? 366 : 365;
+}

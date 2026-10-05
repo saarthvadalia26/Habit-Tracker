@@ -1,47 +1,97 @@
 import { HabitWithLogs } from '@/types/database.types';
+import { formatDateToISO } from '@/lib/dateUtils';
 
 export function getSampleHabits(): HabitWithLogs[] {
-  const habitsTemplate = [
-    { title: 'Wake up early', color: '#6366F1', prob: 0.68 },
-    { title: 'Make bed', color: '#38BDF8', prob: 0.74 },
-    { title: 'Meditation', color: '#34D399', prob: 0.87 },
-    { title: 'Morning Skincare', color: '#FB7185', prob: 0.61 },
-    { title: 'Take vitamins', color: '#FBBF24', prob: 0.77 },
-    { title: 'Daily Walk', color: '#A855F7', prob: 0.81 },
-    { title: 'Drink 2-3L Water', color: '#06B6D4', prob: 0.90 },
-    { title: 'Exercise / Workout', color: '#F43F5E', prob: 0.68 },
-    { title: 'Read 10 Pages', color: '#3B82F6', prob: 0.55 },
-    { title: 'Journal / Plan Tomorrow', color: '#A3E635', prob: 0.61 },
-  ];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateToISO(today);
 
-  // Pre-seed full data across 2025, 2026, and 2027 so previous months always have data
-  const years = [2025, 2026, 2027];
+  const habitsTemplate = [
+    {
+      id: 'habit-framer-1',
+      title: 'Morning run',
+      subtitle: '5 km · 7:00 AM',
+      icon: 'footprints',
+      color: '#ff5a1f',
+      streak: 12,
+      doneToday: true,
+      targetTime: '07:00 AM',
+    },
+    {
+      id: 'habit-framer-2',
+      title: 'Drink water',
+      subtitle: '8 glasses · all day',
+      icon: 'droplets',
+      color: '#ff5a1f',
+      streak: 21,
+      doneToday: true,
+      targetTime: 'All day',
+    },
+    {
+      id: 'habit-framer-3',
+      title: 'Read 20 pages',
+      subtitle: 'Atomic Habits · evening',
+      icon: 'book',
+      color: '#ff5a1f',
+      streak: 9,
+      doneToday: true,
+      targetTime: '08:00 PM',
+    },
+    {
+      id: 'habit-framer-4',
+      title: 'Meditate',
+      subtitle: '10 min · before bed',
+      icon: 'brain',
+      color: '#ff5a1f',
+      streak: 4,
+      doneToday: false,
+      targetTime: '10:30 PM',
+    },
+    {
+      id: 'habit-framer-5',
+      title: 'Sleep by 11',
+      subtitle: 'Lights out · 11:00 PM',
+      icon: 'moon',
+      color: '#ff5a1f',
+      streak: 2,
+      doneToday: false,
+      targetTime: '11:00 PM',
+    },
+  ];
 
   return habitsTemplate.map((item, index) => {
     const logs: Record<string, boolean> = {};
 
-    years.forEach((year) => {
-      for (let month = 0; month < 12; month++) {
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for (let day = 1; day <= daysInMonth; day++) {
-          const mm = String(month + 1).padStart(2, '0');
-          const dd = String(day).padStart(2, '0');
-          const dateString = `${year}-${mm}-${dd}`;
+    // 1. Seed historical logs for past 365 days
+    for (let d = 1; d <= 365; d++) {
+      const pastDate = new Date(today);
+      pastDate.setDate(pastDate.getDate() - d);
+      const pastDateStr = formatDateToISO(pastDate);
 
-          // Deterministic seed for realistic historical trends
-          const seed = (index * 37 + day * 13 + month * 19 + year * 7) % 100;
-          logs[dateString] = seed < item.prob * 100;
-        }
+      if (d <= item.streak) {
+        // Must be complete to maintain the exact streak
+        logs[pastDateStr] = true;
+      } else {
+        // High completion rate (~86%) before streak
+        const seed = (index * 41 + d * 17) % 100;
+        logs[pastDateStr] = seed < 86;
       }
-    });
+    }
+
+    // 2. Set today's log
+    logs[todayStr] = item.doneToday;
 
     return {
-      id: `smart-habit-${index + 1}`,
+      id: item.id,
       user_id: 'local-user',
       title: item.title,
+      subtitle: item.subtitle,
+      icon: item.icon,
       color_theme: item.color,
-      created_at: '2025-01-01T00:00:00Z',
+      targetTime: item.targetTime,
+      created_at: new Date(Date.now() - 365 * 86400000).toISOString(),
       logs,
+      currentStreak: item.streak,
     };
   });
 }

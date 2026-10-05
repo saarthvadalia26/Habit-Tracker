@@ -72,7 +72,7 @@ export const V2_DROPS: V2Drop[] = [
     id: 'heatmap-365',
     dropNumber: 1,
     totalDrops: 6,
-    title: '365-Day Master Heatmap',
+    title: '365/366-Day Master Heatmap',
     versionBadge: 'v2.0 • DROP 1',
     targetDate: '10th October 2026',
     status: 'up_next',
@@ -82,7 +82,7 @@ export const V2_DROPS: V2Drop[] = [
     description:
       'Gain a high-altitude perspective on your discipline. Track your entire year with a responsive contribution grid, zoom in on specific habits, and celebrate your annual adherence rate.',
     highlights: [
-      '52-week panoramic contribution grid mapping all 365 days',
+      '52-week panoramic contribution grid mapping all 365 or 366 days (with full leap year support)',
       'Per-habit isolation with theme-colored intensity levels',
       'Annual consistency index, total completions & longest yearly streak',
       'Interactive date inspector tooltips with exact completion details',

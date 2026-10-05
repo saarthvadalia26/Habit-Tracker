@@ -1,40 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- Background Gradient (Deep Cosmic Indigo to Slate) -->
+    <!-- Background Gradient (Warm Obsidian to Deep Charcoal) -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1E1B4B"/>
-      <stop offset="50%" stop-color="#0F172A"/>
-      <stop offset="100%" stop-color="#020617"/>
+      <stop offset="0%" stop-color="#1c1a16"/>
+      <stop offset="100%" stop-color="#12100d"/>
     </linearGradient>
 
-    <!-- Outer Border Glow Gradient -->
+    <!-- Subtle Border Accent -->
     <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#818CF8"/>
-      <stop offset="40%" stop-color="#F43F5E"/>
-      <stop offset="100%" stop-color="#F59E0B"/>
+      <stop offset="0%" stop-color="#ff5a1f" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.15"/>
     </linearGradient>
 
-    <!-- Vibrant Outer Flame Gradient -->
-    <linearGradient id="outerFlame" x1="10%" y1="100%" x2="90%" y2="0%">
-      <stop offset="0%" stop-color="#E11D48"/>
-      <stop offset="25%" stop-color="#EA580C"/>
-      <stop offset="55%" stop-color="#F97316"/>
-      <stop offset="85%" stop-color="#FBBF24"/>
-      <stop offset="100%" stop-color="#FEF08A"/>
+    <!-- Vibrant Signature Flame Gradient -->
+    <linearGradient id="outerFlame" x1="20%" y1="100%" x2="80%" y2="0%">
+      <stop offset="0%" stop-color="#e04a12"/>
+      <stop offset="45%" stop-color="#ff5a1f"/>
+      <stop offset="85%" stop-color="#ff7a3d"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
     </linearGradient>
 
     <!-- Radiant Inner Core Gradient -->
     <linearGradient id="innerCore" x1="50%" y1="100%" x2="50%" y2="0%">
-      <stop offset="0%" stop-color="#F97316"/>
-      <stop offset="40%" stop-color="#FACC15"/>
-      <stop offset="85%" stop-color="#FEF9C3"/>
-      <stop offset="100%" stop-color="#FFFFFF"/>
+      <stop offset="0%" stop-color="#ff5a1f"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
 
-    <!-- Radial Core Glow -->
+    <!-- Ambient Core Glow -->
     <radialGradient id="centerGlow" cx="50%" cy="65%" r="50%">
-      <stop offset="0%" stop-color="#F43F5E" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#1E1B4B" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#ff5a1f" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#12100d" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
@@ -45,7 +41,7 @@
   <rect x="24" y="24" width="464" height="464" rx="128" fill="url(#centerGlow)"/>
 
   <!-- Glowing Border -->
-  <rect x="24" y="24" width="464" height="464" rx="128" fill="none" stroke="url(#borderGrad)" stroke-width="18" stroke-opacity="0.85"/>
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="none" stroke="url(#borderGrad)" stroke-width="16" stroke-opacity="0.8"/>
 
   <!-- Outer Streak Flame -->
   <path d="M256 80 C256 80 318 175 318 230 C318 244 314 257 308 266 C334 242 350 209 356 178 C395 225 414 284 414 342 C414 428 344 448 256 448 C168 448 98 428 98 342 C98 268 136 205 191 170 C187 195 192 221 204 240 C212 198 228 138 256 80 Z" 
@@ -56,5 +52,5 @@
         fill="url(#innerCore)"/>
 
   <!-- Discipline Spark at Top -->
-  <circle cx="256" cy="74" r="10" fill="#FEF08A"/>
+  <circle cx="256" cy="74" r="10" fill="#fbbf24"/>
 </svg>

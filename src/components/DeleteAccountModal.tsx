@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Trash2, X, Loader2, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Trash2, X, Loader2 } from 'lucide-react';
 import { deleteAccountAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { setPendingAuthToast } from '@/lib/auth-toast';
@@ -39,7 +39,6 @@ export function DeleteAccountModal({
         return;
       }
 
-      // Completely wipe all account titles, notes, and tracker data from this device
       if (userEmail) {
         localStorage.removeItem(`habit_tracker_custom_name_${userEmail}`);
       }
@@ -55,153 +54,104 @@ export function DeleteAccountModal({
         }
         keysToRemove.forEach((k) => localStorage.removeItem(k));
       } catch {}
+
       setPendingAuthToast({
         type: 'success',
         message: 'Account Deleted',
-        description: 'Your account, habits, and all database records were permanently deleted.',
+        description: 'Your account and tracking data have been purged.',
       });
       onClose();
       window.location.reload();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      setError(msg);
-      toast.error('Deletion Failed', { description: msg });
+    } catch {
+      setError('An error occurred during account deletion');
       setIsDeleting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={!isDeleting ? onClose : undefined}
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-md"
-            aria-hidden="true"
-          />
-
-          {/* Modal Card */}
-          <motion.div
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-modal-title"
-            aria-describedby="delete-modal-description"
-            initial={{ opacity: 0, scale: 0.94, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 15 }}
-            transition={{ type: 'spring', duration: 0.45, bounce: 0.2 }}
-            className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-3xl p-6 shadow-2xl overflow-hidden z-10 transition-colors"
-          >
-            {/* Top decorative hazard accent */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 via-red-600 to-amber-500" />
-
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
-                  <AlertTriangle className="w-5 h-5 stroke-[2.25]" />
-                </div>
-                <div>
-                  <h3
-                    id="delete-modal-title"
-                    className="text-lg font-black text-slate-900 dark:text-white tracking-tight font-mono"
-                  >
-                    Delete Account & Data
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    Permanent action &bull; Cannot be undone
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={onClose}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
-                aria-label="Close dialog"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+          className="relative w-full max-w-[380px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-rose-500/20 p-5 sm:p-6 shadow-2xl flex flex-col gap-4 text-[#15130f] dark:text-[#fbf8f1] font-archivo max-h-[min(90vh,600px)] overflow-y-auto"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <AlertTriangle className="w-4 h-4" />
             </div>
+            <button
+              onClick={onClose}
+              disabled={isDeleting}
+              className="p-1 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-            {/* Content & Warning */}
-            <div id="delete-modal-description" className="mt-4 space-y-3.5 text-xs text-slate-600 dark:text-slate-300">
-              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 leading-relaxed space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-300">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                  <span>Irreversible Data Deletion</span>
-                </div>
-                <p className="text-[11px] text-rose-800 dark:text-rose-300/90">
-                  This will completely wipe account <strong className="font-mono text-slate-900 dark:text-white">{userEmail || 'current user'}</strong>, including:
-                </p>
-                <ul className="list-disc pl-4 text-[11px] text-rose-700 dark:text-rose-400 space-y-0.5">
-                  <li>All configured habits & custom themes</li>
-                  <li>All historical logs & consistency streak records</li>
-                  <li>Account login credentials & authentication metadata</li>
-                </ul>
-              </div>
+          <div>
+            <h3 className="font-clash font-semibold text-xl tracking-tight text-rose-600 dark:text-rose-400">
+              Permanently Delete Account?
+            </h3>
+            <p className="text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 mt-1 leading-relaxed">
+              This action is permanent and irreversible. All habits, streaks, and reflection notes associated with{' '}
+              <span className="font-semibold text-[#15130f] dark:text-[#fbf8f1]">{userEmail || 'your account'}</span> will be erased immediately.
+            </p>
+          </div>
 
-              {error && (
-                <div className="p-3 text-xs text-rose-700 dark:text-rose-300 bg-rose-100/70 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 rounded-xl">
-                  {error}
-                </div>
+          {error && (
+            <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+              Type <span className="text-rose-600 font-bold">DELETE</span> to confirm
+            </label>
+            <input
+              type="text"
+              placeholder="DELETE"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-xs sm:text-sm font-semibold tracking-wider uppercase focus:outline-none focus:border-rose-500 transition-colors"
+            />
+          </div>
+
+          <div className="flex items-center gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isDeleting}
+              className="flex-1 py-2.5 rounded-full border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-xs font-semibold hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={!canDelete || isDeleting}
+              className="flex-1 py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Forever</span>
+                </>
               )}
-
-              {/* Confirmation Input */}
-              <div className="space-y-1.5 pt-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                  Type <span className="text-rose-600 dark:text-rose-400 font-black">DELETE</span> to confirm:
-                </label>
-                <input
-                  type="text"
-                  value={confirmText}
-                  disabled={isDeleting}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 font-mono text-xs font-bold tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition-all disabled:opacity-50"
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80">
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                disabled={!canDelete || isDeleting}
-                onClick={handleDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md shadow-rose-600/25 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Wiping Account...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Permanently Wipe Account</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </button>
+          </div>
+        </motion.div>
+      </div>
     </AnimatePresence>
   );
 }

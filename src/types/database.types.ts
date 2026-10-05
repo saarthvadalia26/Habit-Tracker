@@ -152,4 +152,7 @@ export interface HabitWithLogs extends Habit {
   logs: Record<string, boolean>; // date (YYYY-MM-DD) -> is_completed
   currentStreak?: number;
   completionRate?: number;
+  subtitle?: string;
+  icon?: string;
+  targetTime?: string;
 }

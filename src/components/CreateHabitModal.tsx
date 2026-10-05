@@ -141,30 +141,22 @@ export function CreateHabitModal({
               stiffness: 450,
               damping: 28,
             }}
-            className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 text-slate-900 smooth-scroll dark:text-slate-100 transition-colors"
+            className="relative w-full max-w-[420px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 backdrop-blur-2xl max-h-[88vh] overflow-y-auto rounded-[28px] p-5 sm:p-6 shadow-2xl z-10 text-[#15130f] smooth-scroll dark:text-[#fbf8f1] font-archivo transition-colors"
           >
-            {/* Top decorative gradient glow */}
-            <div
-              style={{
-                background: `radial-gradient(circle at top, ${selectedTheme.hex}40, transparent 70%)`,
-              }}
-              className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-48 pointer-events-none blur-2xl"
-            />
-
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
               <div className="flex items-center gap-2.5">
                 <div
-                  style={{ backgroundColor: `${selectedTheme.hex}25`, color: selectedTheme.hex }}
-                  className="p-2.5 rounded-2xl flex items-center justify-center transition-colors duration-300 border border-slate-200 dark:border-slate-700/50"
+                  style={{ backgroundColor: `${selectedTheme.hex}20`, color: selectedTheme.hex }}
+                  className="p-2.5 rounded-2xl flex items-center justify-center transition-colors duration-300 border border-[#15130f]/10 dark:border-[#fbf8f1]/10"
                 >
                   <Plus className="w-5 h-5 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">
+                  <h3 className="text-xl font-semibold text-[#15130f] dark:text-[#fbf8f1] tracking-tight font-clash">
                     Add New Habit
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  <p className="text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-medium">
                     Set a clear daily routine to maintain consistency
                   </p>
                 </div>
@@ -175,7 +167,7 @@ export function CreateHabitModal({
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-2 text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] rounded-full hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
@@ -194,7 +186,7 @@ export function CreateHabitModal({
               <div>
                 <label
                   htmlFor="habit-title"
-                  className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 font-mono"
+                  className="block text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-2 font-archivo"
                 >
                   Habit Title
                 </label>
@@ -206,7 +198,7 @@ export function CreateHabitModal({
                   placeholder="e.g. Read 20 pages, Morning Run, Meditate..."
                   autoFocus
                   maxLength={60}
-                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
+                  className="w-full px-4 py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-2xl text-[#15130f] dark:text-[#fbf8f1] placeholder-[#15130f]/40 dark:placeholder-[#fbf8f1]/40 font-medium focus:outline-none focus:ring-2 focus:ring-[#ff5a1f]/50 focus:border-[#ff5a1f] transition-all text-sm"
                 />
               </div>
 

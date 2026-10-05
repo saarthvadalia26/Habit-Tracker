@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lock, Mail, ArrowRight, ShieldCheck, UserPlus, LogIn, AlertCircle } from 'lucide-react';
+import { X, Lock, Mail, ArrowRight, ShieldCheck, UserPlus, LogIn, AlertCircle, User } from 'lucide-react';
 import { signInAction, signUpAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { setPendingAuthToast } from '@/lib/auth-toast';
@@ -27,7 +27,7 @@ export function AuthModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Live preview for dashboard header title (capped to 15 chars so it never overflows)
+  // Live preview for dashboard header title
   const previewTitle = (() => {
     const chosen = (nickname.trim() || firstName.trim()).slice(0, 15);
     if (!chosen) return 'HABIT TRACKER';
@@ -81,242 +81,200 @@ export function AuthModal({
           window.location.reload();
         }
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed';
-      setError(msg);
-      toast.error(msg);
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md"
-          />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/45 backdrop-blur-sm overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+          className="relative w-full max-w-[390px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/12 dark:border-[#fbf8f1]/12 p-5 sm:p-6 shadow-2xl flex flex-col gap-4 text-[#15130f] dark:text-[#fbf8f1] font-archivo max-h-[min(90vh,680px)] overflow-y-auto"
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#ff5a1f]">
+                {mode === 'signin' ? 'Welcome Back' : 'Create Free Account'}
+              </span>
+              <h3 className="font-clash font-semibold text-xl sm:text-[22px] tracking-tight leading-tight">
+                {mode === 'signin' ? 'Sign in to Habit Tracker' : 'Start your journey'}
+              </h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-          {/* Dialog Container */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 15 }}
-            transition={{
-              type: 'spring',
-              stiffness: 450,
-              damping: 28,
-            }}
-            className="relative w-full max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl max-h-[92vh] overflow-y-auto rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 text-slate-900 smooth-scroll dark:text-slate-100 transition-colors"
-          >
-            {/* Top decorative gradient glow */}
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-48 bg-indigo-500/20 dark:bg-indigo-600/25 pointer-events-none blur-3xl" />
+          {/* Mode Switcher Pill */}
+          <div className="p-1 rounded-full bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin');
+                setError(null);
+              }}
+              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                mode === 'signin'
+                  ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                  : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setError(null);
+              }}
+              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                mode === 'signup'
+                  ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                  : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-xs dark:shadow-inner">
-                  {mode === 'signin' ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+          {/* Error Message */}
+          {error && (
+            <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            {mode === 'signup' && (
+              <div className="flex flex-col gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Alex"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Smith"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight font-mono">
-                    {mode === 'signin' ? 'Sign In' : 'Create Account'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    {mode === 'signin'
-                      ? 'Access your private habit tracker'
-                      : 'Get your own isolated habit workspace'}
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    Custom Board Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. FOCUS, PRIME"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    className="w-full px-3 py-2 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
+                  />
+                  <p className="text-[10px] text-[#15130f]/45 dark:text-[#fbf8f1]/45">
+                    Will display as: <span className="font-semibold text-[#ff5a1f]">{previewTitle}</span>
                   </p>
                 </div>
               </div>
+            )}
 
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" />
-              </motion.button>
+            {/* Email */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                Email Address
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
+                />
+                <Mail className="w-4 h-4 text-[#15130f]/40 dark:text-[#fbf8f1]/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {error && (
-                <div className="p-3.5 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 rounded-xl leading-relaxed space-y-1.5">
-                  <div className="font-semibold flex items-center gap-1.5">
-                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Profile Details for Sign Up */}
-              {mode === 'signup' && (
-                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80">
-                  {/* First Name & Last Name (Side by Side) */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 font-mono">
-                        First Name <span className="text-slate-400 lowercase font-normal">(opt)</span>
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={15}
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First name"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 font-mono">
-                        Last Name <span className="text-slate-400 lowercase font-normal">(opt)</span>
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={20}
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last name"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Nickname / Custom Tracker Name */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                        Tracker Title / Nickname <span className="text-slate-400 lowercase font-normal">(opt)</span>
-                      </label>
-                      <span className="text-[9px] text-slate-400 font-mono">Max 15 chars</span>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={15}
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      placeholder={firstName.trim() ? `Defaults to "${firstName.trim()}"` : 'Nickname or custom title'}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                    />
-
-                    {/* Live Tracker Title Preview Badge */}
-                    <div className="mt-2 px-2.5 py-1 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center justify-between text-xs">
-                      <span className="text-[10px] font-mono text-indigo-700 dark:text-indigo-300">
-                        Board Title:
-                      </span>
-                      <span className="font-mono font-black text-indigo-900 dark:text-indigo-100 text-[11px] tracking-tight">
-                        {previewTitle}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Email */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 font-mono">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    autoFocus
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                  />
-                </div>
+            {/* Password */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs sm:text-sm font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
+                />
+                <Lock className="w-4 h-4 text-[#15130f]/40 dark:text-[#fbf8f1]/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
+            </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 font-mono">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Multi-tenant security guarantee badge */}
-              <div className="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                  <strong className="text-slate-900 dark:text-slate-200">100% Private Workspace:</strong> Your habits, streaks, and daily progress are strictly isolated and confidential to your account.
-                </p>
-              </div>
-
-              {/* Submit Button */}
-              <motion.button
-                type="submit"
-                disabled={isSubmitting}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 disabled:opacity-50 cursor-pointer transition-all"
-              >
-                <span>{isSubmitting ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Create Free Account'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </form>
-
-            {/* Mode Toggle */}
-            <div className="mt-5 text-center pt-4 border-t border-slate-200 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400">
-              {mode === 'signin' ? (
-                <p>
-                  Don&apos;t have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('signup');
-                      setError(null);
-                    }}
-                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline underline-offset-2 ml-1 cursor-pointer"
-                  >
-                    Create Account
-                  </button>
-                </p>
+            {/* Submit Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-1 w-full py-2.5 sm:py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white font-semibold text-xs sm:text-sm shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <span>Please wait...</span>
+              ) : mode === 'signin' ? (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
               ) : (
-                <p>
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('signin');
-                      setError(null);
-                    }}
-                    className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline underline-offset-2 ml-1 cursor-pointer"
-                  >
-                    Sign In
-                  </button>
-                </p>
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
               )}
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.button>
+          </form>
+
+          {/* Footer note */}
+          <div className="flex items-center justify-center gap-1.5 text-center text-[11px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 pt-1.5 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#ff5a1f]" />
+            <span>Encrypted & synchronized across all your devices.</span>
+          </div>
+        </motion.div>
+      </div>
     </AnimatePresence>
   );
 }

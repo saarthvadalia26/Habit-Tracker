@@ -55,6 +55,20 @@ export const MONTH_NAMES_SHORT = [
 export const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
+ * Determines whether a given year is a leap year (366 days)
+ */
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/**
+ * Returns total days in a given year (366 for leap years, 365 otherwise)
+ */
+export function getDaysInYear(year: number): number {
+  return isLeapYear(year) ? 366 : 365;
+}
+
+/**
  * Returns ISO day of week: 0 = Monday, 6 = Sunday
  */
 export function getIsoDayOfWeek(date: Date): number {
