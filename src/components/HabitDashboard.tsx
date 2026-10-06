@@ -46,12 +46,15 @@ import {
   Apple,
   Music,
   Bike,
+  History,
+  Award,
+  XCircle,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
-import { formatDateToISO, getTodayDateString, isLeapYear, getDaysInYear } from '@/lib/dateUtils';
-import { calculateContinuousStreak, computeMonthlyAnalytics } from '@/lib/analytics';
-import { getDaysForMonth, MONTH_NAMES } from '@/lib/monthUtils';
+import { formatDateToISO, getTodayDateString, isLeapYear } from '@/lib/dateUtils';
+import { calculateContinuousStreak } from '@/lib/analytics';
+import { MONTH_NAMES } from '@/lib/monthUtils';
 import { toggleHabitLogAction, deleteHabitAction, createHabitAction } from '@/app/actions/habits';
 import {
   createChallengeAction,
@@ -82,6 +85,7 @@ interface HabitTrackerDashboardProps {
   userEmail?: string | null;
   initialCustomName?: string;
   initialChallenge?: Challenge | null;
+  initialPastChallenges?: Challenge[];
   initialMonthlyNotes?: Record<string, string>;
   userId?: string | null;
   userFirstName?: string;
@@ -167,6 +171,7 @@ export function HabitDashboard({
   userEmail,
   initialCustomName = '',
   initialChallenge = null,
+  initialPastChallenges = [],
   initialMonthlyNotes = {},
   userId,
   userFirstName,
@@ -190,6 +195,10 @@ export function HabitDashboard({
 
   // Challenge state
   const [challenge, setChallenge] = useState<Challenge | null>(initialChallenge);
+  const [pastChallenges, setPastChallenges] = useState<Challenge[]>(initialPastChallenges ?? []);
+
+  // Monthly reflections notes state (persisted across devices)
+  const [monthlyNotes, setMonthlyNotes] = useState<Record<string, string>>(initialMonthlyNotes ?? {});
 
   // Habit creation form state
   const [newTitle, setNewTitle] = useState('');
@@ -848,11 +857,16 @@ export function HabitDashboard({
         return;
       }
     }
+    // Move to past challenges list
+    if (previousChallenge) {
+      setPastChallenges((prev) => [{ ...previousChallenge, status: 'completed' }, ...prev]);
+    }
     toast.success('Challenge completed! Congratulations! 🎉');
   };
 
   // Abandon / Reset active challenge with backend sync & local purge
   const handleAbandonChallenge = async (challengeId: string) => {
+    const previousChallenge = challenge;
     setChallenge(null);
     setIsActiveChallengeModalOpen(false);
     const key = userEmail ? `habit_challenge_${userEmail}` : 'habit_challenge_guest';
@@ -872,6 +886,10 @@ export function HabitDashboard({
         console.error('Failed to abandon challenge:', err);
       }
     }
+    // Move to past challenges list
+    if (previousChallenge) {
+      setPastChallenges((prev) => [{ ...previousChallenge, status: 'abandoned' }, ...prev]);
+    }
     toast.info('Challenge reset.');
   };
 
@@ -879,27 +897,27 @@ export function HabitDashboard({
   const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
   return (
-    <div className="min-h-screen w-full bg-[#f2ecdf] dark:bg-[#11100d] text-[#15130f] dark:text-[#fbf8f1] font-archivo flex flex-col lg:flex-row antialiased transition-colors duration-300">
+    <div className="min-h-screen w-full bg-[#f2ecdf] dark:bg-[#11100d] text-[#15130f] dark:text-[#fbf8f1] font-archivo flex flex-col lg:pl-[260px] xl:pl-[268px] antialiased transition-colors duration-300">
       <Toaster position="top-right" richColors />
 
       {/* Floating Upcoming Release Toast */}
       <UpcomingReleaseToast onOpenRoadmap={() => setIsRoadmapOpen(true)} />
 
       {/* ============================================================== */}
-      {/* 1. DESKTOP STICKY SIDEBAR (Brand: Habit Tracker) */}
+      {/* 1. DESKTOP LOCKED SIDEBAR (Brand: Habit Tracker) */}
       {/* ============================================================== */}
-      <aside className="hidden lg:flex w-[268px] h-screen sticky top-0 flex-col justify-between px-4.5 py-6 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-y-auto scrollbar-none">
-        <div className="flex flex-col gap-6">
+      <aside className="hidden lg:flex w-[260px] xl:w-[268px] h-screen h-[100dvh] max-h-screen fixed top-0 left-0 bottom-0 flex-col justify-between px-3.5 xl:px-4.5 py-3 xl:py-4.5 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none">
+        <div className="flex flex-col gap-2.5 xl:gap-4 shrink-0">
           {/* Brand Logo: Habit Tracker */}
-          <div className="flex items-center justify-between px-1">
-            <h1 className="font-clash font-bold text-[22px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
+          <div className="flex items-center justify-between px-1 shrink-0">
+            <h1 className="font-clash font-bold text-xl xl:text-[22px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
               Habit Tracker<span className="text-[#ff5a1f]">.</span>
             </h1>
 
             {/* Quick Dark Mode Icon Toggle */}
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-all cursor-pointer"
+              className="w-7 h-7 xl:w-8 xl:h-8 rounded-full flex items-center justify-center text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-all cursor-pointer"
               title="Toggle theme"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -907,7 +925,7 @@ export function HabitDashboard({
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1 w-full">
+          <nav className="flex flex-col gap-0.5 xl:gap-1 w-full shrink-0">
             {[
               { id: 'today', label: 'Today', icon: Home },
               { id: 'calendar', label: 'Calendar', icon: CalendarDays },
@@ -921,18 +939,18 @@ export function HabitDashboard({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`relative flex items-center gap-3 w-full px-3 py-2.5 rounded-[12px] text-[14.5px] font-medium transition-all cursor-pointer ${
+                  className={`relative flex items-center gap-2.5 xl:gap-3 w-full px-3 py-1.5 min-[1280px]:py-2 min-[1440px]:py-2.5 rounded-[10px] xl:rounded-[12px] text-[13.5px] xl:text-[14.5px] font-medium transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#15130f] dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#ff5a1f]' : ''}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#ff5a1f]' : ''}`} />
                   <span>{tab.label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute left-0 w-1 h-4 bg-[#ff5a1f] rounded-r-full"
+                      className="absolute left-0 w-1 h-3.5 xl:h-4 bg-[#ff5a1f] rounded-r-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -943,32 +961,32 @@ export function HabitDashboard({
             {/* Sleek Roadmap Nav Item (seamlessly integrated, no bulky separate card) */}
             <button
               onClick={() => setIsRoadmapOpen(true)}
-              className="flex items-center justify-between w-full px-3 py-2.5 rounded-[12px] text-[14.5px] font-medium text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
+              className="flex items-center justify-between w-full px-3 py-1.5 min-[1280px]:py-2 min-[1440px]:py-2.5 rounded-[10px] xl:rounded-[12px] text-[13.5px] xl:text-[14.5px] font-medium text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
             >
-              <div className="flex items-center gap-3">
-                <Rocket className="w-4 h-4 text-[#ff5a1f]" />
-                <span>Roadmap</span>
+              <div className="flex items-center gap-2.5 xl:gap-3 min-w-0">
+                <Rocket className="w-4 h-4 text-[#ff5a1f] shrink-0" />
+                <span className="truncate">Roadmap</span>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors">
+              <span className="text-[9.5px] xl:text-[10px] font-bold px-1.5 xl:px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors shrink-0">
                 v2.0
               </span>
             </button>
           </nav>
         </div>
 
-        {/* Bottom Section: Account Profile & Compact Quote Widget (Fixed stable height to prevent layout shifts) */}
-        <div className="flex flex-col gap-2.5 pt-3.5 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0">
-          {/* Account Row (Fixed 38px height) */}
-          <div className="h-[38px] shrink-0 flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs shrink-0 shadow-sm">
+        {/* Bottom Section: Account Profile & Compact Quote Widget (Locked, fitted to screen, never overflows) */}
+        <div className="flex flex-col gap-2 xl:gap-2.5 pt-2 xl:pt-3 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0">
+          {/* Account Row */}
+          <div className="h-[34px] xl:h-[38px] shrink-0 flex items-center justify-between px-2 py-1 rounded-xl hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors">
+            <div className="flex items-center gap-2 xl:gap-2.5 min-w-0">
+              <div className="w-6.5 h-6.5 xl:w-7 xl:h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-[11px] xl:text-xs shrink-0 shadow-sm">
                 {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
                   {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
                 </span>
-                <span className="text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                <span className="text-[10px] xl:text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
                   {userEmail || 'Local workspace'}
                 </span>
               </div>
@@ -977,7 +995,7 @@ export function HabitDashboard({
             {isGuestMode ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="text-xs font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2 py-1 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
+                className="text-[11px] xl:text-xs font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2 py-0.5 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
               >
                 Sign In
               </button>
@@ -992,18 +1010,18 @@ export function HabitDashboard({
             )}
           </div>
 
-          {/* Motivational Quote Widget (Fixed 126px height - completely immune to quote length shifts) */}
+          {/* Motivational Quote Widget (Responsive compact height, locked into screen viewport) */}
           <motion.div
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={handleManualShuffleQuote}
             onMouseEnter={() => setIsQuoteHovered(true)}
             onMouseLeave={() => setIsQuoteHovered(false)}
-            className="cursor-pointer p-3 rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 h-[126px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none"
+            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 h-[104px] xl:h-[120px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
             title="Click to shuffle quote • Hover to pause"
           >
             <div className="flex items-center justify-between shrink-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
+              <span className="text-[8.5px] xl:text-[9px] font-bold uppercase tracking-wider px-1.5 xl:px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
                 {MOTIVATION_QUOTES[quoteIndex]?.tag || 'Mindset'}
               </span>
               <button
@@ -1012,25 +1030,25 @@ export function HabitDashboard({
                   e.stopPropagation();
                   handleManualShuffleQuote();
                 }}
-                className="p-1 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors"
+                className="p-0.5 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors"
                 title="Shuffle next quote"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
               </button>
             </div>
 
-            {/* Stable fixed-height quote container (46px) so 1, 2, or 3 line quotes never change card geometry */}
-            <div className="h-[46px] flex items-center overflow-hidden my-auto">
-              <p className="font-clash text-[11.5px] leading-[1.35] line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
+            {/* Stable quote container with clamp so quotes never overflow */}
+            <div className="h-[38px] xl:h-[46px] flex items-center overflow-hidden my-auto">
+              <p className="font-clash text-[10.5px] min-[1400px]:text-[11.5px] leading-[1.3] line-clamp-2 min-[1400px]:line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
                 “{MOTIVATION_QUOTES[quoteIndex]?.quote}”
               </p>
             </div>
 
-            <div className="flex flex-col gap-1 shrink-0">
-              <div className="flex items-center justify-between text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
-                <span className="truncate">— {MOTIVATION_QUOTES[quoteIndex]?.author}</span>
-                <span className={`text-[9px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
-                  {isQuoteHovered ? 'Paused' : `${Math.max(1, Math.ceil((15000 - elapsedRef.current) / 1000))}s`}
+            <div className="flex flex-col gap-0.5 xl:gap-1 shrink-0">
+              <div className="flex items-center justify-between text-[9.5px] xl:text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                <span className="truncate max-w-[160px] xl:max-w-[175px]">— {MOTIVATION_QUOTES[quoteIndex]?.author}</span>
+                <span className={`text-[8.5px] xl:text-[9px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
+                  {isQuoteHovered ? 'Paused' : `${Math.max(1, Math.ceil(15 * (1 - quoteProgress / 100)))}s`}
                 </span>
               </div>
               {/* 15-second progress indicator bar */}
@@ -1182,15 +1200,25 @@ export function HabitDashboard({
         )}
       </AnimatePresence>
 
-      {/* ============================================================== */}
-      {/* 3. MAIN WORKSPACE CONTENT */}
-      {/* ============================================================== */}
       <main className="flex-1 max-w-[1020px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-7 lg:py-8 flex flex-col gap-5 sm:gap-7">
-        {/* VIEW 1: TODAY (Framer Layout & Motion) */}
-        {activeTab === 'today' && (
-          <>
-            {/* Header Row */}
-            <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 w-full">
+        <AnimatePresence mode="wait" initial={true}>
+          {/* VIEW 1: TODAY (Framer Layout & Motion) */}
+          {activeTab === 'today' && (
+            <motion.div
+              key="today"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col gap-5 sm:gap-7 w-full"
+            >
+              {/* Header Row */}
+              <motion.header
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.04 }}
+                className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 w-full"
+              >
               <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
                 <p className="text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
                   {headerDateString}
@@ -1211,7 +1239,7 @@ export function HabitDashboard({
                   <span>New habit</span>
                 </motion.button>
               </div>
-            </header>
+            </motion.header>
 
             {/* Active Challenge Teaser Banner (if enrolled) */}
             {challenge && challenge.status === 'active' && (
@@ -1228,7 +1256,12 @@ export function HabitDashboard({
             )}
 
             {/* Stats Row (3 Cards Grid) */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full">
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.08 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full"
+            >
               {/* Card 1: Progress Ring Card (Dark Ink #15130f) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -1314,12 +1347,17 @@ export function HabitDashboard({
                   </p>
                 </div>
               </motion.div>
-            </section>
+            </motion.section>
 
             {/* Body Section: Habits List (Left) & This Week Card (Right) */}
             <section className="flex flex-col xl:flex-row items-start gap-5 sm:gap-6 w-full">
               {/* Left Column: Today’s habits */}
-              <div className="flex-1 w-full flex flex-col gap-3">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, delay: 0.14 }}
+                className="flex-1 w-full flex flex-col gap-3"
+              >
                 <div className="flex items-center justify-between">
                   <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     Today’s habits
@@ -1555,10 +1593,15 @@ export function HabitDashboard({
                     })}
                   </div>
                 )}
-              </div>
+              </motion.div>
 
               {/* Right Column: This week (Centered when stacked on tablet/mobile, fixed 320px on xl desktop) */}
-              <div className="w-full xl:w-[320px] max-w-xl mx-auto xl:mx-0 rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 flex flex-col gap-5 shadow-framer-card shrink-0">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.18 }}
+                className="w-full xl:w-[320px] max-w-xl mx-auto xl:mx-0 rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 flex flex-col gap-5 shadow-framer-card shrink-0"
+              >
                 <div className="flex items-center justify-between">
                   <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     This week
@@ -1673,15 +1716,27 @@ export function HabitDashboard({
                     </button>
                   )}
                 </div>
-              </div>
+              </motion.div>
             </section>
-          </>
+          </motion.div>
         )}
 
         {/* VIEW 2: CALENDAR (Monthly Matrix & 365 Heatmap) */}
         {activeTab === 'calendar' && (
-          <section className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <motion.section
+            key="calendar"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col gap-6 w-full"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.04 }}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
               <div>
                 <h2 className="font-clash font-semibold text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Calendar
@@ -1733,7 +1788,7 @@ export function HabitDashboard({
                   </button>
                 )}
               </div>
-            </div>
+            </motion.div>
 
             {calendarSubView === 'annual-365' && drop1Unlocked ? (
               <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 shadow-framer-card">
@@ -1860,13 +1915,25 @@ export function HabitDashboard({
                 </table>
               </div>
             )}
-          </section>
+          </motion.section>
         )}
 
         {/* VIEW 3: GOALS & 30-DAY CHALLENGES */}
         {activeTab === 'goals' && (
-          <section className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <motion.section
+            key="goals"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col gap-6 w-full"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.04 }}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
               <div>
                 <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Goals & Challenges
@@ -1884,7 +1951,7 @@ export function HabitDashboard({
                   + Launch challenge
                 </button>
               )}
-            </div>
+            </motion.div>
 
             {challenge ? (
               <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-8 shadow-framer-card flex flex-col gap-4">
@@ -1928,13 +1995,99 @@ export function HabitDashboard({
                 </button>
               </div>
             )}
-          </section>
+
+            {/* ── Challenge History ── */}
+            {pastChallenges.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <History className="w-5 h-5 text-[#15130f]/50 dark:text-[#fbf8f1]/50" />
+                  <h3 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
+                    Challenge History
+                  </h3>
+                  <span className="ml-auto text-xs text-[#15130f]/40 dark:text-[#fbf8f1]/40 font-medium">
+                    {pastChallenges.length} past {pastChallenges.length === 1 ? 'challenge' : 'challenges'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {pastChallenges.map((pc) => {
+                    const isCompleted = pc.status === 'completed';
+                    const datePart = (pc.start_date || '').split('T')[0];
+                    const [sY, sM, sD] = datePart.split('-').map(Number);
+                    const startDt = (sY && sM && sD) ? new Date(Date.UTC(sY, sM - 1, sD)) : new Date(pc.start_date);
+                    const endDt = new Date(startDt);
+                    endDt.setUTCDate(endDt.getUTCDate() + (pc.duration_days || 1) - 1);
+                    const dateOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' };
+                    const startStr = isNaN(startDt.getTime()) ? pc.start_date : startDt.toLocaleDateString('en-US', dateOpts);
+                    const endStr = isNaN(endDt.getTime()) ? '' : endDt.toLocaleDateString('en-US', dateOpts);
+
+                    return (
+                      <div
+                        key={pc.id}
+                        className={`rounded-2xl border p-4 sm:p-5 flex items-start gap-3.5 transition-colors ${
+                          isCompleted
+                            ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30'
+                            : 'bg-red-50/50 dark:bg-red-950/15 border-red-200/50 dark:border-red-800/25'
+                        }`}
+                      >
+                        {/* Status Icon */}
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          isCompleted
+                            ? 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-red-500/15 dark:bg-red-500/20 text-red-500 dark:text-red-400'
+                        }`}>
+                          {isCompleted ? <Award className="w-4.5 h-4.5" /> : <XCircle className="w-4.5 h-4.5" />}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-clash font-semibold text-sm sm:text-base text-[#15130f] dark:text-[#fbf8f1] truncate">
+                              {pc.title}
+                            </h4>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0 ${
+                              isCompleted
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                : 'bg-red-500/15 text-red-600 dark:text-red-400'
+                            }`}>
+                              {isCompleted ? '✓ Completed' : '✗ Abandoned'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 mt-0.5">
+                            {pc.duration_days}-day sprint &bull; {startStr} → {endStr}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Empty state when no active and no past */}
+            {!challenge && pastChallenges.length === 0 && (
+              <p className="text-xs text-[#15130f]/40 dark:text-[#fbf8f1]/40 text-center mt-2">
+                Your completed and abandoned challenges will appear here.
+              </p>
+            )}
+          </motion.section>
         )}
 
         {/* VIEW 4: REFLECTION JOURNAL */}
         {activeTab === 'journal' && (
-          <section className="flex flex-col gap-5 sm:gap-6 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <motion.section
+            key="journal"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col gap-5 sm:gap-6 w-full"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.04 }}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
+            >
               <div>
                 <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Journal
@@ -1980,7 +2133,7 @@ export function HabitDashboard({
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             <NotesSection
               year={selectedYear}
@@ -1988,24 +2141,44 @@ export function HabitDashboard({
               monthName={MONTH_NAMES[selectedMonth]}
               userEmail={userEmail}
               readOnly={isGuestMode}
+              serverNotes={monthlyNotes[`${selectedYear}_${selectedMonth}`] ?? null}
+              onSaveNote={(y, m, text) => {
+                setMonthlyNotes((prev) => ({ ...prev, [`${y}_${m}`]: text }));
+              }}
               onRequireAuth={() => setIsAuthModalOpen(true)}
             />
-          </section>
+          </motion.section>
         )}
 
         {/* VIEW 5: SETTINGS & ACCOUNT MANAGEMENT */}
         {activeTab === 'settings' && (
-          <section className="flex flex-col gap-6 w-full max-w-2xl">
-            <div>
+          <motion.section
+            key="settings"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col gap-6 w-full max-w-2xl"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.04 }}
+            >
               <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
                 Settings & Workspace
               </h2>
               <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                 Customize your workspace, profile, and account preferences.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col gap-5 shadow-framer-card">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.08 }}
+              className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-5 sm:p-6 flex flex-col gap-5 shadow-framer-card"
+            >
               {/* Profile Card */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
                 <div className="flex items-center gap-3">
@@ -2094,9 +2267,10 @@ export function HabitDashboard({
                   </div>
                 )}
               </div>
-            </div>
-          </section>
+            </motion.div>
+          </motion.section>
         )}
+        </AnimatePresence>
       </main>
 
       {/* ============================================================== */}

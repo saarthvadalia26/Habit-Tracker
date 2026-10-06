@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
-import { saveMonthlyNoteAction } from '@/app/actions/auth';
+import { saveMonthlyNoteAction, getMonthlyNoteAction } from '@/app/actions/auth';
 
 interface NotesSectionProps {
   year?: number;
@@ -33,6 +33,7 @@ interface NotesSectionProps {
   userEmail?: string | null;
   readOnly?: boolean;
   serverNotes?: string | null;
+  onSaveNote?: (year: number, month: number, content: string) => void;
   onRequireAuth?: () => void;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
@@ -57,11 +58,13 @@ export function NotesSection({
   userEmail,
   readOnly = false,
   serverNotes,
+  onSaveNote,
   onRequireAuth,
   onPrevMonth,
   onNextMonth,
 }: NotesSectionProps) {
   const [notes, setNotes] = useState('');
+  const [isLoadingCloud, setIsLoadingCloud] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'synced' | 'error'>('idle');
   const [viewMode, setViewMode] = useState<'interactive' | 'edit'>('interactive');
   const [newQuickTask, setNewQuickTask] = useState('');
@@ -103,6 +106,7 @@ export function NotesSection({
         if (res.success) {
           lastSyncedRef.current = text;
           setSyncStatus('synced');
+          if (onSaveNote) onSaveNote(targetYear, targetMonth, text);
           setTimeout(() => {
             setSyncStatus((current) => (current === 'synced' ? 'idle' : current));
           }, 2500);
@@ -113,13 +117,15 @@ export function NotesSection({
         setSyncStatus('error');
       }
     },
-    [readOnly, userEmail]
+    [readOnly, userEmail, onSaveNote]
   );
 
-  // Load notes on mount and whenever selected month/year/scopedKey changes
+  // Load notes on mount and whenever selected month/year/scopedKey/serverNotes changes
   useEffect(() => {
-    // 1. If server notes exist from cloud, use them and cache locally
-    if (serverNotes !== undefined && serverNotes !== null && serverNotes !== '') {
+    let isCancelled = false;
+
+    // 1. If server notes exist from cloud (passed from parent), use them and cache locally
+    if (typeof serverNotes === 'string') {
       setNotes(serverNotes);
       lastSyncedRef.current = serverNotes;
       try {
@@ -129,7 +135,56 @@ export function NotesSection({
       return;
     }
 
-    // 2. Check local storage for pre-existing offline/local notes
+    // 2. If authenticated and serverNotes is not passed, fetch directly from cloud (cross-device sync)
+    if (!readOnly && userEmail) {
+      setIsLoadingCloud(true);
+      getMonthlyNoteAction(year, month)
+        .then((res) => {
+          if (isCancelled) return;
+          if (typeof res?.note === 'string') {
+            setNotes(res.note);
+            lastSyncedRef.current = res.note;
+            try {
+              localStorage.setItem(scopedKey, res.note);
+            } catch {}
+            if (onSaveNote) onSaveNote(year, month, res.note);
+            setSyncStatus('idle');
+          } else {
+            // No note found in cloud, check local storage draft
+            let savedLocal: string | null = null;
+            try {
+              savedLocal = localStorage.getItem(scopedKey);
+            } catch {}
+
+            if (savedLocal !== null && savedLocal.trim() !== '') {
+              setNotes(savedLocal);
+              syncToCloud(savedLocal, year, month);
+            } else {
+              setNotes('');
+              lastSyncedRef.current = '';
+            }
+          }
+        })
+        .catch(() => {
+          if (isCancelled) return;
+          let savedLocal: string | null = null;
+          try {
+            savedLocal = localStorage.getItem(scopedKey);
+          } catch {}
+          setNotes(savedLocal ?? '');
+        })
+        .finally(() => {
+          if (!isCancelled) {
+            setIsLoadingCloud(false);
+          }
+        });
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    // 3. Fallback for guest mode
     let savedLocal: string | null = null;
     try {
       savedLocal = localStorage.getItem(scopedKey);
@@ -137,20 +192,11 @@ export function NotesSection({
 
     if (savedLocal !== null && savedLocal.trim() !== '') {
       setNotes(savedLocal);
-      if (!readOnly && userEmail) {
-        syncToCloud(savedLocal, year, month);
-      }
-      return;
-    }
-
-    // 3. Fallback to default starter template for empty months
-    if (readOnly) {
-      setNotes(DEFAULT_NOTES_TEMPLATE);
     } else {
-      setNotes('');
-      lastSyncedRef.current = '';
+      setNotes(DEFAULT_NOTES_TEMPLATE);
     }
-  }, [scopedKey, serverNotes, readOnly, userEmail, year, month, syncToCloud]);
+    lastSyncedRef.current = '';
+  }, [scopedKey, serverNotes, readOnly, userEmail, year, month, syncToCloud, onSaveNote]);
 
   // Clean up debounced timers on unmount
   useEffect(() => {
@@ -813,7 +859,14 @@ export function NotesSection({
         {/* Content Surface: Interactive Mode vs Raw Textarea Mode */}
         {viewMode === 'interactive' ? (
           <div className="w-full">
-            {!notes.trim() ? (
+            {isLoadingCloud ? (
+              <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center gap-3 bg-[#f2ecdf]/30 dark:bg-[#11100d]/40 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-2xl">
+                <Loader2 className="w-7 h-7 animate-spin text-[#ff5a1f]" />
+                <p className="text-xs sm:text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                  Retrieving reflections from cloud...
+                </p>
+              </div>
+            ) : !notes.trim() ? (
               <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center gap-3 bg-[#f2ecdf]/30 dark:bg-[#11100d]/40 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 rounded-2xl">
                 <BookOpen className="w-8 h-8 text-[#ff5a1f]" />
                 <h4 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">

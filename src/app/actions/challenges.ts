@@ -45,6 +45,39 @@ export async function getActiveChallengeAction(): Promise<ActionResponse<Challen
 }
 
 /**
+ * Fetches all past challenges (completed or abandoned), most recent first
+ */
+export async function getPastChallengesAction(): Promise<ActionResponse<Challenge[]>> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+      .from('challenges')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('status', ['completed', 'abandoned'])
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      return { data: [], error: 'Unable to load past challenges.' };
+    }
+
+    return { data: (data as unknown as Challenge[]) ?? [], error: null };
+  } catch {
+    return { data: [], error: 'Unable to load past challenges.' };
+  }
+}
+
+/**
  * Creates and activates a new challenge (75-Day, 90-Day, or Custom)
  */
 export async function createChallengeAction(

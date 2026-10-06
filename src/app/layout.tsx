@@ -6,13 +6,18 @@ import { ThemeProvider } from "@/context/ThemeContext";
 export const metadata: Metadata = {
   title: "Habit Tracker | Daily Discipline & Consistency",
   description: "Build unstoppable momentum with daily habit rituals, continuous streaks, and consistency tracking.",
+  manifest: "/manifest.json",
   icons: {
-    icon: [
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+    // Convention files (src/app/favicon.ico, icon.svg, apple-icon.png)
+    // auto-generate the primary <link> tags.
+    // These are additional fallbacks for older / non-standard browsers:
+    shortcut: "/favicon.ico",
+    other: [
+      { rel: "icon", url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { rel: "icon", url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { rel: "icon", url: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon-precomposed", url: "/apple-touch-icon-precomposed.png" },
     ],
-    apple: "/apple-touch-icon.png",
   },
 };
 

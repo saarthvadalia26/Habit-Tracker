@@ -240,3 +240,21 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Responsive Desktop Sidebar: Fit completely on screen across all device heights */
+@media (max-height: 680px) {
+  .sidebar-quote-card {
+    height: 92px !important;
+    padding: 8px 10px !important;
+  }
+  .sidebar-quote-card p {
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+  }
+}
+
+@media (max-height: 540px) {
+  .sidebar-quote-card {
+    display: none !important;
+  }
+}

@@ -40,9 +40,34 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
       ? user.user_metadata.full_name 
       : [firstName, lastName].filter(Boolean).join(' ');
     const profilePromptDismissed = Boolean(user.user_metadata?.profile_prompt_dismissed);
-    const monthlyNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
-      ? (user.user_metadata.monthly_notes as Record<string, string>)
-      : {};
+
+    // Load monthly notes for cross-device cloud sync
+    let monthlyNotes: Record<string, string> = {};
+
+    // 1. Try public.monthly_notes table first (authoritative Postgres database)
+    try {
+      const { data: dbNotes } = await supabase
+        .from('monthly_notes')
+        .select('month_key, content')
+        .eq('user_id', user.id);
+
+      if (dbNotes && Array.isArray(dbNotes)) {
+        for (const row of dbNotes) {
+          if (row.month_key && typeof row.content === 'string') {
+            monthlyNotes[row.month_key] = row.content;
+          }
+        }
+      }
+    } catch {}
+
+    // 2. Merge user_metadata fallback for any notes not yet in the table
+    if (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object') {
+      const metaNotes = user.user_metadata.monthly_notes as Record<string, string>;
+      monthlyNotes = {
+        ...metaNotes,
+        ...monthlyNotes, // database table values take precedence
+      };
+    }
 
     return {
       user: {
@@ -354,29 +379,12 @@ export async function saveMonthlyNoteAction(
     const cleanContent = content.slice(0, 8000);
     const noteKey = `${year}_${month}`;
 
-    const currentNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
-      ? (user.user_metadata.monthly_notes as Record<string, string>)
-      : {};
+    let savedToTable = false;
+    let savedToMetadata = false;
 
-    const updatedNotes = {
-      ...currentNotes,
-      [noteKey]: cleanContent,
-    };
-
-    // 1. Persist to Supabase Auth metadata (instant zero-downtime cross-device sync)
-    const { error: metaError } = await supabase.auth.updateUser({
-      data: {
-        monthly_notes: updatedNotes,
-      },
-    });
-
-    if (metaError) {
-      return { success: false, error: 'Failed to sync note to cloud.' };
-    }
-
-    // 2. Best-effort sync to public.monthly_notes table if it exists
+    // 1. Primary: Save to PostgreSQL monthly_notes table (authoritative, no Auth rate limits)
     try {
-      await supabase.from('monthly_notes').upsert(
+      const { error: dbError } = await supabase.from('monthly_notes').upsert(
         {
           user_id: user.id,
           month_key: noteKey,
@@ -385,8 +393,34 @@ export async function saveMonthlyNoteAction(
         },
         { onConflict: 'user_id,month_key' }
       );
-    } catch {
-      // Table may not exist yet if schema hasn't been run; metadata safely covers it.
+      if (!dbError) {
+        savedToTable = true;
+      }
+    } catch {}
+
+    // 2. Secondary: Sync to Supabase Auth metadata for seamless backward compatibility
+    try {
+      const currentNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
+        ? (user.user_metadata.monthly_notes as Record<string, string>)
+        : {};
+
+      const updatedNotes = {
+        ...currentNotes,
+        [noteKey]: cleanContent,
+      };
+
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: {
+          monthly_notes: updatedNotes,
+        },
+      });
+      if (!metaError) {
+        savedToMetadata = true;
+      }
+    } catch {}
+
+    if (!savedToTable && !savedToMetadata) {
+      return { success: false, error: 'Failed to sync note across devices.' };
     }
 
     return { success: true, error: null };
@@ -417,21 +451,25 @@ export async function getMonthlyNoteAction(
 
     // Try table first
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('monthly_notes')
         .select('content')
         .eq('user_id', user.id)
         .eq('month_key', noteKey)
         .maybeSingle();
 
-      if (data?.content !== undefined) {
+      if (!error && data && data.content !== undefined) {
         return { note: data.content, error: null };
       }
     } catch {}
 
     // Fall back to user_metadata
     const metaNotes = user.user_metadata?.monthly_notes as Record<string, string> | undefined;
-    return { note: metaNotes?.[noteKey] ?? null, error: null };
+    if (metaNotes && metaNotes[noteKey] !== undefined) {
+      return { note: metaNotes[noteKey], error: null };
+    }
+
+    return { note: null, error: null };
   } catch {
     return { note: null, error: 'Failed to fetch note' };
   }
