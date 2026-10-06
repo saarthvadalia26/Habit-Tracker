@@ -928,8 +928,14 @@ export function HabitDashboard({
       {/* ============================================================== */}
       <aside
         ref={sidebarRef}
-        className="hidden lg:flex w-[260px] xl:w-[268px] h-screen h-[100dvh] max-h-screen fixed top-0 left-0 bottom-0 flex-col justify-between px-3.5 xl:px-4.5 py-3 xl:py-4 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none overscroll-none"
-        style={{ overscrollBehavior: 'none', touchAction: 'none' }}
+        className="hidden lg:flex w-[260px] xl:w-[268px] fixed inset-y-0 left-0 flex-col justify-between px-3.5 xl:px-4.5 pt-3 xl:pt-4 pb-5 xl:pb-6 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none overscroll-none"
+        style={{
+          height: '100svh',
+          maxHeight: '100dvh',
+          paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+          overscrollBehavior: 'none',
+          touchAction: 'none',
+        }}
       >
         <div className="flex flex-col gap-2 xl:gap-3.5 shrink-0">
           {/* Brand Logo: Habit Tracker (Prominent & bold) */}
@@ -1041,7 +1047,7 @@ export function HabitDashboard({
             onClick={handleManualShuffleQuote}
             onMouseEnter={() => setIsQuoteHovered(true)}
             onMouseLeave={() => setIsQuoteHovered(false)}
-            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 h-[104px] xl:h-[118px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
+            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 min-h-[92px] max-h-[114px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
             title="Click to shuffle quote • Hover to pause"
           >
             <div className="flex items-center justify-between shrink-0">
@@ -1062,7 +1068,7 @@ export function HabitDashboard({
             </div>
 
             {/* Stable quote container with clamp so quotes never overflow */}
-            <div className="h-[38px] xl:h-[46px] flex items-center overflow-hidden my-auto">
+            <div className="min-h-[32px] max-h-[44px] flex items-center overflow-hidden my-auto">
               <p className="font-clash text-[11px] min-[1400px]:text-[12px] leading-[1.3] line-clamp-2 min-[1400px]:line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
                 “{MOTIVATION_QUOTES[quoteIndex]?.quote}”
               </p>

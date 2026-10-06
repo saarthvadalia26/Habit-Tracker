@@ -247,7 +247,7 @@ aside {
   touch-action: none !important;
 }
 
-@media (max-height: 740px) {
+@media (max-height: 760px) {
   .sidebar-quote-card {
     height: 84px !important;
     padding: 6px 10px !important;
@@ -261,7 +261,7 @@ aside {
 
 @media (max-height: 640px) {
   .sidebar-quote-card {
-    height: 68px !important;
+    height: 70px !important;
     padding: 5px 8px !important;
   }
   .sidebar-quote-card p {
@@ -273,7 +273,13 @@ aside {
 
 @media (max-height: 540px) {
   .sidebar-quote-card {
-    display: none !important;
+    height: 62px !important;
+    padding: 4px 8px !important;
+  }
+  .sidebar-quote-card p {
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+    font-size: 9px !important;
   }
 }
 
