@@ -5,6 +5,7 @@ export interface V2Drop {
   title: string;
   versionBadge: string;
   targetDate: string;
+  releaseDate: string;
   status: 'up_next' | 'in_development' | 'planned';
   statusBadge: string;
   category: string;
@@ -27,6 +28,110 @@ export const V2_RELEASE_INFO = {
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
 
 /**
+ * Gets current effective timestamp, allowing optional ?mock_date=YYYY-MM-DD for testing
+ */
+export function getEffectiveNow(): number {
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      const params = new URLSearchParams(search);
+      const mockDate = params.get('mock_date');
+      if (mockDate) {
+        const parsed = new Date(mockDate).getTime();
+        if (!isNaN(parsed)) return parsed;
+      }
+    } catch {}
+  }
+  return Date.now();
+}
+
+/**
+ * Checks whether a specific drop has already been released based on effective time.
+ */
+export function isDropReleased(drop: V2Drop | number): boolean {
+  const d = typeof drop === 'number' ? V2_DROPS.find((item) => item.dropNumber === drop) : drop;
+  if (!d) return false;
+
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const releasedUpTo = params.get('released_up_to');
+      if (releasedUpTo && Number(releasedUpTo) >= d.dropNumber) {
+        return true;
+      }
+      if (params.get('all_released') === 'true') {
+        return true;
+      }
+    } catch {}
+  }
+
+  try {
+    const launchTimestamp = new Date(d.releaseDate).getTime();
+    return getEffectiveNow() >= launchTimestamp;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns the currently active upcoming drop in the evolution cycle.
+ * - When Drop 1 is pending -> Drop 1
+ * - When Drop 1 is released -> Drop 2
+ * - When Drop 2 is released -> Drop 3
+ * - When Drop 3 is released -> Drop 4
+ * - When Drop 4 is released -> Drop 5
+ * - When Drop 5 is released -> Drop 6
+ * - When all 6 released -> Drop 6
+ */
+export function getActiveUpcomingDrop(): V2Drop {
+  if (typeof window !== 'undefined') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dropOverride = params.get('active_drop') || params.get('preview_drop') || params.get('drop');
+      if (dropOverride) {
+        const num = parseInt(dropOverride, 10);
+        const matched = V2_DROPS.find((d) => d.dropNumber === num);
+        if (matched) return matched;
+      }
+    } catch {}
+  }
+
+  const upcoming = V2_DROPS.find((d) => !isDropReleased(d));
+  return upcoming || V2_DROPS[V2_DROPS.length - 1];
+}
+
+/**
+ * Returns days remaining until a drop's launch.
+ * Returns 0 if already released.
+ */
+export function getDropDaysRemaining(drop: V2Drop | number): number {
+  const d = typeof drop === 'number' ? V2_DROPS.find((item) => item.dropNumber === drop) : drop;
+  if (!d) return 0;
+  try {
+    const target = new Date(d.releaseDate).getTime();
+    const diffMs = target - getEffectiveNow();
+    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Formats ISO release date into uppercase short format, e.g. 'OCT 17, 2026'
+ */
+export function formatDropShortDate(releaseDateStr: string): string {
+  try {
+    const date = new Date(releaseDateStr);
+    const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month} ${day}, ${year}`;
+  } catch {
+    return releaseDateStr;
+  }
+}
+
+/**
  * Checks whether Drop 1 (365-Day Heatmap) is unlocked.
  * - Always unlocked on localhost (NODE_ENV === 'development')
  * - Unlocked if ?preview=true or ?beta=true query param is present
@@ -46,25 +151,14 @@ export function isDrop1Unlocked(): boolean {
     } catch {}
   }
 
-  try {
-    const launchTimestamp = new Date(DROP_1_RELEASE_DATE).getTime();
-    return Date.now() >= launchTimestamp;
-  } catch {
-    return false;
-  }
+  return isDropReleased(V2_DROPS[0]);
 }
 
 /**
  * Returns days remaining until Drop 1 launch
  */
 export function getDrop1DaysRemaining(): number {
-  try {
-    const target = new Date(DROP_1_RELEASE_DATE).getTime();
-    const diffMs = target - Date.now();
-    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  } catch {
-    return 6;
-  }
+  return getDropDaysRemaining(V2_DROPS[0]);
 }
 
 export const V2_DROPS: V2Drop[] = [
@@ -75,6 +169,7 @@ export const V2_DROPS: V2Drop[] = [
     title: '365/366-Day Master Heatmap',
     versionBadge: 'v2.0 • DROP 1',
     targetDate: '10th October 2026',
+    releaseDate: '2026-10-10T00:00:00',
     status: 'up_next',
     statusBadge: 'SPOTLIGHT • RELEASING OCT 10',
     category: '📊 VISUALS & ANALYTICS',
@@ -97,6 +192,7 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Milestone Flex Cards',
     versionBadge: 'v2.0 • DROP 2',
     targetDate: '17th October 2026',
+    releaseDate: '2026-10-17T00:00:00',
     status: 'planned',
     statusBadge: 'NEXT IN QUEUE • OCT 17',
     category: '🎨 CELEBRATION',
@@ -118,6 +214,7 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Streak Armor & Rest Cadence',
     versionBadge: 'v2.0 • DROP 3',
     targetDate: '24th October 2026',
+    releaseDate: '2026-10-24T00:00:00',
     status: 'planned',
     statusBadge: 'RELEASING OCT 24',
     category: '🛡️ RESILIENCE',
@@ -139,6 +236,7 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Habit Stacking & Dayflows',
     versionBadge: 'v2.0 • DROP 4',
     targetDate: '31st October 2026',
+    releaseDate: '2026-10-31T00:00:00',
     status: 'planned',
     statusBadge: 'RELEASING OCT 31',
     category: '⚡ ROUTINES',
@@ -160,6 +258,7 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Target & Numeric Goals',
     versionBadge: 'v2.0 • DROP 5',
     targetDate: '7th November 2026',
+    releaseDate: '2026-11-07T00:00:00',
     status: 'planned',
     statusBadge: 'RELEASING NOV 7',
     category: '🎯 QUANTITATIVE METRICS',
@@ -181,6 +280,7 @@ export const V2_DROPS: V2Drop[] = [
     title: 'Offline-First Engine & Cloud Sync',
     versionBadge: 'v2.0 • DROP 6',
     targetDate: '14th November 2026',
+    releaseDate: '2026-11-14T00:00:00',
     status: 'planned',
     statusBadge: 'RELEASING NOV 14',
     category: '📡 INFRASTRUCTURE',

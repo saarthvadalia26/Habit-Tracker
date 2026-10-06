@@ -2,32 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, ArrowRight, X, Flame } from 'lucide-react';
-import { V2_DROPS, isDrop1Unlocked, getDrop1DaysRemaining } from '@/config/releases';
+import { ArrowRight, X, Flame } from 'lucide-react';
+import {
+  type V2Drop,
+  getActiveUpcomingDrop,
+  getDropDaysRemaining,
+  formatDropShortDate,
+} from '@/config/releases';
 
 interface UpcomingReleaseToastProps {
   onOpenRoadmap: () => void;
   suppressed?: boolean;
 }
 
-const STORAGE_DISMISS_KEY = 'ht_v2_release_toast_dismissed_drop1';
-
 export function UpcomingReleaseToast({
   onOpenRoadmap,
   suppressed = false,
 }: UpcomingReleaseToastProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const spotlightDrop = V2_DROPS[0];
-  const daysRemaining = getDrop1DaysRemaining();
-
-  useEffect(() => {
-    setIsUnlocked(isDrop1Unlocked());
-  }, []);
+  const [activeDrop, setActiveDrop] = useState<V2Drop>(() => getActiveUpcomingDrop());
+  const [daysRemaining, setDaysRemaining] = useState<number>(() =>
+    getDropDaysRemaining(getActiveUpcomingDrop())
+  );
 
   useEffect(() => {
     try {
-      const isDismissed = localStorage.getItem(STORAGE_DISMISS_KEY) === 'true';
+      const drop = getActiveUpcomingDrop();
+      setActiveDrop(drop);
+      const remaining = getDropDaysRemaining(drop);
+      setDaysRemaining(remaining);
+
+      const dismissKey = `ht_v2_release_toast_dismissed_${drop.id}`;
+      const isDismissed = localStorage.getItem(dismissKey) === 'true';
       if (isDismissed) return;
 
       const timer = setTimeout(() => {
@@ -41,7 +47,7 @@ export function UpcomingReleaseToast({
   const handleDismiss = () => {
     setIsVisible(false);
     try {
-      localStorage.setItem(STORAGE_DISMISS_KEY, 'true');
+      localStorage.setItem(`ht_v2_release_toast_dismissed_${activeDrop.id}`, 'true');
     } catch {}
   };
 
@@ -53,6 +59,9 @@ export function UpcomingReleaseToast({
   if (suppressed || !isVisible) {
     return null;
   }
+
+  // e.g. "OCT 10" from "OCT 10, 2026"
+  const shortDate = formatDropShortDate(activeDrop.releaseDate).split(',')[0].trim();
 
   return (
     <AnimatePresence>
@@ -75,7 +84,7 @@ export function UpcomingReleaseToast({
                     <span className="animate-ping absolute inset-0 rounded-full bg-[#ff5a1f] opacity-75" />
                     <span className="relative block w-2 h-2 rounded-full bg-[#ff5a1f]" />
                   </span>
-                  v2.0 Drop 1 · Oct 10
+                  v2.0 Drop {activeDrop.dropNumber} · {shortDate}
                 </span>
 
                 <span className="text-[11px] font-semibold text-[#15130f]/50 dark:text-[#fbf8f1]/50 bg-[#f2ecdf] dark:bg-[#11100d] px-2 py-0.5 rounded-md">
@@ -97,11 +106,10 @@ export function UpcomingReleaseToast({
             <div className="mb-3">
               <h4 className="font-clash font-semibold text-base tracking-tight text-[#15130f] dark:text-[#fbf8f1] flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-[#ff5a1f] shrink-0" />
-                <span>{spotlightDrop?.title || 'Annual Master Heatmap'}</span>
+                <span>{activeDrop.title}</span>
               </h4>
               <p className="mt-1 text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
-                {spotlightDrop?.tagline ||
-                  'Panoramic 52-week annual heatmap & consistency tracking are arriving Oct 10.'}
+                {activeDrop.tagline}
               </p>
             </div>
 

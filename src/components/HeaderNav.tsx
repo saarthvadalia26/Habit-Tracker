@@ -14,6 +14,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { signOutAction } from '@/app/actions/auth';
 import { toast, Toaster } from 'sonner';
 import { consumePendingAuthToast, setPendingAuthToast } from '@/lib/auth-toast';
+import { getActiveUpcomingDrop } from '@/config/releases';
 
 interface HeaderNavProps {
   userId?: string | null;
@@ -179,7 +180,7 @@ export function HeaderNav({
               whileTap={{ scale: 0.96 }}
               onClick={() => setIsRoadmapOpen(true)}
               className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-indigo-500/20 text-slate-800 dark:text-slate-200 border border-cyan-500/30 dark:border-cyan-500/40 rounded-xl transition-all cursor-pointer font-semibold shadow-xs text-[11px] sm:text-xs"
-              title="v2.0 Roadmap: Drop 1 launching 10th October 2026"
+              title={`v2.0 Roadmap: Drop ${getActiveUpcomingDrop().dropNumber} (${getActiveUpcomingDrop().title}) launching ${getActiveUpcomingDrop().targetDate}`}
             >
               <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
                 <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-75 pointer-events-none"></span>

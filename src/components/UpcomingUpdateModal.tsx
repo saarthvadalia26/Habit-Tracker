@@ -14,15 +14,16 @@ import {
   X,
   Clock,
   ArrowRight,
-  Heart,
+  LayoutGrid,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
   V2_DROPS,
   V2_RELEASE_INFO,
-  type V2Drop,
-  isDrop1Unlocked,
-  getDrop1DaysRemaining,
+  getActiveUpcomingDrop,
+  getDropDaysRemaining,
+  isDropReleased,
+  formatDropShortDate,
 } from '@/config/releases';
 
 interface UpcomingUpdateModalProps {
@@ -32,22 +33,26 @@ interface UpcomingUpdateModalProps {
 
 const DROP_ICONS: Record<string, React.ElementType> = {
   'heatmap-365': CalendarDays,
-  'numeric-goals': Target,
+  'flex-cards': Share2,
   'streak-armor': ShieldCheck,
   'habit-stacking': Layers,
-  'flex-cards': Share2,
+  'numeric-goals': Target,
   'offline-sync': WifiOff,
 };
 
 export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProps) {
   const [hypedFeatures, setHypedFeatures] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<'all' | 'spotlight'>('all');
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const daysRemaining = getDrop1DaysRemaining();
+  const [viewMode, setViewMode] = useState<'spotlight' | 'overview'>('spotlight');
+  const [selectedDropId, setSelectedDropId] = useState<string>(() => getActiveUpcomingDrop().id);
 
+  // Sync selected drop to the currently active upcoming drop when opening
   useEffect(() => {
-    setIsUnlocked(isDrop1Unlocked());
-  }, []);
+    if (isOpen) {
+      const active = getActiveUpcomingDrop();
+      setSelectedDropId(active.id);
+      setViewMode('spotlight');
+    }
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -80,9 +85,15 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
     });
   };
 
+  const activeUpcomingDrop = getActiveUpcomingDrop();
+  const spotlightDrop = V2_DROPS.find((d) => d.id === selectedDropId) || activeUpcomingDrop;
+  const isSpotlightReleased = isDropReleased(spotlightDrop);
+  const spotlightDaysRemaining = getDropDaysRemaining(spotlightDrop);
+  const SpotlightIcon = DROP_ICONS[spotlightDrop.id] || Target;
+
   const handleConfirm = () => {
     try {
-      localStorage.setItem('ht_v2_release_toast_dismissed_drop1', 'true');
+      localStorage.setItem(`ht_v2_release_toast_dismissed_${activeUpcomingDrop.id}`, 'true');
       sessionStorage.removeItem('ht_show_v2_roadmap');
       sessionStorage.removeItem('ht_v2_roadmap_dismissed');
       localStorage.removeItem('ht_seen_v2_roadmap_v1');
@@ -97,9 +108,6 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
     onClose();
   };
 
-  const spotlightDrop = V2_DROPS[0];
-  const futureDrops = V2_DROPS.slice(1);
-
   if (!isOpen) return null;
 
   return (
@@ -108,185 +116,291 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-roadmap-title"
-        className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/45 backdrop-blur-sm"
+        className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-black/50 backdrop-blur-sm"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 14 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 14 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-          className="relative w-full max-w-xl max-h-[88vh] flex flex-col bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/12 dark:border-[#fbf8f1]/12 rounded-[28px] shadow-2xl overflow-hidden z-10 my-auto text-[#15130f] dark:text-[#fbf8f1] font-archivo"
+          className="relative w-full max-w-2xl sm:max-w-3xl flex flex-col bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 rounded-[26px] shadow-2xl overflow-hidden z-10 my-auto text-[#15130f] dark:text-[#fbf8f1] font-archivo max-h-[92vh]"
         >
-          {/* Header */}
-          <div className="relative p-6 pb-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10">
-            <div className="flex items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[11px] font-semibold tracking-wide">
+          {/* Header Bar - Compact single row */}
+          <div className="relative px-4 sm:px-6 py-3.5 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex items-center justify-between gap-3 bg-[#fbf8f1] dark:bg-[#1c1a16]">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[10.5px] font-bold tracking-wider uppercase shrink-0">
                 <span className="relative flex items-center justify-center w-2 h-2 shrink-0">
                   <span className="animate-ping absolute inset-0 rounded-full bg-[#ff5a1f] opacity-75" />
                   <span className="relative block w-2 h-2 rounded-full bg-[#ff5a1f]" />
                 </span>
-                <span>v2.0 ROADMAP • 6 UPCOMING DROPS</span>
-              </div>
+                Roadmap
+              </span>
+
+              <h3 id="modal-roadmap-title" className="font-clash font-semibold text-lg sm:text-xl text-[#15130f] dark:text-[#fbf8f1] tracking-tight truncate">
+                {V2_RELEASE_INFO.title}
+              </h3>
+
+              <span className="hidden md:inline text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                • 6 Weekly Drops
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === 'spotlight' ? 'overview' : 'spotlight')}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 hover:bg-[#15130f]/10 dark:hover:bg-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 transition-colors cursor-pointer"
+                title="Toggle between focused drop view and all drops overview"
+              >
+                <LayoutGrid className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                <span>{viewMode === 'spotlight' ? 'Compare All' : 'Focus Drop'}</span>
+              </button>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+                aria-label="Close roadmap dialog"
+                className="p-1 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </div>
 
-            <div className="mt-3">
-              <h3 id="modal-roadmap-title" className="font-clash font-semibold text-2xl sm:text-3xl tracking-tight">
-                The v2.0 Evolution Cycle
-              </h3>
-              <p className="text-xs sm:text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60 mt-1">
-                6 weekly staged drops designed to systematically refine your discipline.
-              </p>
-            </div>
+          {/* Quick Drop Navigation Tabs - 6 drops in 1 row */}
+          <div className="px-3 sm:px-6 py-2 bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-max">
+              {V2_DROPS.map((drop) => {
+                const isReleased = isDropReleased(drop);
+                const isNext = drop.dropNumber === activeUpcomingDrop.dropNumber && !isReleased;
+                const isSelected = drop.id === spotlightDrop.id && viewMode === 'spotlight';
+                const DropIcon = DROP_ICONS[drop.id] || Target;
 
-            {/* Sub-Tabs Switcher */}
-            <div className="flex items-center gap-2 mt-4 p-1 rounded-full bg-[#f2ecdf] dark:bg-[#11100d] w-fit">
-              <button
-                onClick={() => setActiveTab('all')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'all'
-                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
-                    : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
-                }`}
-              >
-                All 6 Drops
-              </button>
-              <button
-                onClick={() => setActiveTab('spotlight')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'spotlight'
-                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
-                    : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
-                }`}
-              >
-                Spotlight: Drop 1
-              </button>
+                return (
+                  <button
+                    key={drop.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDropId(drop.id);
+                      setViewMode('spotlight');
+                    }}
+                    className={`group px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#15130f] text-[#fbf8f1] dark:bg-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                        : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:bg-[#ff5a1f]/10 hover:text-[#ff5a1f]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {isReleased ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Released & Live" />
+                      ) : isNext ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse shrink-0" title="Next upcoming drop" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#15130f]/30 dark:bg-[#fbf8f1]/30 shrink-0" />
+                      )}
+                      <DropIcon className="w-3 h-3 text-[#ff5a1f] shrink-0" />
+                      <span>Drop {drop.dropNumber}</span>
+                    </div>
+
+                    <span
+                      className={`text-[10px] font-mono transition-opacity ${
+                        isSelected
+                          ? 'opacity-80'
+                          : 'opacity-50 group-hover:opacity-80'
+                      }`}
+                    >
+                      {formatDropShortDate(drop.releaseDate).split(',')[0]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Scrollable Content Body */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
-            {/* SPOTLIGHT CARD: DROP 1 */}
-            <div className="rounded-[20px] bg-[#15130f] text-[#fbf8f1] p-5 sm:p-6 shadow-md border border-[#15130f]">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#ff5a1f] text-white text-[10px] font-bold tracking-wider uppercase">
-                  DROP 1 • OCT 10, 2026
-                </span>
-                <div className="flex items-center gap-1.5 text-xs text-[#ff5a1f] font-semibold">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Unlocked!'}</span>
+          {/* Modal Body */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+            {viewMode === 'spotlight' ? (
+              /* THE REDESIGNED DROP BOX - Compact, 2-column highlights, 100% visible without scroll */
+              <div className="rounded-[22px] bg-[#15130f] text-[#fbf8f1] p-4 sm:p-5 shadow-lg border border-[#15130f]">
+                {/* Header row: Badge + Countdown */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#ff5a1f] text-white text-[10.5px] font-bold tracking-wider uppercase">
+                      DROP {spotlightDrop.dropNumber} • {formatDropShortDate(spotlightDrop.releaseDate)}
+                    </span>
+                    <span className="text-[11px] font-medium text-[#fbf8f1]/60 uppercase tracking-wider hidden sm:inline">
+                      {spotlightDrop.category}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs font-semibold shrink-0">
+                    {isSpotlightReleased ? (
+                      <span className="text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Live & Unlocked</span>
+                      </span>
+                    ) : spotlightDaysRemaining === 0 ? (
+                      <span className="text-[#ff5a1f] flex items-center gap-1.5 bg-[#ff5a1f]/10 px-2.5 py-0.5 rounded-full">
+                        <Flame className="w-3.5 h-3.5" />
+                        <span>Releasing Today!</span>
+                      </span>
+                    ) : (
+                      <span className="text-[#ff5a1f] flex items-center gap-1.5 bg-[#ff5a1f]/10 px-2.5 py-0.5 rounded-full">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{spotlightDaysRemaining} {spotlightDaysRemaining === 1 ? 'day' : 'days'} remaining</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Drop Title & Tagline */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#fbf8f1]/10 flex items-center justify-center shrink-0">
+                    <SpotlightIcon className="w-5 h-5 text-[#ff5a1f]" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-clash font-semibold text-lg sm:text-xl text-[#fbf8f1] tracking-tight">
+                      {spotlightDrop.title}
+                    </h4>
+                    <p className="text-xs sm:text-[13px] text-[#fbf8f1]/70 mt-0.5 leading-snug">
+                      {spotlightDrop.tagline}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Highlights: 2-Column Responsive Grid so EVERYTHING fits without scrolling */}
+                <div className="mt-3.5 pt-3 border-t border-[#fbf8f1]/10">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#fbf8f1]/50 block mb-2">
+                    Key Features in This Drop:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {spotlightDrop.highlights.map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 p-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-[#fbf8f1]/85 leading-snug"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#ff5a1f] shrink-0 mt-0.5" />
+                        <span>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom Action Row */}
+                <div className="mt-3.5 pt-3 border-t border-[#fbf8f1]/10 flex items-center justify-between gap-2 flex-wrap text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHype(spotlightDrop.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      hypedFeatures[spotlightDrop.id]
+                        ? 'bg-[#ff5a1f] text-white shadow-xs'
+                        : 'bg-[#fbf8f1]/10 text-[#fbf8f1] hover:bg-[#fbf8f1]/20'
+                    }`}
+                  >
+                    <Flame className="w-3.5 h-3.5" />
+                    <span>{hypedFeatures[spotlightDrop.id] ? 'Hyped! 🔥' : 'I want this'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 text-[11px] text-[#fbf8f1]/60">
+                    <span>
+                      {spotlightDrop.dropNumber === 1
+                        ? 'Opens the 2026 cycle'
+                        : `Releases 1 week after Drop ${spotlightDrop.dropNumber - 1}`}
+                    </span>
+                    {spotlightDrop.dropNumber !== activeUpcomingDrop.dropNumber && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDropId(activeUpcomingDrop.id)}
+                        className="text-[#ff5a1f] hover:underline font-semibold cursor-pointer"
+                      >
+                        Return to Drop {activeUpcomingDrop.dropNumber}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-start gap-3 mt-3">
-                <div className="w-10 h-10 rounded-xl bg-[#fbf8f1]/10 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-5 h-5 text-[#ff5a1f]" />
-                </div>
-                <div>
-                  <h4 className="font-clash font-semibold text-xl text-[#fbf8f1]">
-                    {spotlightDrop.title}
-                  </h4>
-                  <p className="text-xs text-[#fbf8f1]/70 mt-1 leading-relaxed">
-                    {spotlightDrop.tagline}
-                  </p>
-                </div>
-              </div>
-
-              {/* Highlights */}
-              <ul className="mt-4 space-y-1.5 border-t border-[#fbf8f1]/10 pt-3 text-xs text-[#fbf8f1]/80">
-                {spotlightDrop.highlights.map((h, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#ff5a1f] shrink-0 mt-0.5" />
-                    <span>{h}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Hype Reaction */}
-              <div className="mt-4 pt-3 border-t border-[#fbf8f1]/10 flex items-center justify-between">
-                <button
-                  onClick={() => handleToggleHype(spotlightDrop.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    hypedFeatures[spotlightDrop.id]
-                      ? 'bg-[#ff5a1f] text-white'
-                      : 'bg-[#fbf8f1]/10 text-[#fbf8f1] hover:bg-[#fbf8f1]/20'
-                  }`}
-                >
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>{hypedFeatures[spotlightDrop.id] ? 'Hyped! 🔥' : 'I want this'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* REMAINING 5 DROPS (If 'all' tab selected) */}
-            {activeTab === 'all' && (
+            ) : (
+              /* OVERVIEW GRID VIEW (If 'Compare All' clicked) */
               <div className="space-y-3">
-                <h4 className="font-clash font-semibold text-sm tracking-wider uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 pt-2">
-                  Subsequent Evolution Drops
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-clash font-semibold text-sm tracking-wider uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    All 6 Evolution Drops (1 Week Intervals)
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('spotlight')}
+                    className="text-xs font-semibold text-[#ff5a1f] hover:underline cursor-pointer"
+                  >
+                    Back to Focus View
+                  </button>
+                </div>
 
-                {futureDrops.map((drop) => {
-                  const Icon = DROP_ICONS[drop.id] || Target;
-                  const isHyped = Boolean(hypedFeatures[drop.id]);
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {V2_DROPS.map((drop) => {
+                    const Icon = DROP_ICONS[drop.id] || Target;
+                    const isReleased = isDropReleased(drop);
+                    const isNext = drop.dropNumber === activeUpcomingDrop.dropNumber && !isReleased;
+                    const isSelected = drop.id === spotlightDrop.id;
 
-                  return (
-                    <div
-                      key={drop.id}
-                      className="rounded-[18px] bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col gap-2.5 transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#ff5a1f]">
-                          DROP {drop.dropNumber} • {drop.targetDate}
-                        </span>
-                        <button
-                          onClick={() => handleToggleHype(drop.id)}
-                          className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
-                            isHyped
-                              ? 'bg-[#ff5a1f] text-white'
-                              : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f]'
-                          }`}
-                        >
-                          <Flame className="w-3 h-3" />
-                          <span>{isHyped ? 'Hyped' : 'Hype'}</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 flex items-center justify-center shrink-0">
-                          <Icon className="w-4 h-4 text-[#ff5a1f]" />
+                    return (
+                      <div
+                        key={drop.id}
+                        onClick={() => {
+                          setSelectedDropId(drop.id);
+                          setViewMode('spotlight');
+                        }}
+                        className={`rounded-[18px] bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 border p-3.5 transition-all cursor-pointer hover:border-[#ff5a1f]/40 ${
+                          isSelected
+                            ? 'border-[#ff5a1f]/60 ring-1 ring-[#ff5a1f]/30'
+                            : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#ff5a1f]">
+                            DROP {drop.dropNumber} • {formatDropShortDate(drop.releaseDate)}
+                          </span>
+                          {isReleased ? (
+                            <span className="px-2 py-0.2 rounded-full text-[9.5px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                              LIVE
+                            </span>
+                          ) : isNext ? (
+                            <span className="px-2 py-0.2 rounded-full text-[9.5px] font-bold bg-[#ff5a1f]/15 text-[#ff5a1f]">
+                              UP NEXT
+                            </span>
+                          ) : null}
                         </div>
-                        <div>
-                          <h5 className="font-clash font-semibold text-base text-[#15130f] dark:text-[#fbf8f1]">
-                            {drop.title}
-                          </h5>
-                          <p className="text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 mt-0.5">
-                            {drop.tagline}
-                          </p>
+
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4 text-[#ff5a1f]" />
+                          </div>
+                          <div>
+                            <h5 className="font-clash font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
+                              {drop.title}
+                            </h5>
+                            <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 line-clamp-2 mt-0.5">
+                              {drop.tagline}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="p-4 sm:p-5 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex items-center justify-between bg-[#fbf8f1] dark:bg-[#1c1a16]">
+          {/* Footer Bar */}
+          <div className="px-4 sm:px-6 py-3 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex items-center justify-between bg-[#fbf8f1] dark:bg-[#1c1a16]">
             <p className="text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 hidden sm:block">
-              Continuous incremental discipline engineering.
+              Continuous weekly discipline engineering.
             </p>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleConfirm}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-2 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>Explore Habit Tracker</span>
               <ArrowRight className="w-3.5 h-3.5" />
