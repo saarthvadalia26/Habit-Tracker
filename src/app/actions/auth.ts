@@ -380,9 +380,8 @@ export async function saveMonthlyNoteAction(
     const noteKey = `${year}_${month}`;
 
     let savedToTable = false;
-    let savedToMetadata = false;
 
-    // 1. Primary: Save to PostgreSQL monthly_notes table (authoritative, no Auth rate limits)
+    // 1. Primary: Save to PostgreSQL monthly_notes table (authoritative, ultra-fast ~30ms, no Auth rate limits)
     try {
       const { error: dbError } = await supabase.from('monthly_notes').upsert(
         {
@@ -398,7 +397,33 @@ export async function saveMonthlyNoteAction(
       }
     } catch {}
 
-    // 2. Secondary: Sync to Supabase Auth metadata for seamless backward compatibility
+    // Secondary metadata sync helper for backward compatibility
+    const syncMetadata = async () => {
+      try {
+        const currentNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
+          ? (user.user_metadata.monthly_notes as Record<string, string>)
+          : {};
+
+        const updatedNotes = {
+          ...currentNotes,
+          [noteKey]: cleanContent,
+        };
+
+        await supabase.auth.updateUser({
+          data: {
+            monthly_notes: updatedNotes,
+          },
+        });
+      } catch {}
+    };
+
+    if (savedToTable) {
+      // Run secondary Auth metadata sync concurrently without blocking client response
+      syncMetadata();
+      return { success: true, error: null };
+    }
+
+    // 2. Secondary fallback: If table upsert failed (e.g. migration pending), await metadata update
     try {
       const currentNotes = (user.user_metadata?.monthly_notes && typeof user.user_metadata.monthly_notes === 'object')
         ? (user.user_metadata.monthly_notes as Record<string, string>)
@@ -415,15 +440,11 @@ export async function saveMonthlyNoteAction(
         },
       });
       if (!metaError) {
-        savedToMetadata = true;
+        return { success: true, error: null };
       }
     } catch {}
 
-    if (!savedToTable && !savedToMetadata) {
-      return { success: false, error: 'Failed to sync note across devices.' };
-    }
-
-    return { success: true, error: null };
+    return { success: false, error: 'Failed to sync note across devices.' };
   } catch {
     return { success: false, error: 'Failed to sync note across devices.' };
   }

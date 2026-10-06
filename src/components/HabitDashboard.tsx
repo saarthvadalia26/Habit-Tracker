@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -199,6 +199,11 @@ export function HabitDashboard({
 
   // Monthly reflections notes state (persisted across devices)
   const [monthlyNotes, setMonthlyNotes] = useState<Record<string, string>>(initialMonthlyNotes ?? {});
+
+  // Memoized save handler prevents re-instantiating on timer ticks
+  const handleSaveMonthlyNote = useCallback((y: number, m: number, text: string) => {
+    setMonthlyNotes((prev) => ({ ...prev, [`${y}_${m}`]: text }));
+  }, []);
 
   // Habit creation form state
   const [newTitle, setNewTitle] = useState('');
@@ -928,11 +933,11 @@ export function HabitDashboard({
       {/* ============================================================== */}
       <aside
         ref={sidebarRef}
-        className="hidden lg:flex w-[260px] xl:w-[268px] fixed inset-y-0 left-0 flex-col justify-between px-3.5 xl:px-4.5 pt-3 xl:pt-4 pb-5 xl:pb-6 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none overscroll-none"
+        className="hidden lg:flex w-[260px] xl:w-[268px] fixed inset-y-0 left-0 flex-col justify-between px-3.5 xl:px-4.5 pt-3 xl:pt-4 pb-3.5 xl:pb-4 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none overscroll-none"
         style={{
           height: '100svh',
           maxHeight: '100dvh',
-          paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+          paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))',
           overscrollBehavior: 'none',
           touchAction: 'none',
         }}
@@ -940,7 +945,7 @@ export function HabitDashboard({
         <div className="flex flex-col gap-2 xl:gap-3.5 shrink-0">
           {/* Brand Logo: Habit Tracker (Prominent & bold) */}
           <div className="flex items-center justify-between px-1 shrink-0">
-            <h1 className="font-clash font-bold text-[22px] min-[1280px]:text-[24px] xl:text-[26px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
+            <h1 className="font-clash font-bold text-[20px] min-[1280px]:text-[21px] xl:text-[22px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
               Habit Tracker<span className="text-[#ff5a1f]">.</span>
             </h1>
 
@@ -969,7 +974,7 @@ export function HabitDashboard({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`relative flex items-center gap-2.5 xl:gap-3 w-full px-3.5 py-2 min-[1280px]:py-2.5 min-[1440px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[15px] min-[1280px]:text-[15.5px] xl:text-[16px] font-semibold tracking-[-0.01em] transition-all cursor-pointer ${
+                  className={`relative flex items-center gap-2.5 xl:gap-3 w-full px-3.5 py-2 min-[1280px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[13.5px] min-[1280px]:text-[14px] xl:text-[14.5px] font-semibold tracking-[-0.01em] transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#15130f] dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
@@ -991,13 +996,13 @@ export function HabitDashboard({
             {/* Sleek Roadmap Nav Item */}
             <button
               onClick={() => setIsRoadmapOpen(true)}
-              className="flex items-center justify-between w-full px-3.5 py-2 min-[1280px]:py-2.5 min-[1440px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[15px] min-[1280px]:text-[15.5px] xl:text-[16px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
+              className="flex items-center justify-between w-full px-3.5 py-2 min-[1280px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[13.5px] min-[1280px]:text-[14px] xl:text-[14.5px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
             >
               <div className="flex items-center gap-2.5 xl:gap-3 min-w-0">
                 <Rocket className="w-[18px] h-[18px] text-[#ff5a1f] shrink-0" />
                 <span className="truncate">Roadmap</span>
               </div>
-              <span className="text-[10px] xl:text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors shrink-0">
+              <span className="text-[9.5px] xl:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors shrink-0">
                 v2.0
               </span>
             </button>
@@ -1009,14 +1014,14 @@ export function HabitDashboard({
           {/* Account Row */}
           <div className="h-[36px] xl:h-[40px] shrink-0 flex items-center justify-between px-2 py-1 rounded-xl hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors">
             <div className="flex items-center gap-2 xl:gap-2.5 min-w-0">
-              <div className="w-7 h-7 xl:w-7.5 xl:h-7.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs xl:text-[13px] shrink-0 shadow-sm">
+              <div className="w-6.5 h-6.5 xl:w-7 xl:h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-[11px] xl:text-xs shrink-0 shadow-sm">
                 {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[13px] xl:text-[14px] font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
+                <span className="text-[12.5px] xl:text-[13px] font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
                   {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
                 </span>
-                <span className="text-[10.5px] xl:text-[11px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                <span className="text-[10px] xl:text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
                   {userEmail || 'Local workspace'}
                 </span>
               </div>
@@ -1025,7 +1030,7 @@ export function HabitDashboard({
             {isGuestMode ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="text-xs xl:text-[13px] font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2.5 py-1 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
+                className="text-[11px] xl:text-xs font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2 py-0.5 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
               >
                 Sign In
               </button>
@@ -1047,11 +1052,11 @@ export function HabitDashboard({
             onClick={handleManualShuffleQuote}
             onMouseEnter={() => setIsQuoteHovered(true)}
             onMouseLeave={() => setIsQuoteHovered(false)}
-            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 min-h-[92px] max-h-[114px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
+            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 min-h-[96px] shrink-0 flex flex-col justify-between gap-1 shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
             title="Click to shuffle quote • Hover to pause"
           >
             <div className="flex items-center justify-between shrink-0">
-              <span className="text-[9px] xl:text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
+              <span className="text-[8.5px] xl:text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
                 {MOTIVATION_QUOTES[quoteIndex]?.tag || 'Mindset'}
               </span>
               <button
@@ -1060,24 +1065,32 @@ export function HabitDashboard({
                   e.stopPropagation();
                   handleManualShuffleQuote();
                 }}
-                className="p-1 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors"
+                className="p-1 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors cursor-pointer"
                 title="Shuffle next quote"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
               </button>
             </div>
 
-            {/* Stable quote container with clamp so quotes never overflow */}
-            <div className="min-h-[32px] max-h-[44px] flex items-center overflow-hidden my-auto">
-              <p className="font-clash text-[11px] min-[1400px]:text-[12px] leading-[1.3] line-clamp-2 min-[1400px]:line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
+            {/* Complete quote container: fully visible with natural text wrapping and dynamic scaling */}
+            <div className="my-auto py-0.5 flex items-center">
+              <p
+                className={`font-clash leading-[1.38] text-[#15130f] dark:text-[#fbf8f1] font-medium transition-all ${
+                  (MOTIVATION_QUOTES[quoteIndex]?.quote?.length || 0) > 85
+                    ? 'text-[10px] min-[1400px]:text-[10.5px]'
+                    : 'text-[10.5px] min-[1400px]:text-[11px]'
+                }`}
+              >
                 “{MOTIVATION_QUOTES[quoteIndex]?.quote}”
               </p>
             </div>
 
-            <div className="flex flex-col gap-0.5 xl:gap-1 shrink-0">
-              <div className="flex items-center justify-between text-[10px] xl:text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
-                <span className="truncate max-w-[160px] xl:max-w-[175px]">— {MOTIVATION_QUOTES[quoteIndex]?.author}</span>
-                <span className={`text-[9px] xl:text-[9.5px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
+            <div className="flex flex-col gap-0.5 xl:gap-1 shrink-0 pt-0.5">
+              <div className="flex items-center justify-between text-[9.5px] xl:text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                <span className="truncate max-w-[155px] xl:max-w-[170px]" title={MOTIVATION_QUOTES[quoteIndex]?.author}>
+                  — {MOTIVATION_QUOTES[quoteIndex]?.author}
+                </span>
+                <span className={`text-[8.5px] xl:text-[9px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
                   {isQuoteHovered ? 'Paused' : `${Math.max(1, Math.ceil(15 * (1 - quoteProgress / 100)))}s`}
                 </span>
               </div>
@@ -1098,11 +1111,8 @@ export function HabitDashboard({
       {/* ============================================================== */}
       {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
       {/* ============================================================== */}
-      {/* ============================================================== */}
-      {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
-      {/* ============================================================== */}
       <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
-        <h1 className="font-clash font-bold text-2xl sm:text-[26px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
+        <h1 className="font-clash font-bold text-xl sm:text-[22px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
           Habit Tracker<span className="text-[#ff5a1f]">.</span>
         </h1>
 
@@ -1118,14 +1128,14 @@ export function HabitDashboard({
 
           <button
             onClick={() => setIsRoadmapOpen(true)}
-            className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[10.5px] sm:text-[11px] font-bold tracking-tight hover:bg-[#ff5a1f]/15 transition-colors cursor-pointer"
+            className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] text-[10px] sm:text-[10.5px] font-bold tracking-tight hover:bg-[#ff5a1f]/15 transition-colors cursor-pointer"
           >
             v2.0
           </button>
 
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-[13px] font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs sm:text-[12.5px] font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span className="hidden min-[360px]:inline">Habit</span>
@@ -1250,10 +1260,10 @@ export function HabitDashboard({
                 className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 w-full"
               >
               <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
-                <p className="text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
+                <p className="text-[10.5px] sm:text-[11.5px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
                   {headerDateString}
                 </p>
-                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-3xl sm:text-[36px] lg:text-[38px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1] break-words">
+                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-[26px] sm:text-[30px] lg:text-[32px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1] break-words">
                   {headerTitle}
                 </h2>
               </div>
@@ -1263,7 +1273,7 @@ export function HabitDashboard({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4.5 sm:px-5.5 py-2.5 sm:py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-[13.5px] sm:text-[15.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>New habit</span>
@@ -1297,11 +1307,11 @@ export function HabitDashboard({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-4 sm:p-5 lg:p-6 flex items-center gap-3.5 sm:gap-5 shadow-sm"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-4 sm:p-5 flex items-center gap-3.5 sm:gap-4.5 shadow-sm"
               >
                 {/* Responsive Conic Ring */}
                 <div
-                  className="w-[74px] h-[74px] min-[380px]:w-[82px] min-[380px]:h-[82px] lg:w-[88px] lg:h-[88px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
+                  className="w-[68px] h-[68px] min-[380px]:w-[74px] min-[380px]:h-[74px] lg:w-[78px] lg:h-[78px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
                   style={{
                     background: `conic-gradient(#ff5a1f 0deg ${Math.round(
                       (todayPercentage / 100) * 360
@@ -1310,8 +1320,8 @@ export function HabitDashboard({
                     )}deg)`,
                   }}
                 >
-                  <div className="w-[58px] h-[58px] min-[380px]:w-[66px] min-[380px]:h-[66px] lg:w-[70px] lg:h-[70px] rounded-full bg-[#15130f] flex items-center justify-center">
-                    <span className="font-clash font-semibold text-[17px] min-[380px]:text-[19px] lg:text-[20px] text-[#fbf8f1]">
+                  <div className="w-[52px] h-[52px] min-[380px]:w-[58px] min-[380px]:h-[58px] lg:w-[62px] lg:h-[62px] rounded-full bg-[#15130f] flex items-center justify-center">
+                    <span className="font-clash font-semibold text-[16px] min-[380px]:text-[17px] lg:text-[18px] text-[#fbf8f1]">
                       {todayPercentage}%
                     </span>
                   </div>
@@ -1319,10 +1329,10 @@ export function HabitDashboard({
 
                 {/* Progress Text */}
                 <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                  <h3 className="font-clash font-semibold text-lg min-[380px]:text-xl sm:text-[22px] tracking-tight leading-tight text-[#fbf8f1] truncate">
+                  <h3 className="font-clash font-semibold text-[17px] sm:text-[18px] min-[1440px]:text-[19px] tracking-tight leading-tight text-[#fbf8f1] truncate">
                     {doneCount} of {totalCount} done
                   </h3>
-                  <p className="text-[12.5px] sm:text-[13.5px] text-[#fbf8f1]/65 leading-snug">
+                  <p className="text-[12px] sm:text-[12.5px] text-[#fbf8f1]/65 leading-snug">
                     {remainingCount === 0
                       ? 'All habits completed for today! 🎉'
                       : remainingCount === 1
@@ -1337,19 +1347,19 @@ export function HabitDashboard({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.08 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] shadow-framer-card"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col justify-between min-h-[114px] sm:min-h-[126px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-[#ff5a1f]" />
-                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                  <Flame className="w-5 h-5 text-[#ff5a1f]" />
+                  <span className="text-[10px] sm:text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                     Streak
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-2.5 sm:mt-3">
-                  <p className="font-clash font-semibold text-[30px] min-[380px]:text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                <div className="flex flex-col gap-0.5 mt-2 sm:mt-2.5">
+                  <p className="font-clash font-semibold text-[26px] min-[380px]:text-[28px] sm:text-[30px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
                     {longestStreak} days
                   </p>
-                  <p className="text-[13px] sm:text-[14px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
+                  <p className="text-[12px] sm:text-[12.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
                     Longest current streak
                   </p>
                 </div>
@@ -1360,19 +1370,19 @@ export function HabitDashboard({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.16 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 lg:p-6 flex flex-col justify-between min-h-[120px] sm:min-h-[136px] shadow-framer-card"
+                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col justify-between min-h-[114px] sm:min-h-[126px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-[#15130f] dark:text-[#fbf8f1]" />
-                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                  <Target className="w-5 h-5 text-[#15130f] dark:text-[#fbf8f1]" />
+                  <span className="text-[10px] sm:text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                     Monthly
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-2.5 sm:mt-3">
-                  <p className="font-clash font-semibold text-[30px] min-[380px]:text-[34px] sm:text-[36px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                <div className="flex flex-col gap-0.5 mt-2 sm:mt-2.5">
+                  <p className="font-clash font-semibold text-[26px] min-[380px]:text-[28px] sm:text-[30px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
                     {monthlyCompletionRate}%
                   </p>
-                  <p className="text-[12.5px] sm:text-[13.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
+                  <p className="text-[12px] sm:text-[12.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
                     {monthlyCompletedChecks} of {monthlyPossibleChecks} done this month
                   </p>
                 </div>
@@ -1380,19 +1390,19 @@ export function HabitDashboard({
             </motion.section>
 
             {/* Body Section: Habits List (Left) & This Week Card (Right) */}
-            <section className="flex flex-col xl:flex-row items-start gap-5 sm:gap-6 w-full">
+            <section className="flex flex-col lg:flex-row items-start gap-5 sm:gap-6 w-full">
               {/* Left Column: Today’s habits */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.32, delay: 0.14 }}
-                className="flex-1 w-full flex flex-col gap-3"
+                className="flex-1 w-full flex flex-col gap-3 min-w-0"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
+                  <h3 className="font-clash font-semibold text-[17px] sm:text-[18px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     Today’s habits
                   </h3>
-                  <span className="text-xs font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                  <span className="text-[11px] sm:text-xs font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
                     {habits.length} habits
                   </span>
                 </div>
@@ -1400,10 +1410,10 @@ export function HabitDashboard({
                 {habits.length === 0 ? (
                   <div className="rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-7 sm:p-10 flex flex-col items-center justify-center text-center gap-3">
                     <Target className="w-8 h-8 text-[#ff5a1f]" />
-                    <h4 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
+                    <h4 className="font-clash font-semibold text-base sm:text-lg text-[#15130f] dark:text-[#fbf8f1]">
                       No habits tracked yet
                     </h4>
-                    <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60 max-w-sm">
+                    <p className="text-xs sm:text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60 max-w-sm">
                       Build your daily routine by adding your first habit. Consistency creates momentum.
                     </p>
                     <button
@@ -1435,7 +1445,7 @@ export function HabitDashboard({
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.98 }}
                           transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          className={`relative group rounded-[20px] sm:rounded-[22px] p-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-2.5 sm:gap-4 transition-all duration-300 border ${
+                          className={`relative group rounded-[18px] sm:rounded-[20px] p-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-2.5 sm:gap-3.5 transition-all duration-300 border ${
                             openMenuHabitId === habit.id ? 'z-30' : 'z-10'
                           } ${
                             isDone
@@ -1444,9 +1454,9 @@ export function HabitDashboard({
                           }`}
                         >
                           {/* Left: Icon Chip + Title / Subtitle */}
-                          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                             <div
-                              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[13px] sm:rounded-[15px] flex items-center justify-center shrink-0 transition-colors ${
+                              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[12px] sm:rounded-[13px] flex items-center justify-center shrink-0 transition-colors [&>svg]:w-[18px] [&>svg]:h-[18px] sm:[&>svg]:w-[19px] sm:[&>svg]:h-[19px] ${
                                 isDone
                                   ? 'bg-[#fbf8f1]/10 text-[#fbf8f1]'
                                   : 'bg-[#f2ecdf] dark:bg-[#2b2721] text-[#15130f] dark:text-[#fbf8f1]'
@@ -1457,7 +1467,7 @@ export function HabitDashboard({
 
                             <div className="flex flex-col min-w-0">
                               <h4
-                                className={`font-clash font-semibold text-[16px] sm:text-[18px] tracking-[-0.01em] truncate transition-all ${
+                                className={`font-clash font-semibold text-[15px] sm:text-[16px] tracking-[-0.01em] truncate transition-all ${
                                   isDone
                                     ? 'line-through text-[#fbf8f1]/90'
                                     : 'text-[#15130f] dark:text-[#fbf8f1]'
@@ -1466,7 +1476,7 @@ export function HabitDashboard({
                                 {displayTitle}
                               </h4>
                               <p
-                                className={`text-[12.5px] sm:text-[13.5px] truncate font-normal ${
+                                className={`text-[12px] sm:text-[12.5px] truncate font-normal ${
                                   isDone
                                     ? 'text-[#fbf8f1]/55'
                                     : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
@@ -1478,12 +1488,12 @@ export function HabitDashboard({
                           </div>
 
                           {/* Right: Streak Flame + Interactive Check Button */}
-                          <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                             {/* Streak Badge */}
                             <div className="flex items-center gap-1 sm:gap-1.5 select-none" title={`${currentStreak} day streak`}>
-                              <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ff5a1f]" />
+                              <Flame className="w-3.5 h-3.5 text-[#ff5a1f]" />
                               <span
-                                className={`font-semibold text-[13px] sm:text-[14px] font-archivo ${
+                                className={`font-semibold text-xs sm:text-[13px] font-archivo ${
                                   isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
                                 }`}
                               >
@@ -1493,10 +1503,10 @@ export function HabitDashboard({
 
                             {/* Check Button */}
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
+                              whileHover={{ scale: 1.08 }}
                               whileTap={{ scale: 0.92 }}
                               onClick={(e) => handleToggleHabit(habit.id, e)}
-                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                              className={`w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                                 isDone
                                   ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
                                   : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
@@ -1504,7 +1514,7 @@ export function HabitDashboard({
                               title={isDone ? 'Mark as todo' : 'Mark as done'}
                             >
                               <Check
-                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
+                                className={`w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3] transition-transform ${
                                   isDone ? 'scale-100' : 'scale-75'
                                 }`}
                               />
@@ -1625,29 +1635,29 @@ export function HabitDashboard({
                 )}
               </motion.div>
 
-              {/* Right Column: This week (Centered when stacked on tablet/mobile, fixed 320px on xl desktop) */}
+              {/* Right Column: This week (Centered when stacked on mobile, fixed 290px-320px on lg/xl desktop) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.18 }}
-                className="w-full xl:w-[320px] max-w-xl mx-auto xl:mx-0 rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-6 flex flex-col gap-5 shadow-framer-card shrink-0"
+                className="w-full lg:w-[290px] xl:w-[320px] max-w-xl mx-auto lg:mx-0 rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col gap-4 sm:gap-5 shadow-framer-card shrink-0"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
+                  <h3 className="font-clash font-semibold text-[17px] sm:text-[18px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                     This week
                   </h3>
-                  <span className="text-[11px] font-semibold text-[#15130f]/40 dark:text-[#fbf8f1]/40 uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-[10.5px] font-semibold text-[#15130f]/40 dark:text-[#fbf8f1]/40 uppercase tracking-wider">
                     7 Days
                   </span>
                 </div>
 
                 {/* 7-Day Vertical Bar Chart */}
-                <div className="flex items-end justify-between w-full h-[160px] pt-4 select-none">
+                <div className="flex items-end justify-between w-full h-[145px] sm:h-[150px] pt-3 sm:pt-4 select-none">
                   {weekDaysData.map((day, idx) => {
                     return (
                       <div
                         key={idx}
-                        className="flex flex-col items-center justify-end gap-2 h-full w-[28px] group relative"
+                        className="flex flex-col items-center justify-end gap-1.5 sm:gap-2 h-full w-[24px] sm:w-[26px] group relative"
                       >
                         {/* Hover Tooltip */}
                         <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#15130f] text-white text-[10px] font-medium px-2 py-0.5 rounded shadow whitespace-nowrap z-10">
@@ -1659,7 +1669,7 @@ export function HabitDashboard({
                           initial={{ height: 0 }}
                           animate={{ height: day.barHeight }}
                           transition={{ type: 'spring', stiffness: 350, damping: 25, delay: idx * 0.05 }}
-                          className={`w-[28px] rounded-[8px] transition-colors ${
+                          className={`w-[24px] sm:w-[26px] rounded-[7px] sm:rounded-[8px] transition-colors ${
                             day.isToday
                               ? 'bg-[#ff5a1f] shadow-sm'
                               : day.completed > 0 || (day.isPast && day.pct >= 50)
@@ -1670,7 +1680,7 @@ export function HabitDashboard({
 
                         {/* Weekday Label: M, T, W, T, F, S, S */}
                         <span
-                          className={`text-[12px] font-semibold font-archivo ${
+                          className={`text-[11px] sm:text-[11.5px] font-semibold font-archivo ${
                             day.isToday
                               ? 'text-[#ff5a1f] font-bold'
                               : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
@@ -1700,20 +1710,20 @@ export function HabitDashboard({
 
                     <div className="flex flex-col min-w-0 flex-1">
                       {nextReminder?.allDone ? (
-                        <span className="text-[13px] sm:text-[13.5px] font-medium leading-snug text-[#15130f] dark:text-[#fbf8f1]">
+                        <span className="text-[12.5px] sm:text-[13px] font-medium leading-snug text-[#15130f] dark:text-[#fbf8f1]">
                           All reminders clear for today! 🎉
                         </span>
                       ) : nextReminder ? (
                         <>
-                          <span className="text-[13px] sm:text-[13.5px] font-semibold text-[#15130f] dark:text-[#fbf8f1] leading-snug break-words">
+                          <span className="text-[12.5px] sm:text-[13px] font-semibold text-[#15130f] dark:text-[#fbf8f1] leading-snug break-words">
                             {nextReminder.title}
                           </span>
-                          <span className="text-[11.5px] text-[#ff5a1f] font-medium leading-tight mt-0.5">
+                          <span className="text-[11px] sm:text-[11.5px] text-[#ff5a1f] font-medium leading-tight mt-0.5">
                             {nextReminder.timeStr ? `Reminder at ${nextReminder.timeStr}` : 'Scheduled today'}
                           </span>
                         </>
                       ) : (
-                        <span className="text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                        <span className="text-[12.5px] sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                           No pending reminders
                         </span>
                       )}
@@ -1768,10 +1778,10 @@ export function HabitDashboard({
               className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div>
-                <h2 className="font-clash font-semibold text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-[26px] sm:text-[30px] lg:text-[32px] tracking-tight sm:tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Calendar
                 </h2>
-                <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                <p className="text-xs sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                   {calendarSubView === 'annual-365'
                     ? `Track full-year habit completions across your ${isLeapYear(heatmapYear) ? '366-day leap year' : '365-day'} consistency matrix for ${heatmapYear}.`
                     : `Track full-month habit completions and daily routines for ${MONTH_NAMES[selectedMonth]} ${selectedYear}.`}
@@ -1782,7 +1792,7 @@ export function HabitDashboard({
               <div className="flex items-center p-1 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 gap-1">
                 <button
                   onClick={() => setCalendarSubView('matrix')}
-                  className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-[12.5px] font-semibold transition-all cursor-pointer ${
                     calendarSubView === 'matrix'
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
@@ -1793,7 +1803,7 @@ export function HabitDashboard({
                 {drop1Unlocked ? (
                   <button
                     onClick={() => setCalendarSubView('annual-365')}
-                    className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
+                    className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-[12.5px] font-semibold transition-all cursor-pointer ${
                       calendarSubView === 'annual-365'
                         ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                         : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
@@ -1810,7 +1820,7 @@ export function HabitDashboard({
                       });
                       setIsRoadmapOpen(true);
                     }}
-                    className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-3 sm:px-3.5 py-1.5 rounded-full text-xs sm:text-[12.5px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] transition-all cursor-pointer flex items-center gap-1.5"
                     title="Drop 1: Releasing October 10th, 2026"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse" />
@@ -1965,10 +1975,10 @@ export function HabitDashboard({
               className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div>
-                <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-[26px] sm:text-[30px] lg:text-[32px] tracking-tight sm:tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Goals & Challenges
                 </h2>
-                <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                <p className="text-xs sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                   Sprint towards unbreakable consistency with 14, 21, and 30-day challenges.
                 </p>
               </div>
@@ -1976,7 +1986,7 @@ export function HabitDashboard({
               {!challenge && (
                 <button
                   onClick={handleOpenChallengeModal}
-                  className="px-5 py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm shrink-0 cursor-pointer self-start sm:self-auto"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs sm:text-[13px] font-semibold shadow-sm shrink-0 cursor-pointer self-start sm:self-auto"
                 >
                   + Launch challenge
                 </button>
@@ -2119,10 +2129,10 @@ export function HabitDashboard({
               className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
             >
               <div>
-                <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+                <h2 className="font-clash font-semibold text-2xl min-[400px]:text-[26px] sm:text-[30px] lg:text-[32px] tracking-tight sm:tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1]">
                   Discipline Journal
                 </h2>
-                <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                <p className="text-xs sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                   Log your monthly wins, self-reflections, and habit system adjustments.
                 </p>
               </div>
@@ -2172,9 +2182,7 @@ export function HabitDashboard({
               userEmail={userEmail}
               readOnly={isGuestMode}
               serverNotes={monthlyNotes[`${selectedYear}_${selectedMonth}`] ?? null}
-              onSaveNote={(y, m, text) => {
-                setMonthlyNotes((prev) => ({ ...prev, [`${y}_${m}`]: text }));
-              }}
+              onSaveNote={handleSaveMonthlyNote}
               onRequireAuth={() => setIsAuthModalOpen(true)}
             />
           </motion.section>
@@ -2195,10 +2203,10 @@ export function HabitDashboard({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, delay: 0.04 }}
             >
-              <h2 className="font-clash font-semibold text-2xl sm:text-3xl text-[#15130f] dark:text-[#fbf8f1]">
+              <h2 className="font-clash font-semibold text-2xl min-[400px]:text-[26px] sm:text-[30px] lg:text-[32px] tracking-tight sm:tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1]">
                 Settings & Workspace
               </h2>
-              <p className="text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+              <p className="text-xs sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                 Customize your workspace, profile, and account preferences.
               </p>
             </motion.div>

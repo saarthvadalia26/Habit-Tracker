@@ -74,6 +74,20 @@ export function NotesSection({
   const lastSyncedRef = useRef<string>('');
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Keep stable reference to onSaveNote and current notes state
+  const onSaveNoteRef = useRef(onSaveNote);
+  useEffect(() => {
+    onSaveNoteRef.current = onSaveNote;
+  }, [onSaveNote]);
+
+  const currentNotesRef = useRef(notes);
+  useEffect(() => {
+    currentNotesRef.current = notes;
+  }, [notes]);
+
+  // Track currently loaded scopedKey to prevent re-initializing notes on timer ticks
+  const prevScopedKeyRef = useRef<string | null>(null);
+
   // Month-scoped storage key to keep each month's notes distinct
   const scopedKey = userEmail
     ? `${storageKey}_${userEmail}_${year}_${month}`
@@ -91,7 +105,7 @@ export function NotesSection({
     return false;
   };
 
-  // Core cloud sync function
+  // Core cloud sync function (fast and non-blocking)
   const syncToCloud = useCallback(
     async (text: string, targetYear: number, targetMonth: number) => {
       if (readOnly || !userEmail) return;
@@ -106,10 +120,10 @@ export function NotesSection({
         if (res.success) {
           lastSyncedRef.current = text;
           setSyncStatus('synced');
-          if (onSaveNote) onSaveNote(targetYear, targetMonth, text);
+          if (onSaveNoteRef.current) onSaveNoteRef.current(targetYear, targetMonth, text);
           setTimeout(() => {
             setSyncStatus((current) => (current === 'synced' ? 'idle' : current));
-          }, 2500);
+          }, 2000);
         } else {
           setSyncStatus('error');
         }
@@ -117,86 +131,102 @@ export function NotesSection({
         setSyncStatus('error');
       }
     },
-    [readOnly, userEmail, onSaveNote]
+    [readOnly, userEmail]
   );
 
-  // Load notes on mount and whenever selected month/year/scopedKey/serverNotes changes
+  // Load notes on mount and whenever selected month/year/scopedKey changes
   useEffect(() => {
     let isCancelled = false;
+    const isMonthChange = prevScopedKeyRef.current !== scopedKey;
 
-    // 1. If server notes exist from cloud (passed from parent), use them and cache locally
-    if (typeof serverNotes === 'string') {
+    if (isMonthChange) {
+      prevScopedKeyRef.current = scopedKey;
+
+      // 1. If server notes exist from cloud (passed from parent), use them and cache locally
+      if (typeof serverNotes === 'string') {
+        setNotes(serverNotes);
+        lastSyncedRef.current = serverNotes;
+        try {
+          localStorage.setItem(scopedKey, serverNotes);
+        } catch {}
+        setSyncStatus('idle');
+        return;
+      }
+
+      // 2. If authenticated and serverNotes is not yet passed, fetch directly from cloud (cross-device sync)
+      if (!readOnly && userEmail) {
+        setIsLoadingCloud(true);
+        getMonthlyNoteAction(year, month)
+          .then((res) => {
+            if (isCancelled) return;
+            if (typeof res?.note === 'string') {
+              setNotes(res.note);
+              lastSyncedRef.current = res.note;
+              try {
+                localStorage.setItem(scopedKey, res.note);
+              } catch {}
+              if (onSaveNoteRef.current) onSaveNoteRef.current(year, month, res.note);
+              setSyncStatus('idle');
+            } else {
+              // No note found in cloud, check local storage draft
+              let savedLocal: string | null = null;
+              try {
+                savedLocal = localStorage.getItem(scopedKey);
+              } catch {}
+
+              if (savedLocal !== null && savedLocal.trim() !== '') {
+                setNotes(savedLocal);
+                syncToCloud(savedLocal, year, month);
+              } else {
+                setNotes('');
+                lastSyncedRef.current = '';
+              }
+            }
+          })
+          .catch(() => {
+            if (isCancelled) return;
+            let savedLocal: string | null = null;
+            try {
+              savedLocal = localStorage.getItem(scopedKey);
+            } catch {}
+            setNotes(savedLocal ?? '');
+          })
+          .finally(() => {
+            if (!isCancelled) {
+              setIsLoadingCloud(false);
+            }
+          });
+
+        return () => {
+          isCancelled = true;
+        };
+      }
+
+      // 3. Fallback for guest mode
+      let savedLocal: string | null = null;
+      try {
+        savedLocal = localStorage.getItem(scopedKey);
+      } catch {}
+
+      if (savedLocal !== null && savedLocal.trim() !== '') {
+        setNotes(savedLocal);
+      } else {
+        setNotes(DEFAULT_NOTES_TEMPLATE);
+      }
+      lastSyncedRef.current = '';
+      return;
+    }
+
+    // If month did not change, only adopt incoming serverNotes if local notes is empty and serverNotes arrived asynchronously
+    if (typeof serverNotes === 'string' && currentNotesRef.current === '' && serverNotes.trim() !== '') {
       setNotes(serverNotes);
       lastSyncedRef.current = serverNotes;
       try {
         localStorage.setItem(scopedKey, serverNotes);
       } catch {}
       setSyncStatus('idle');
-      return;
     }
-
-    // 2. If authenticated and serverNotes is not passed, fetch directly from cloud (cross-device sync)
-    if (!readOnly && userEmail) {
-      setIsLoadingCloud(true);
-      getMonthlyNoteAction(year, month)
-        .then((res) => {
-          if (isCancelled) return;
-          if (typeof res?.note === 'string') {
-            setNotes(res.note);
-            lastSyncedRef.current = res.note;
-            try {
-              localStorage.setItem(scopedKey, res.note);
-            } catch {}
-            if (onSaveNote) onSaveNote(year, month, res.note);
-            setSyncStatus('idle');
-          } else {
-            // No note found in cloud, check local storage draft
-            let savedLocal: string | null = null;
-            try {
-              savedLocal = localStorage.getItem(scopedKey);
-            } catch {}
-
-            if (savedLocal !== null && savedLocal.trim() !== '') {
-              setNotes(savedLocal);
-              syncToCloud(savedLocal, year, month);
-            } else {
-              setNotes('');
-              lastSyncedRef.current = '';
-            }
-          }
-        })
-        .catch(() => {
-          if (isCancelled) return;
-          let savedLocal: string | null = null;
-          try {
-            savedLocal = localStorage.getItem(scopedKey);
-          } catch {}
-          setNotes(savedLocal ?? '');
-        })
-        .finally(() => {
-          if (!isCancelled) {
-            setIsLoadingCloud(false);
-          }
-        });
-
-      return () => {
-        isCancelled = true;
-      };
-    }
-
-    // 3. Fallback for guest mode
-    let savedLocal: string | null = null;
-    try {
-      savedLocal = localStorage.getItem(scopedKey);
-    } catch {}
-
-    if (savedLocal !== null && savedLocal.trim() !== '') {
-      setNotes(savedLocal);
-    } else {
-      setNotes(DEFAULT_NOTES_TEMPLATE);
-    }
-    lastSyncedRef.current = '';
-  }, [scopedKey, serverNotes, readOnly, userEmail, year, month, syncToCloud, onSaveNote]);
+  }, [scopedKey, serverNotes, readOnly, userEmail, year, month, syncToCloud]);
 
   // Clean up debounced timers on unmount
   useEffect(() => {
@@ -213,10 +243,14 @@ export function NotesSection({
     const val = e.target.value;
     setNotes(val);
 
-    // 1. Instant local persistence
+    // 1. Instant local persistence and optimistic parent reflection
     try {
       localStorage.setItem(scopedKey, val);
     } catch {}
+
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, val);
+    }
 
     // 2. Debounced cloud sync (750ms after user pauses typing)
     if (!readOnly && userEmail) {
@@ -248,6 +282,10 @@ export function NotesSection({
     try {
       localStorage.setItem(scopedKey, newText);
     } catch {}
+
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, newText);
+    }
 
     if (!readOnly && userEmail) {
       setSyncStatus('saving');
@@ -431,26 +469,38 @@ export function NotesSection({
     }
 
     const updated = lines.join('\n');
+
+    // 1. Instant 0ms local state update (UI checkbox reflects immediately)
     setNotes(updated);
     try {
       localStorage.setItem(scopedKey, updated);
     } catch {}
 
+    // 2. Immediate optimistic parent reflection (prevents serverNotes prop delay or reverts)
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, updated);
+    }
+    lastSyncedRef.current = updated;
+
+    // 3. Defer celebration particle effects to next animation frame so DOM paints instantaneously
     if (nextState) {
-      try {
-        confetti({
-          particleCount: 24,
-          spread: 45,
-          origin: { x: 0.5, y: 0.6 },
-          colors: ['#ff5a1f', '#fbf8f1', '#15130f', '#fbbf24'],
-          ticks: 120,
-          gravity: 1.2,
-          scalar: 0.75,
-        });
-      } catch {}
+      requestAnimationFrame(() => {
+        try {
+          confetti({
+            particleCount: 24,
+            spread: 45,
+            origin: { x: 0.5, y: 0.6 },
+            colors: ['#ff5a1f', '#fbf8f1', '#15130f', '#fbbf24'],
+            ticks: 120,
+            gravity: 1.2,
+            scalar: 0.75,
+          });
+        } catch {}
+      });
       toast.success('Task checked off!', { duration: 1500 });
     }
 
+    // 4. Non-blocking cloud sync in background (~30ms)
     if (!readOnly && userEmail) {
       syncToCloud(updated, year, month);
     }
@@ -468,6 +518,11 @@ export function NotesSection({
     try {
       localStorage.setItem(scopedKey, updated);
     } catch {}
+
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, updated);
+    }
+    lastSyncedRef.current = updated;
 
     toast.success('Task added to journal!');
     if (!readOnly && userEmail) {
@@ -587,6 +642,11 @@ export function NotesSection({
       localStorage.setItem(scopedKey, newText);
     } catch {}
 
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, newText);
+    }
+    lastSyncedRef.current = newText;
+
     if (!readOnly && userEmail) {
       syncToCloud(newText, year, month);
     }
@@ -610,6 +670,12 @@ export function NotesSection({
     try {
       localStorage.setItem(scopedKey, DEFAULT_NOTES_TEMPLATE);
     } catch {}
+
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, DEFAULT_NOTES_TEMPLATE);
+    }
+    lastSyncedRef.current = DEFAULT_NOTES_TEMPLATE;
+
     if (!readOnly && userEmail) {
       syncToCloud(DEFAULT_NOTES_TEMPLATE, year, month);
     }
@@ -624,6 +690,12 @@ export function NotesSection({
     try {
       localStorage.setItem(scopedKey, '');
     } catch {}
+
+    if (onSaveNoteRef.current) {
+      onSaveNoteRef.current(year, month, '');
+    }
+    lastSyncedRef.current = '';
+
     if (!readOnly && userEmail) {
       syncToCloud('', year, month);
     }
