@@ -660,12 +660,7 @@ export function NotesSection({
     }, 50);
   };
 
-  const handleLoadTemplate = () => {
-    if (handleGuardAction()) return;
-
-    if (notes && !window.confirm('Replace current journal text with the starter template?')) {
-      return;
-    }
+  const applyTemplate = () => {
     setNotes(DEFAULT_NOTES_TEMPLATE);
     try {
       localStorage.setItem(scopedKey, DEFAULT_NOTES_TEMPLATE);
@@ -679,13 +674,31 @@ export function NotesSection({
     if (!readOnly && userEmail) {
       syncToCloud(DEFAULT_NOTES_TEMPLATE, year, month);
     }
+    toast.success('Starter template loaded.');
   };
 
-  const handleClear = () => {
+  const handleLoadTemplate = () => {
     if (handleGuardAction()) return;
 
-    if (!notes) return;
-    if (!window.confirm('Are you sure you want to clear this month’s journal?')) return;
+    if (notes && notes.trim().length > 0) {
+      toast('Replace current journal?', {
+        description: 'This will replace your current text with the starter template.',
+        action: {
+          label: 'Load Template',
+          onClick: applyTemplate,
+        },
+        cancel: {
+          label: 'Cancel',
+          onClick: () => {},
+        },
+        duration: 6000,
+      });
+      return;
+    }
+    applyTemplate();
+  };
+
+  const executeClear = () => {
     setNotes('');
     try {
       localStorage.setItem(scopedKey, '');
@@ -699,6 +712,26 @@ export function NotesSection({
     if (!readOnly && userEmail) {
       syncToCloud('', year, month);
     }
+    toast.info('Journal cleared.');
+  };
+
+  const handleClear = () => {
+    if (handleGuardAction()) return;
+
+    if (!notes || notes.trim().length === 0) return;
+
+    toast('Clear this month’s journal?', {
+      description: 'Your notes for this month will be wiped clean.',
+      action: {
+        label: 'Clear Journal',
+        onClick: executeClear,
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+      duration: 6000,
+    });
   };
 
   // Compute stats

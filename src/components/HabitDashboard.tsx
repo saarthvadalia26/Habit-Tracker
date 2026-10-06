@@ -204,6 +204,7 @@ export function HabitDashboard({
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>(
     isGuestMode ? [] : (initialPastChallenges ?? [])
   );
+  const [confirmDeletePastChallengeId, setConfirmDeletePastChallengeId] = useState<string | null>(null);
 
   // Monthly reflections notes state (persisted across devices)
   const [monthlyNotes, setMonthlyNotes] = useState<Record<string, string>>(initialMonthlyNotes ?? {});
@@ -998,7 +999,15 @@ export function HabitDashboard({
 
   return (
     <div className="min-h-screen w-full bg-[#f2ecdf] dark:bg-[#11100d] text-[#15130f] dark:text-[#fbf8f1] font-archivo flex flex-col lg:pl-[260px] xl:pl-[268px] antialiased transition-colors duration-300">
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        duration={4000}
+        toastOptions={{
+          className: 'font-archivo rounded-2xl shadow-xl border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-sm backdrop-blur-md',
+        }}
+      />
 
       {/* Floating Upcoming Release Toast */}
       <UpcomingReleaseToast onOpenRoadmap={() => setIsRoadmapOpen(true)} />
@@ -2128,9 +2137,18 @@ export function HabitDashboard({
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to clear your entire challenge history?')) {
-                        handleClearPastChallenges();
-                      }
+                      toast('Clear challenge history?', {
+                        description: 'Permanently remove all completed and abandoned challenge records.',
+                        action: {
+                          label: 'Clear All',
+                          onClick: () => handleClearPastChallenges(),
+                        },
+                        cancel: {
+                          label: 'Cancel',
+                          onClick: () => {},
+                        },
+                        duration: 6000,
+                      });
                     }}
                     className="text-xs text-[#15130f]/40 hover:text-rose-600 dark:text-[#fbf8f1]/40 dark:hover:text-rose-400 font-medium transition-colors cursor-pointer"
                   >
@@ -2186,16 +2204,60 @@ export function HabitDashboard({
                           </p>
                         </div>
 
-                        {/* Delete past challenge button */}
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePastChallenge(pc.id)}
-                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 text-[#15130f]/35 hover:text-rose-600 dark:text-[#fbf8f1]/35 dark:hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-all cursor-pointer shrink-0"
-                          title="Delete this challenge from history"
-                          aria-label={`Delete ${pc.title} from history`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {/* Delete past challenge controls (Always visible across all devices) */}
+                        {confirmDeletePastChallengeId === pc.id ? (
+                          <div className="flex items-center gap-1.5 shrink-0 self-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeletePastChallengeId(null);
+                              }}
+                              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeletePastChallengeId(null);
+                                handleDeletePastChallenge(pc.id);
+                              }}
+                              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeletePastChallengeId(pc.id);
+                              toast(`Delete "${pc.title}" from history?`, {
+                                description: 'Are you sure you want to delete this challenge from your history?',
+                                action: {
+                                  label: 'Delete',
+                                  onClick: () => {
+                                    setConfirmDeletePastChallengeId(null);
+                                    handleDeletePastChallenge(pc.id);
+                                  },
+                                },
+                                cancel: {
+                                  label: 'Cancel',
+                                  onClick: () => setConfirmDeletePastChallengeId(null),
+                                },
+                                duration: 6000,
+                              });
+                            }}
+                            className="p-2 sm:p-2 text-[#15130f]/40 hover:text-rose-600 dark:text-[#fbf8f1]/40 dark:hover:text-rose-400 rounded-xl hover:bg-rose-500/10 dark:hover:bg-rose-500/15 active:scale-95 transition-all cursor-pointer shrink-0 self-center"
+                            title="Delete this challenge from history"
+                            aria-label={`Delete ${pc.title} from history`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
