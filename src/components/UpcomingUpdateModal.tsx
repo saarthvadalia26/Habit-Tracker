@@ -141,7 +141,7 @@ export function UpcomingUpdateModal({ isOpen, onClose }: UpcomingUpdateModalProp
                 The v2.0 Evolution Cycle
               </h3>
               <p className="text-xs sm:text-sm text-[#15130f]/60 dark:text-[#fbf8f1]/60 mt-1">
-                6 dedicated staged drops designed to systematically refine your discipline.
+                6 weekly staged drops designed to systematically refine your discipline.
               </p>
             </div>
 
