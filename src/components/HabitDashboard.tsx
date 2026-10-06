@@ -221,6 +221,26 @@ export function HabitDashboard({
     setDrop1Unlocked(isDrop1Unlocked());
   }, []);
 
+  // Permanently lock desktop sidebar to viewport: prevent wheel/touch scroll propagation
+  const sidebarRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el) return;
+
+    const preventScroll = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    el.addEventListener('wheel', preventScroll, { passive: false });
+    el.addEventListener('touchmove', preventScroll, { passive: false });
+
+    return () => {
+      el.removeEventListener('wheel', preventScroll);
+      el.removeEventListener('touchmove', preventScroll);
+    };
+  }, []);
+
   // 66 Motivational Quotes with 15-second automatic shuffle timer (deterministic SSR initial state)
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [quoteProgress, setQuoteProgress] = useState(0);
@@ -906,26 +926,30 @@ export function HabitDashboard({
       {/* ============================================================== */}
       {/* 1. DESKTOP LOCKED SIDEBAR (Brand: Habit Tracker) */}
       {/* ============================================================== */}
-      <aside className="hidden lg:flex w-[260px] xl:w-[268px] h-screen h-[100dvh] max-h-screen fixed top-0 left-0 bottom-0 flex-col justify-between px-3.5 xl:px-4.5 py-3 xl:py-4.5 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none">
-        <div className="flex flex-col gap-2.5 xl:gap-4 shrink-0">
-          {/* Brand Logo: Habit Tracker */}
+      <aside
+        ref={sidebarRef}
+        className="hidden lg:flex w-[260px] xl:w-[268px] h-screen h-[100dvh] max-h-screen fixed top-0 left-0 bottom-0 flex-col justify-between px-3.5 xl:px-4.5 py-3 xl:py-4 border-r border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf] dark:bg-[#11100d] z-20 shrink-0 overflow-hidden select-none overscroll-none"
+        style={{ overscrollBehavior: 'none', touchAction: 'none' }}
+      >
+        <div className="flex flex-col gap-2 xl:gap-3.5 shrink-0">
+          {/* Brand Logo: Habit Tracker (Prominent & bold) */}
           <div className="flex items-center justify-between px-1 shrink-0">
-            <h1 className="font-clash font-bold text-xl xl:text-[22px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
+            <h1 className="font-clash font-bold text-[22px] min-[1280px]:text-[24px] xl:text-[26px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
               Habit Tracker<span className="text-[#ff5a1f]">.</span>
             </h1>
 
             {/* Quick Dark Mode Icon Toggle */}
             <button
               onClick={toggleTheme}
-              className="w-7 h-7 xl:w-8 xl:h-8 rounded-full flex items-center justify-center text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-all cursor-pointer"
+              className="w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-all cursor-pointer"
               title="Toggle theme"
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex flex-col gap-0.5 xl:gap-1 w-full shrink-0">
+          {/* Navigation Links (Increased prominent typography and touch target) */}
+          <nav className="flex flex-col gap-1 w-full shrink-0">
             {[
               { id: 'today', label: 'Today', icon: Home },
               { id: 'calendar', label: 'Calendar', icon: CalendarDays },
@@ -939,18 +963,18 @@ export function HabitDashboard({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`relative flex items-center gap-2.5 xl:gap-3 w-full px-3 py-1.5 min-[1280px]:py-2 min-[1440px]:py-2.5 rounded-[10px] xl:rounded-[12px] text-[13.5px] xl:text-[14.5px] font-medium transition-all cursor-pointer ${
+                  className={`relative flex items-center gap-2.5 xl:gap-3 w-full px-3.5 py-2 min-[1280px]:py-2.5 min-[1440px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[15px] min-[1280px]:text-[15.5px] xl:text-[16px] font-semibold tracking-[-0.01em] transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#15130f] dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#ff5a1f]' : ''}`} />
+                  <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-[#ff5a1f]' : ''}`} />
                   <span>{tab.label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute left-0 w-1 h-3.5 xl:h-4 bg-[#ff5a1f] rounded-r-full"
+                      className="absolute left-0 w-1.5 h-4 xl:h-4.5 bg-[#ff5a1f] rounded-r-full"
                       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -958,16 +982,16 @@ export function HabitDashboard({
               );
             })}
 
-            {/* Sleek Roadmap Nav Item (seamlessly integrated, no bulky separate card) */}
+            {/* Sleek Roadmap Nav Item */}
             <button
               onClick={() => setIsRoadmapOpen(true)}
-              className="flex items-center justify-between w-full px-3 py-1.5 min-[1280px]:py-2 min-[1440px]:py-2.5 rounded-[10px] xl:rounded-[12px] text-[13.5px] xl:text-[14.5px] font-medium text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
+              className="flex items-center justify-between w-full px-3.5 py-2 min-[1280px]:py-2.5 min-[1440px]:py-2.5 rounded-[12px] xl:rounded-[14px] text-[15px] min-[1280px]:text-[15.5px] xl:text-[16px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 dark:hover:bg-[#ff5a1f]/10 transition-all cursor-pointer group mt-0.5"
             >
               <div className="flex items-center gap-2.5 xl:gap-3 min-w-0">
-                <Rocket className="w-4 h-4 text-[#ff5a1f] shrink-0" />
+                <Rocket className="w-[18px] h-[18px] text-[#ff5a1f] shrink-0" />
                 <span className="truncate">Roadmap</span>
               </div>
-              <span className="text-[9.5px] xl:text-[10px] font-bold px-1.5 xl:px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors shrink-0">
+              <span className="text-[10px] xl:text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] group-hover:bg-[#ff5a1f] group-hover:text-white transition-colors shrink-0">
                 v2.0
               </span>
             </button>
@@ -975,18 +999,18 @@ export function HabitDashboard({
         </div>
 
         {/* Bottom Section: Account Profile & Compact Quote Widget (Locked, fitted to screen, never overflows) */}
-        <div className="flex flex-col gap-2 xl:gap-2.5 pt-2 xl:pt-3 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0">
+        <div className="flex flex-col gap-2 xl:gap-2.5 pt-2 xl:pt-2.5 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0">
           {/* Account Row */}
-          <div className="h-[34px] xl:h-[38px] shrink-0 flex items-center justify-between px-2 py-1 rounded-xl hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors">
+          <div className="h-[36px] xl:h-[40px] shrink-0 flex items-center justify-between px-2 py-1 rounded-xl hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors">
             <div className="flex items-center gap-2 xl:gap-2.5 min-w-0">
-              <div className="w-6.5 h-6.5 xl:w-7 xl:h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-[11px] xl:text-xs shrink-0 shadow-sm">
+              <div className="w-7 h-7 xl:w-7.5 xl:h-7.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs xl:text-[13px] shrink-0 shadow-sm">
                 {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
+                <span className="text-[13px] xl:text-[14px] font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
                   {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
                 </span>
-                <span className="text-[10px] xl:text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                <span className="text-[10.5px] xl:text-[11px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
                   {userEmail || 'Local workspace'}
                 </span>
               </div>
@@ -995,17 +1019,17 @@ export function HabitDashboard({
             {isGuestMode ? (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="text-[11px] xl:text-xs font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2 py-0.5 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
+                className="text-xs xl:text-[13px] font-semibold text-[#ff5a1f] hover:text-[#e04a12] px-2.5 py-1 rounded-md hover:bg-[#ff5a1f]/10 transition-colors shrink-0 cursor-pointer"
               >
                 Sign In
               </button>
             ) : (
               <button
                 onClick={() => setIsProfileModalOpen(true)}
-                className="p-1 rounded-md text-[#15130f]/50 hover:text-[#15130f] dark:text-[#fbf8f1]/50 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors shrink-0 cursor-pointer"
+                className="p-1.5 rounded-md text-[#15130f]/50 hover:text-[#15130f] dark:text-[#fbf8f1]/50 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors shrink-0 cursor-pointer"
                 title="Profile Settings"
               >
-                <Sliders className="w-3.5 h-3.5" />
+                <Sliders className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -1017,11 +1041,11 @@ export function HabitDashboard({
             onClick={handleManualShuffleQuote}
             onMouseEnter={() => setIsQuoteHovered(true)}
             onMouseLeave={() => setIsQuoteHovered(false)}
-            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 h-[104px] xl:h-[120px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
+            className="cursor-pointer p-2.5 xl:p-3 rounded-[12px] xl:rounded-[14px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 h-[104px] xl:h-[118px] shrink-0 flex flex-col justify-between shadow-sm hover:border-[#ff5a1f]/30 transition-all select-none sidebar-quote-card"
             title="Click to shuffle quote • Hover to pause"
           >
             <div className="flex items-center justify-between shrink-0">
-              <span className="text-[8.5px] xl:text-[9px] font-bold uppercase tracking-wider px-1.5 xl:px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
+              <span className="text-[9px] xl:text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f]">
                 {MOTIVATION_QUOTES[quoteIndex]?.tag || 'Mindset'}
               </span>
               <button
@@ -1030,7 +1054,7 @@ export function HabitDashboard({
                   e.stopPropagation();
                   handleManualShuffleQuote();
                 }}
-                className="p-0.5 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors"
+                className="p-1 rounded-full text-[#15130f]/40 hover:text-[#ff5a1f] dark:text-[#fbf8f1]/40 dark:hover:text-[#ff5a1f] transition-colors"
                 title="Shuffle next quote"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
@@ -1039,15 +1063,15 @@ export function HabitDashboard({
 
             {/* Stable quote container with clamp so quotes never overflow */}
             <div className="h-[38px] xl:h-[46px] flex items-center overflow-hidden my-auto">
-              <p className="font-clash text-[10.5px] min-[1400px]:text-[11.5px] leading-[1.3] line-clamp-2 min-[1400px]:line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
+              <p className="font-clash text-[11px] min-[1400px]:text-[12px] leading-[1.3] line-clamp-2 min-[1400px]:line-clamp-3 text-[#15130f] dark:text-[#fbf8f1] font-medium">
                 “{MOTIVATION_QUOTES[quoteIndex]?.quote}”
               </p>
             </div>
 
             <div className="flex flex-col gap-0.5 xl:gap-1 shrink-0">
-              <div className="flex items-center justify-between text-[9.5px] xl:text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+              <div className="flex items-center justify-between text-[10px] xl:text-[10.5px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
                 <span className="truncate max-w-[160px] xl:max-w-[175px]">— {MOTIVATION_QUOTES[quoteIndex]?.author}</span>
-                <span className={`text-[8.5px] xl:text-[9px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
+                <span className={`text-[9px] xl:text-[9.5px] font-mono shrink-0 ml-1 transition-colors ${isQuoteHovered ? 'text-[#ff5a1f] font-semibold' : 'opacity-60'}`}>
                   {isQuoteHovered ? 'Paused' : `${Math.max(1, Math.ceil(15 * (1 - quoteProgress / 100)))}s`}
                 </span>
               </div>
@@ -1072,7 +1096,7 @@ export function HabitDashboard({
       {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
       {/* ============================================================== */}
       <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
-        <h1 className="font-clash font-bold text-xl sm:text-2xl tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
+        <h1 className="font-clash font-bold text-2xl sm:text-[26px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
           Habit Tracker<span className="text-[#ff5a1f]">.</span>
         </h1>
 
@@ -1095,7 +1119,7 @@ export function HabitDashboard({
 
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-[13px] font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span className="hidden min-[360px]:inline">Habit</span>
@@ -1233,7 +1257,7 @@ export function HabitDashboard({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4.5 sm:px-5.5 py-2.5 sm:py-3 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-[13.5px] sm:text-[15.5px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                   <span>New habit</span>
@@ -1752,7 +1776,7 @@ export function HabitDashboard({
               <div className="flex items-center p-1 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 gap-1">
                 <button
                   onClick={() => setCalendarSubView('matrix')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
                     calendarSubView === 'matrix'
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                       : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
@@ -1763,7 +1787,7 @@ export function HabitDashboard({
                 {drop1Unlocked ? (
                   <button
                     onClick={() => setCalendarSubView('annual-365')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all cursor-pointer ${
                       calendarSubView === 'annual-365'
                         ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
                         : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
@@ -1780,7 +1804,7 @@ export function HabitDashboard({
                       });
                       setIsRoadmapOpen(true);
                     }}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f] transition-all cursor-pointer flex items-center gap-1.5"
                     title="Drop 1: Releasing October 10th, 2026"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse" />
@@ -2197,7 +2221,7 @@ export function HabitDashboard({
 
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
-                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-colors cursor-pointer text-center"
+                  className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-[13px] font-semibold hover:bg-[#ff5a1f] hover:text-white transition-colors cursor-pointer text-center"
                 >
                   Personalize Profile
                 </button>
@@ -2215,7 +2239,7 @@ export function HabitDashboard({
                 </div>
                 <button
                   onClick={toggleTheme}
-                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-[13px] font-semibold flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
@@ -2234,7 +2258,7 @@ export function HabitDashboard({
                 </div>
                 <button
                   onClick={() => setIsRoadmapOpen(true)}
-                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 text-[13px] font-semibold hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
                 >
                   View 6 Drops
                 </button>

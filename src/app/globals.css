@@ -241,20 +241,46 @@
   }
 }
 
-/* Responsive Desktop Sidebar: Fit completely on screen across all device heights */
-@media (max-height: 680px) {
+/* Responsive Desktop Sidebar: Fit completely on screen across all device heights with zero overflow */
+aside {
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+}
+
+@media (max-height: 740px) {
   .sidebar-quote-card {
-    height: 92px !important;
-    padding: 8px 10px !important;
+    height: 84px !important;
+    padding: 6px 10px !important;
   }
   .sidebar-quote-card p {
     -webkit-line-clamp: 2 !important;
     line-clamp: 2 !important;
+    font-size: 10px !important;
+  }
+}
+
+@media (max-height: 640px) {
+  .sidebar-quote-card {
+    height: 68px !important;
+    padding: 5px 8px !important;
+  }
+  .sidebar-quote-card p {
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+    font-size: 9.5px !important;
   }
 }
 
 @media (max-height: 540px) {
   .sidebar-quote-card {
     display: none !important;
+  }
+}
+
+@media (max-height: 480px) {
+  aside nav button {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    font-size: 13.5px !important;
   }
 }
