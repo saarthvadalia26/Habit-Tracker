@@ -28,6 +28,7 @@ interface ActiveChallengeModalProps {
   habits: HabitWithLogs[];
   onCompleteChallenge: (challengeId: string) => Promise<void>;
   onAbandonChallenge: (challengeId: string) => Promise<void>;
+  onDeleteChallenge?: (challengeId: string) => Promise<void>;
   onCelebrate?: () => void;
 }
 
@@ -38,10 +39,12 @@ export function ActiveChallengeModal({
   habits,
   onCompleteChallenge,
   onAbandonChallenge,
+  onDeleteChallenge,
   onCelebrate,
 }: ActiveChallengeModalProps) {
   const [isFinishing, setIsFinishing] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
 
   const progress = useMemo(() => {
@@ -83,12 +86,12 @@ export function ActiveChallengeModal({
   };
 
   const handleAbandon = async () => {
-    if (isAbandoning) return;
+    if (isAbandoning || isDeleting) return;
     setIsAbandoning(true);
     try {
       await onAbandonChallenge(challenge.id);
-      toast.info('Challenge reset', {
-        description: 'You can now start a fresh challenge whenever you are ready.',
+      toast.info('Challenge marked as abandoned', {
+        description: 'Recorded in your challenge history. Start a fresh sprint whenever ready.',
       });
       setShowAbandonConfirm(false);
       onClose();
@@ -96,6 +99,20 @@ export function ActiveChallengeModal({
       toast.error('Failed to reset challenge');
     } finally {
       setIsAbandoning(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting || isAbandoning || !onDeleteChallenge) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteChallenge(challenge.id);
+      setShowAbandonConfirm(false);
+      onClose();
+    } catch {
+      toast.error('Failed to delete challenge');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -238,12 +255,12 @@ export function ActiveChallengeModal({
           {/* Footer */}
           <div className="p-4 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#fbf8f1] dark:bg-[#1c1a16]">
             {showAbandonConfirm ? (
-              <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25">
+              <div className="w-full flex flex-col gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25">
                 <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-semibold text-xs">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>Reset and end this challenge?</span>
+                  <span>Choose how to end this active challenge:</span>
                 </div>
-                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowAbandonConfirm(false)}
@@ -251,13 +268,24 @@ export function ActiveChallengeModal({
                   >
                     Cancel
                   </button>
+                  {onDeleteChallenge && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isDeleting || isAbandoning}
+                      className="px-3.5 py-1.5 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 hover:bg-rose-500/20 text-[#15130f] dark:text-[#fbf8f1] hover:text-rose-600 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      title="Permanently discard without leaving an abandoned record in history"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete (No History)'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleAbandon}
-                    disabled={isAbandoning}
+                    disabled={isAbandoning || isDeleting}
                     className="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    {isAbandoning ? 'Resetting...' : 'Yes, Reset Challenge'}
+                    {isAbandoning ? 'Abandoning...' : 'Mark Abandoned'}
                   </button>
                 </div>
               </div>

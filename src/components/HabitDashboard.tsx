@@ -60,7 +60,13 @@ import {
   createChallengeAction,
   completeChallengeAction,
   abandonChallengeAction,
+  deleteChallengeAction,
+  clearPastChallengesAction,
 } from '@/app/actions/challenges';
+
+const isUuid = (val: unknown): boolean =>
+  typeof val === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
 import { signOutAction } from '@/app/actions/auth';
 import { AuthModal } from '@/components/AuthModal';
 import { PersonalizeProfileModal } from '@/components/PersonalizeProfileModal';
@@ -193,9 +199,11 @@ export function HabitDashboard({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Challenge state
-  const [challenge, setChallenge] = useState<Challenge | null>(initialChallenge);
-  const [pastChallenges, setPastChallenges] = useState<Challenge[]>(initialPastChallenges ?? []);
+  // Challenge state (guests never persist or see fake challenge history)
+  const [challenge, setChallenge] = useState<Challenge | null>(isGuestMode ? null : initialChallenge);
+  const [pastChallenges, setPastChallenges] = useState<Challenge[]>(
+    isGuestMode ? [] : (initialPastChallenges ?? [])
+  );
 
   // Monthly reflections notes state (persisted across devices)
   const [monthlyNotes, setMonthlyNotes] = useState<Record<string, string>>(initialMonthlyNotes ?? {});
@@ -857,6 +865,7 @@ export function HabitDashboard({
   }, []);
 
   // Complete active challenge with backend sync
+  // Complete active challenge with backend sync
   const handleCompleteChallenge = async (challengeId: string) => {
     const previousChallenge = challenge;
     setChallenge(null);
@@ -867,7 +876,7 @@ export function HabitDashboard({
       localStorage.removeItem('habit_challenge_guest');
     } catch {}
 
-    if (!isGuestMode && challengeId && !challengeId.startsWith('challenge-')) {
+    if (!isGuestMode && challengeId && isUuid(challengeId)) {
       try {
         const res = await completeChallengeAction(challengeId);
         if (res?.error) {
@@ -881,10 +890,10 @@ export function HabitDashboard({
         toast.error('Failed to complete challenge on server');
         return;
       }
-    }
-    // Move to past challenges list
-    if (previousChallenge) {
-      setPastChallenges((prev) => [{ ...previousChallenge, status: 'completed' }, ...prev]);
+      // Move to past challenges list ONLY if authenticated and real
+      if (previousChallenge && isUuid(previousChallenge.id)) {
+        setPastChallenges((prev) => [{ ...previousChallenge, status: 'completed' }, ...prev]);
+      }
     }
     toast.success('Challenge completed! Congratulations! 🎉');
   };
@@ -900,7 +909,7 @@ export function HabitDashboard({
       localStorage.removeItem('habit_challenge_guest');
     } catch {}
 
-    if (!isGuestMode && challengeId && !challengeId.startsWith('challenge-')) {
+    if (!isGuestMode && challengeId && isUuid(challengeId)) {
       try {
         const res = await abandonChallengeAction(challengeId);
         if (res?.error) {
@@ -910,12 +919,78 @@ export function HabitDashboard({
       } catch (err) {
         console.error('Failed to abandon challenge:', err);
       }
+      // Move to past challenges list ONLY if authenticated and real
+      if (previousChallenge && isUuid(previousChallenge.id)) {
+        setPastChallenges((prev) => [{ ...previousChallenge, status: 'abandoned' }, ...prev]);
+      }
     }
-    // Move to past challenges list
-    if (previousChallenge) {
-      setPastChallenges((prev) => [{ ...previousChallenge, status: 'abandoned' }, ...prev]);
+    toast.info('Challenge marked as abandoned.');
+  };
+
+  // Permanently delete an active challenge without recording it in history
+  const handleDeleteActiveChallenge = async (challengeId: string) => {
+    setChallenge(null);
+    setIsActiveChallengeModalOpen(false);
+    const key = userEmail ? `habit_challenge_${userEmail}` : 'habit_challenge_guest';
+    try {
+      localStorage.removeItem(key);
+      localStorage.removeItem('habit_challenge_guest');
+    } catch {}
+
+    if (!isGuestMode && challengeId && isUuid(challengeId)) {
+      try {
+        const res = await deleteChallengeAction(challengeId);
+        if (res?.error) {
+          toast.error(res.error);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to delete challenge:', err);
+      }
     }
-    toast.info('Challenge reset.');
+    toast.success('Challenge removed.');
+  };
+
+  // Permanently delete a past challenge from history
+  const handleDeletePastChallenge = async (challengeId: string) => {
+    const prev = pastChallenges;
+    setPastChallenges((curr) => curr.filter((c) => c.id !== challengeId));
+    if (!isGuestMode && challengeId && isUuid(challengeId)) {
+      try {
+        const res = await deleteChallengeAction(challengeId);
+        if (res?.error) {
+          toast.error(res.error);
+          setPastChallenges(prev);
+          return;
+        }
+      } catch {
+        toast.error('Failed to remove challenge from history');
+        setPastChallenges(prev);
+        return;
+      }
+    }
+    toast.success('Past challenge removed from history');
+  };
+
+  // Clear all past challenges from history
+  const handleClearPastChallenges = async () => {
+    const prev = pastChallenges;
+    setPastChallenges([]);
+    if (!isGuestMode) {
+      try {
+        const res = await clearPastChallengesAction();
+        if (res?.error) {
+          toast.error(res.error);
+          setPastChallenges(prev);
+          return;
+        }
+      } catch {
+        toast.error('Failed to clear challenge history');
+        setPastChallenges(prev);
+        return;
+      }
+    }
+    toast.success('Challenge history cleared');
   };
 
   // Days in month calculation for the full monthly table
@@ -2037,16 +2112,30 @@ export function HabitDashboard({
             )}
 
             {/* ── Challenge History ── */}
-            {pastChallenges.length > 0 && (
+            {/* ── Challenge History (Authenticated Users Only) ── */}
+            {!isGuestMode && pastChallenges.length > 0 && (
               <div className="mt-4">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <History className="w-5 h-5 text-[#15130f]/50 dark:text-[#fbf8f1]/50" />
-                  <h3 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
-                    Challenge History
-                  </h3>
-                  <span className="ml-auto text-xs text-[#15130f]/40 dark:text-[#fbf8f1]/40 font-medium">
-                    {pastChallenges.length} past {pastChallenges.length === 1 ? 'challenge' : 'challenges'}
-                  </span>
+                <div className="flex items-center justify-between gap-2.5 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <History className="w-5 h-5 text-[#15130f]/50 dark:text-[#fbf8f1]/50" />
+                    <h3 className="font-clash font-semibold text-lg text-[#15130f] dark:text-[#fbf8f1]">
+                      Challenge History
+                    </h3>
+                    <span className="text-xs text-[#15130f]/40 dark:text-[#fbf8f1]/40 font-medium">
+                      ({pastChallenges.length} {pastChallenges.length === 1 ? 'challenge' : 'challenges'})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to clear your entire challenge history?')) {
+                        handleClearPastChallenges();
+                      }
+                    }}
+                    className="text-xs text-[#15130f]/40 hover:text-rose-600 dark:text-[#fbf8f1]/40 dark:hover:text-rose-400 font-medium transition-colors cursor-pointer"
+                  >
+                    Clear history
+                  </button>
                 </div>
                 <div className="flex flex-col gap-3">
                   {pastChallenges.map((pc) => {
@@ -2063,7 +2152,7 @@ export function HabitDashboard({
                     return (
                       <div
                         key={pc.id}
-                        className={`rounded-2xl border p-4 sm:p-5 flex items-start gap-3.5 transition-colors ${
+                        className={`rounded-2xl border p-4 sm:p-5 flex items-start gap-3.5 transition-colors group ${
                           isCompleted
                             ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30'
                             : 'bg-red-50/50 dark:bg-red-950/15 border-red-200/50 dark:border-red-800/25'
@@ -2096,6 +2185,17 @@ export function HabitDashboard({
                             {pc.duration_days}-day sprint &bull; {startStr} → {endStr}
                           </p>
                         </div>
+
+                        {/* Delete past challenge button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePastChallenge(pc.id)}
+                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-2 text-[#15130f]/35 hover:text-rose-600 dark:text-[#fbf8f1]/35 dark:hover:text-rose-400 rounded-lg hover:bg-rose-500/10 transition-all cursor-pointer shrink-0"
+                          title="Delete this challenge from history"
+                          aria-label={`Delete ${pc.title} from history`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     );
                   })}
@@ -2106,7 +2206,9 @@ export function HabitDashboard({
             {/* Empty state when no active and no past */}
             {!challenge && pastChallenges.length === 0 && (
               <p className="text-xs text-[#15130f]/40 dark:text-[#fbf8f1]/40 text-center mt-2">
-                Your completed and abandoned challenges will appear here.
+                {isGuestMode
+                  ? 'Sign in to create personal challenges and track your history.'
+                  : 'Your past completed and concluded challenges will appear here.'}
               </p>
             )}
           </motion.section>
@@ -2530,6 +2632,7 @@ export function HabitDashboard({
           habits={habits}
           onCompleteChallenge={handleCompleteChallenge}
           onAbandonChallenge={handleAbandonChallenge}
+          onDeleteChallenge={handleDeleteActiveChallenge}
         />
       )}
 

@@ -17,8 +17,8 @@ export default async function HomePage() {
   const isGuestMode = !user;
   const initialHabits = user ? (habitsRes.data ?? []) : getSampleHabits();
   const initialCustomName = user?.customName || '';
-  const initialChallenge = challengeRes?.data ?? null;
-  const initialPastChallenges = pastChallengesRes?.data ?? [];
+  const initialChallenge = isGuestMode ? null : (challengeRes?.data ?? null);
+  const initialPastChallenges = isGuestMode ? [] : (pastChallengesRes?.data ?? []);
 
   return (
     <div className="min-h-screen w-full bg-[#f2ecdf] dark:bg-[#11100d] text-[#15130f] dark:text-[#fbf8f1] transition-colors duration-300">

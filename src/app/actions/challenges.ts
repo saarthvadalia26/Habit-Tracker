@@ -71,7 +71,12 @@ export async function getPastChallengesAction(): Promise<ActionResponse<Challeng
       return { data: [], error: 'Unable to load past challenges.' };
     }
 
-    return { data: (data as unknown as Challenge[]) ?? [], error: null };
+    // Strictly ensure only valid records actually created by this user are returned
+    const validChallenges = ((data as unknown as Challenge[]) ?? []).filter(
+      (c) => c && isUuid(c.id) && c.title && typeof c.duration_days === 'number'
+    );
+
+    return { data: validChallenges, error: null };
   } catch {
     return { data: [], error: 'Unable to load past challenges.' };
   }
@@ -245,3 +250,74 @@ export async function abandonChallengeAction(
     return { data: null, error: 'Unable to reset this challenge.' };
   }
 }
+
+/**
+ * Permanently deletes a challenge (active, completed, or abandoned)
+ */
+export async function deleteChallengeAction(
+  challengeId: string
+): Promise<ActionResponse<{ id: string }>> {
+  try {
+    if (!isUuid(challengeId)) {
+      return { data: null, error: 'Invalid challenge.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('id', challengeId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      return { data: null, error: 'Unable to delete this challenge.' };
+    }
+
+    revalidatePath('/');
+    return { data: { id: challengeId }, error: null };
+  } catch {
+    return { data: null, error: 'Unable to delete this challenge.' };
+  }
+}
+
+/**
+ * Clears all past challenges (completed or abandoned) for the authenticated user
+ */
+export async function clearPastChallengesAction(): Promise<ActionResponse<{ cleared: boolean }>> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('user_id', user.id)
+      .in('status', ['completed', 'abandoned']);
+
+    if (error) {
+      return { data: null, error: 'Unable to clear challenge history.' };
+    }
+
+    revalidatePath('/');
+    return { data: { cleared: true }, error: null };
+  } catch {
+    return { data: null, error: 'Unable to clear challenge history.' };
+  }
+}
+
