@@ -407,7 +407,7 @@ export function HabitDashboard({
       const effective = Math.max(s, explicitStreak);
       if (effective > max) max = effective;
     });
-    return max || 21;
+    return max;
   }, [habits]);
 
   // Compute Month-to-date (MTD) Completion Rate
@@ -733,8 +733,7 @@ export function HabitDashboard({
       prev.map((h) => {
         if (h.id === habitId) {
           const updatedLogs = { ...h.logs, [targetDate]: nextState };
-          const baseStreak = h.currentStreak || 1;
-          const updatedStreak = nextState ? baseStreak + 1 : Math.max(1, baseStreak - 1);
+          const updatedStreak = calculateContinuousStreak(updatedLogs);
           return {
             ...h,
             logs: updatedLogs,
@@ -806,7 +805,7 @@ export function HabitDashboard({
           icon: newIcon,
           targetTime: timeVal,
           logs: { [todayStr]: false },
-          currentStreak: 1,
+          currentStreak: 0,
         };
         setHabits((prev) => [created, ...prev]);
         setIsCreateModalOpen(false);
@@ -1511,7 +1510,7 @@ export function HabitDashboard({
                   <div className="flex flex-col gap-2.5 w-full">
                     {habits.map((habit) => {
                       const isDone = Boolean(habit.logs?.[todayStr]);
-                      const currentStreak = calculateContinuousStreak(habit.logs || {}) || habit.currentStreak || 1;
+                      const currentStreak = calculateContinuousStreak(habit.logs || {});
 
                       let displayTitle = habit.title;
                       let displaySubtitle = habit.subtitle || 'Daily routine';
@@ -1573,17 +1572,22 @@ export function HabitDashboard({
 
                           {/* Right: Streak Flame + Interactive Check Button */}
                           <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-                            {/* Streak Badge */}
-                            <div className="flex items-center gap-1 sm:gap-1.5 select-none" title={`${currentStreak} day streak`}>
-                              <Flame className="w-4 h-4 text-[#ff5a1f]" />
-                              <span
-                                className={`font-semibold text-[13.5px] sm:text-[14px] font-archivo ${
-                                  isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
-                                }`}
+                            {/* Streak Badge - Only shown when streak is 1 or more */}
+                            {currentStreak > 0 && (
+                              <div
+                                className="flex items-center gap-1 sm:gap-1.5 select-none"
+                                title={`${currentStreak} day streak`}
                               >
-                                {currentStreak}
-                              </span>
-                            </div>
+                                <Flame className="w-4 h-4 text-[#ff5a1f]" />
+                                <span
+                                  className={`font-semibold text-[13.5px] sm:text-[14px] font-archivo ${
+                                    isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
+                                  }`}
+                                >
+                                  {currentStreak}
+                                </span>
+                              </div>
+                            )}
 
                             {/* Check Button */}
                             <motion.button
