@@ -20,9 +20,9 @@ export const V2_RELEASE_INFO = {
   version: 'v2.0',
   title: 'The v2.0 Evolution Cycle',
   subtitle: '6 weekly staged drops designed to systematically refine your discipline.',
-  currentDrop: 1,
+  currentDrop: 2,
   totalDrops: 6,
-  nextDropDate: '10th October 2026',
+  nextDropDate: '17th October 2026',
 };
 
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
@@ -161,6 +161,41 @@ export function getDrop1DaysRemaining(): number {
   return getDropDaysRemaining(V2_DROPS[0]);
 }
 
+/**
+ * Checks whether Drop 2 (Milestone Flex Cards) is unlocked.
+ * - Always unlocked on localhost (NODE_ENV === 'development')
+ * - Unlocked if ?preview=true, ?drop2=true, or ?beta=true query param is present
+ * - Automatically unlocks on production when reaching Oct 17, 2026 00:00
+ */
+export function isDrop2Unlocked(): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      if (
+        search.includes('preview=true') ||
+        search.includes('drop2=true') ||
+        search.includes('beta=true') ||
+        search.includes('flex=true')
+      ) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return isDropReleased(V2_DROPS[1]);
+}
+
+/**
+ * Returns days remaining until Drop 2 launch
+ */
+export function getDrop2DaysRemaining(): number {
+  return getDropDaysRemaining(V2_DROPS[1]);
+}
+
 export const V2_DROPS: V2Drop[] = [
   {
     id: 'heatmap-365',
@@ -170,8 +205,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 1',
     targetDate: '10th October 2026',
     releaseDate: '2026-10-10T00:00:00',
-    status: 'up_next',
-    statusBadge: 'SPOTLIGHT • RELEASING OCT 10',
+    status: 'in_development',
+    statusBadge: 'RELEASED • OCT 10',
     category: '📊 VISUALS & ANALYTICS',
     tagline: 'A panoramic 52-week annual heatmap visualizing every single day of consistency.',
     description:
@@ -193,8 +228,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 2',
     targetDate: '17th October 2026',
     releaseDate: '2026-10-17T00:00:00',
-    status: 'planned',
-    statusBadge: 'NEXT IN QUEUE • OCT 17',
+    status: 'up_next',
+    statusBadge: 'SPOTLIGHT • RELEASING OCT 17',
     category: '🎨 CELEBRATION',
     tagline: 'Turn 30, 60, and 100-day streaks into bespoke shareable graphics.',
     description:

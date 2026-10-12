@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   AlertTriangle,
+  Share2,
 } from 'lucide-react';
 import { Challenge } from '@/types/challenge.types';
 import { HabitWithLogs } from '@/types/database.types';
@@ -30,6 +31,7 @@ interface ActiveChallengeModalProps {
   onAbandonChallenge: (challengeId: string) => Promise<void>;
   onDeleteChallenge?: (challengeId: string) => Promise<void>;
   onCelebrate?: () => void;
+  onFlexChallenge?: () => void;
 }
 
 export function ActiveChallengeModal({
@@ -41,6 +43,7 @@ export function ActiveChallengeModal({
   onAbandonChallenge,
   onDeleteChallenge,
   onCelebrate,
+  onFlexChallenge,
 }: ActiveChallengeModalProps) {
   const [isFinishing, setIsFinishing] = useState(false);
   const [isAbandoning, setIsAbandoning] = useState(false);
@@ -302,6 +305,19 @@ export function ActiveChallengeModal({
                 </button>
 
                 <div className="flex items-center gap-2">
+                  {onFlexChallenge && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onFlexChallenge();
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[#ff5a1f]/30 bg-[#ff5a1f]/10 text-[#ff5a1f] text-xs font-semibold hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Flex Card</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={onClose}

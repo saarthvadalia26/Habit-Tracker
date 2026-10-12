@@ -49,6 +49,7 @@ import {
   History,
   Award,
   XCircle,
+  Share2,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
@@ -72,12 +73,13 @@ import { AuthModal } from '@/components/AuthModal';
 import { PersonalizeProfileModal } from '@/components/PersonalizeProfileModal';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { ActiveChallengeModal } from '@/components/ActiveChallengeModal';
+import { MilestoneFlexCardModal } from '@/components/MilestoneFlexCardModal';
 import { NotesSection } from '@/components/NotesSection';
 import { YearHeatmapMatrix } from '@/components/YearHeatmapMatrix';
 import { ChallengeBanner } from '@/components/ChallengeBanner';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
-import { isDrop1Unlocked } from '@/config/releases';
+import { isDrop1Unlocked, isDrop2Unlocked } from '@/config/releases';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -199,6 +201,20 @@ export function HabitDashboard({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
+  // Drop 2: Milestone Flex Cards Studio state
+  const [isFlexCardModalOpen, setIsFlexCardModalOpen] = useState(false);
+  const [flexCardInitialMode, setFlexCardInitialMode] = useState<'streak' | 'today' | 'challenge' | 'habit'>('streak');
+  const [flexCardHabitId, setFlexCardHabitId] = useState<string | undefined>(undefined);
+
+  const handleOpenFlexCard = useCallback(
+    (cardMode: 'streak' | 'today' | 'challenge' | 'habit' = 'streak', habitId?: string) => {
+      setFlexCardInitialMode(cardMode);
+      setFlexCardHabitId(habitId);
+      setIsFlexCardModalOpen(true);
+    },
+    []
+  );
+
   // Challenge state (guests never persist or see fake challenge history)
   const [challenge, setChallenge] = useState<Challenge | null>(isGuestMode ? null : initialChallenge);
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>(
@@ -230,9 +246,11 @@ export function HabitDashboard({
   const [calendarSubView, setCalendarSubView] = useState<'matrix' | 'annual-365'>('matrix');
   const [heatmapYear, setHeatmapYear] = useState<number>(currentDate.getFullYear());
   const [drop1Unlocked, setDrop1Unlocked] = useState(false);
+  const [drop2Unlocked, setDrop2Unlocked] = useState(false);
 
   useEffect(() => {
     setDrop1Unlocked(isDrop1Unlocked());
+    setDrop2Unlocked(isDrop2Unlocked());
   }, []);
 
   // Permanently lock desktop sidebar to viewport: prevent wheel/touch scroll propagation
@@ -1351,7 +1369,21 @@ export function HabitDashboard({
                 </h2>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleOpenFlexCard('streak')}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40 font-semibold text-[13px] sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  title="Design & Export Milestone Flex Cards"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                  <span>Flex Card</span>
+                  {drop2Unlocked && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse" />
+                  )}
+                </motion.button>
+
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -1416,11 +1448,23 @@ export function HabitDashboard({
                     {doneCount} of {totalCount} done
                   </h3>
                   <p className="text-[12.5px] sm:text-[13px] text-[#fbf8f1]/65 leading-snug">
-                    {remainingCount === 0
-                      ? 'All habits completed for today! 🎉'
-                      : remainingCount === 1
-                      ? 'One more to close the day.'
-                      : `${remainingCount} more to close the day.`}
+                    {remainingCount === 0 ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span>All habits completed! 🎉</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenFlexCard('today')}
+                          className="text-[#ff5a1f] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <Share2 className="w-2.5 h-2.5" />
+                          <span>Flex 100%</span>
+                        </button>
+                      </span>
+                    ) : remainingCount === 1 ? (
+                      'One more to close the day.'
+                    ) : (
+                      `${remainingCount} more to close the day.`
+                    )}
                   </p>
                 </div>
               </motion.div>
@@ -1434,9 +1478,20 @@ export function HabitDashboard({
               >
                 <div className="flex items-center justify-between w-full">
                   <Flame className="w-5 h-5 text-[#ff5a1f]" />
-                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
-                    Streak
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenFlexCard('streak')}
+                      title="Flex your streak on social stories"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
+                    >
+                      <Share2 className="w-2.5 h-2.5" />
+                      <span>Flex</span>
+                    </button>
+                    <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                      Streak
+                    </span>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-0.5 mt-2 sm:mt-2.5">
                   <p className="font-clash font-semibold text-[28px] min-[380px]:text-[30px] sm:text-[32px] lg:text-[34px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
@@ -1697,6 +1752,19 @@ export function HabitDashboard({
                                         </button>
 
                                         <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenMenuHabitId(null);
+                                            handleOpenFlexCard('habit', habit.id);
+                                          }}
+                                          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                                        >
+                                          <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                                          <span>Flex habit milestone</span>
+                                        </button>
 
                                         <button
                                           type="button"
@@ -2097,12 +2165,19 @@ export function HabitDashboard({
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-2">
+                <div className="flex gap-2.5 mt-2 flex-wrap">
                   <button
                     onClick={() => setIsActiveChallengeModalOpen(true)}
                     className="px-4 py-2 rounded-xl bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] text-xs font-semibold cursor-pointer"
                   >
                     View challenge details
+                  </button>
+                  <button
+                    onClick={() => handleOpenFlexCard('challenge')}
+                    className="px-4 py-2 rounded-xl bg-[#ff5a1f]/15 hover:bg-[#ff5a1f]/25 text-[#ff5a1f] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Flex Challenge</span>
                   </button>
                 </div>
               </div>
@@ -2699,6 +2774,7 @@ export function HabitDashboard({
           onCompleteChallenge={handleCompleteChallenge}
           onAbandonChallenge={handleAbandonChallenge}
           onDeleteChallenge={handleDeleteActiveChallenge}
+          onFlexChallenge={() => handleOpenFlexCard('challenge')}
         />
       )}
 
@@ -2728,6 +2804,24 @@ export function HabitDashboard({
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           userEmail={userEmail}
+        />
+      )}
+
+      {/* Drop 2: Milestone Flex Card Studio Modal */}
+      {isFlexCardModalOpen && (
+        <MilestoneFlexCardModal
+          isOpen={isFlexCardModalOpen}
+          onClose={() => setIsFlexCardModalOpen(false)}
+          habits={habits}
+          challenge={challenge}
+          userName={personalizedName}
+          userEmail={userEmail}
+          isGuestMode={isGuestMode}
+          onRequireAuth={() => setIsAuthModalOpen(true)}
+          longestStreak={longestStreak}
+          todayCompletionRate={todayPercentage}
+          initialHabitId={flexCardHabitId}
+          initialMode={flexCardInitialMode}
         />
       )}
     </div>
