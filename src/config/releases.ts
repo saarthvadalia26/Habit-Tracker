@@ -168,10 +168,6 @@ export function getDrop1DaysRemaining(): number {
  * - Automatically unlocks on production when reaching Oct 17, 2026 00:00
  */
 export function isDrop2Unlocked(): boolean {
-  if (process.env.NODE_ENV === 'development') {
-    return true;
-  }
-
   if (typeof window !== 'undefined') {
     try {
       const search = window.location.search;
