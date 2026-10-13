@@ -18,6 +18,7 @@ export interface FlexCardData {
   bentoLabel?: string;
   routineTag?: string;
   completionRate?: number;
+  weeklyDots?: { label: string; completed: boolean; isFuture?: boolean }[];
   quote?: string;
   quoteAuthor?: string;
   dateStr?: string;
@@ -353,7 +354,7 @@ function renderStoryLayout(
 
   // 4. 7-Day Consistency Dot Matrix
   const dotsY = Math.max(730, curSubY + 36);
-  renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme);
+  renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, data.weeklyDots);
 
   // 5. Dual Bento Stats Grid
   const bentoY = dotsY + 120;
@@ -401,7 +402,7 @@ function renderStoryLayout(
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('ADHERENCE INDEX', bento2X + 28, bentoY + 36);
 
-  const pct = Math.min(100, Math.max(10, data.completionRate ?? 95));
+  const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
   ctx.font = `800 48px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
   ctx.fillText(`${pct}%`, bento2X + 28, bentoY + 92);
@@ -596,7 +597,7 @@ function renderSquareLayout(
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('ADHERENCE', rightX, statsY + 36);
 
-  const pct = Math.min(100, Math.max(10, data.completionRate ?? 95));
+  const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
   ctx.font = `800 36px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
   ctx.fillText(`${pct}%`, rightX, statsY + 78);
@@ -724,7 +725,7 @@ function renderLandscapeLayout(
   const habitStr = truncateText(ctx, data.habitTitle || 'Core Daily Stack', colW - 44);
   ctx.fillText(habitStr, rightX + 22, cardY + 60);
 
-  const pct = Math.min(100, Math.max(10, data.completionRate ?? 95));
+  const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
   ctx.font = `600 13px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('ADHERENCE SCORE', rightX + 22, cardY + 95);
@@ -763,7 +764,7 @@ function renderLandscapeLayout(
     ctx.fillText(`— ${qAuthor}`, rightX + 20, qBoxY + qBoxH - 20);
   } else {
     const dotsY = cardY + cardH + 25;
-    renderWeeklyConsistencyDots(ctx, rightX, dotsY, colW, theme);
+    renderWeeklyConsistencyDots(ctx, rightX, dotsY, colW, theme, data.weeklyDots);
   }
 
   // Divider Line
@@ -861,9 +862,10 @@ function renderWeeklyConsistencyDots(
   x: number,
   y: number,
   width: number,
-  theme: ThemeColors
+  theme: ThemeColors,
+  weeklyDots?: { label: string; completed: boolean; isFuture?: boolean }[]
 ) {
-  const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const defaultLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   const dotCount = 7;
   const colW = width / dotCount;
 
@@ -871,24 +873,46 @@ function renderWeeklyConsistencyDots(
   ctx.textBaseline = 'middle';
 
   for (let i = 0; i < dotCount; i++) {
+    const dot = weeklyDots?.[i] || { label: defaultLabels[i], completed: false, isFuture: false };
     const dotX = x + colW * i + colW / 2;
 
-    // Glowing Dot / Check Circle
-    ctx.fillStyle = theme.accent;
-    ctx.beginPath();
-    ctx.arc(dotX, y + 16, 20, 0, Math.PI * 2);
-    ctx.fill();
+    if (dot.completed) {
+      // Glowing Completed Dot
+      ctx.fillStyle = theme.accent;
+      ctx.beginPath();
+      ctx.arc(dotX, y + 16, 20, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Inner checkmark dot
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(dotX, y + 16, 7, 0, Math.PI * 2);
-    ctx.fill();
+      // Inner checkmark dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(dotX, y + 16, 7, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (dot.isFuture) {
+      // Future day: Faint outline
+      ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(dotX, y + 16, 17, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      // Missed / Uncompleted Day: Dim hollow circle
+      ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.28)' : 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(dotX, y + 16, 17, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.25)' : 'rgba(255, 255, 255, 0.25)';
+      ctx.beginPath();
+      ctx.arc(dotX, y + 16, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Day Label
     ctx.font = `700 18px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
-    ctx.fillText(days[i], dotX, y + 54);
+    ctx.fillText(dot.label, dotX, y + 54);
   }
 
   ctx.textAlign = 'left';

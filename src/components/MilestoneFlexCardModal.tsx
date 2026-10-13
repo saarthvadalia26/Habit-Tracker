@@ -29,6 +29,8 @@ import { HabitWithLogs } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
 import { calculateContinuousStreak } from '@/lib/analytics';
 import { MOTIVATION_QUOTES } from '@/lib/quotes';
+import { formatDateToISO } from '@/lib/dateUtils';
+import { computeChallengeProgress } from '@/lib/challengeUtils';
 import {
   FlexCardFormat,
   FlexCardTheme,
@@ -101,8 +103,13 @@ function FlexCardVectorPreview({
   format: FlexCardFormat;
 }) {
   const theme = FLEX_CARD_THEMES[themeKey] || FLEX_CARD_THEMES.obsidian;
-  const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  const pct = Math.min(100, Math.max(10, data.completionRate ?? 95));
+  const fallbackDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((label) => ({
+    label,
+    completed: false,
+    isFuture: false,
+  }));
+  const weeklyDots = data.weeklyDots && data.weeklyDots.length === 7 ? data.weeklyDots : fallbackDays;
+  const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
 
   const dotGridBg =
     themeKey === 'ivory'
@@ -443,15 +450,23 @@ function FlexCardVectorPreview({
             className="relative z-10 flex items-center justify-between py-1 border-y shrink-0"
             style={{ borderColor: dividerColor }}
           >
-            {days.map((d, i) => (
+            {weeklyDots.map((dot, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5">
-                <div
-                  className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                  style={{ background: theme.accent }}
-                >
-                  <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
-                </div>
-                <span className="text-[7px] font-bold tracking-wider opacity-60">{d}</span>
+                {dot.completed ? (
+                  <div
+                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
+                    style={{ background: theme.accent }}
+                  >
+                    <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
+                  </div>
+                ) : dot.isFuture ? (
+                  <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+                ) : (
+                  <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
+                    <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+                  </div>
+                )}
+                <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
               </div>
             ))}
           </div>
@@ -561,15 +576,23 @@ function FlexCardVectorPreview({
         className="relative z-10 flex items-center justify-between py-1 border-y shrink-0"
         style={{ borderColor: dividerColor }}
       >
-        {days.map((d, i) => (
+        {weeklyDots.map((dot, i) => (
           <div key={i} className="flex flex-col items-center gap-0.5">
-            <div
-              className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-              style={{ background: theme.accent }}
-            >
-              <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
-            </div>
-            <span className="text-[7px] font-bold tracking-wider opacity-60">{d}</span>
+            {dot.completed ? (
+              <div
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
+                style={{ background: theme.accent }}
+              >
+                <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
+              </div>
+            ) : dot.isFuture ? (
+              <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+            ) : (
+              <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
+                <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+              </div>
+            )}
+            <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
           </div>
         ))}
       </div>
@@ -732,16 +755,145 @@ export function MilestoneFlexCardModal({
     return null;
   }, [userName, userEmail]);
 
+  // Habit that ACTUALLY achieved the top active streak
+  const bestStreakHabit = useMemo(() => {
+    if (habits.length === 0) return null;
+    let top = habits[0];
+    let max = -1;
+    habits.forEach((h) => {
+      const s = Math.max(calculateContinuousStreak(h.logs || {}), h.currentStreak || 0);
+      if (s > max) {
+        max = s;
+        top = h;
+      }
+    });
+    return { habit: top, streak: Math.max(0, max) };
+  }, [habits]);
+
   // Selected single habit
   const currentHabit = useMemo(() => {
     return habits.find((h) => h.id === selectedHabitId) || habits[0] || null;
   }, [habits, selectedHabitId]);
 
-  // Habit specific streak
+  // Habit specific streak (real, unclamped)
   const habitStreak = useMemo(() => {
     if (!currentHabit) return 0;
     return calculateContinuousStreak(currentHabit.logs || {});
   }, [currentHabit]);
+
+  // Calculate authentic Month-to-Date adherence rate for any habit
+  const calculateHabitAdherence = useCallback((h: HabitWithLogs | null): number => {
+    if (!h) return 0;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const currentDay = now.getDate();
+
+    let completedCount = 0;
+    for (let d = 1; d <= currentDay; d++) {
+      const mm = String(month + 1).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
+      const dateKey = `${year}-${mm}-${dd}`;
+      if (h.logs?.[dateKey]) {
+        completedCount++;
+      }
+    }
+    return currentDay > 0 ? Math.round((completedCount / currentDay) * 100) : 0;
+  }, []);
+
+  // Compute real Monday-through-Sunday completion dots for a target habit
+  const getWeeklyDotsForHabit = useCallback((h: HabitWithLogs | null) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const currentDayIndex = now.getDay();
+    const distToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + distToMonday);
+
+    const labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const dots: { label: string; completed: boolean; isFuture: boolean }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = formatDateToISO(d);
+      const isFuture = d > now;
+      const isDone = Boolean(h?.logs?.[iso]);
+
+      dots.push({
+        label: labels[i],
+        completed: isDone,
+        isFuture,
+      });
+    }
+    return dots;
+  }, []);
+
+  // Compute real Monday-through-Sunday completion dots for all habits (Today mode)
+  const getWeeklyDotsForToday = useCallback(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const currentDayIndex = now.getDay();
+    const distToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + distToMonday);
+
+    const labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const dots: { label: string; completed: boolean; isFuture: boolean }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = formatDateToISO(d);
+      const isFuture = d > now;
+      const anyDone = habits.some((h) => Boolean(h.logs?.[iso]));
+
+      dots.push({
+        label: labels[i],
+        completed: anyDone,
+        isFuture,
+      });
+    }
+    return dots;
+  }, [habits]);
+
+  // Compute real Monday-through-Sunday completion dots for challenge
+  const getWeeklyDotsForChallenge = useCallback(() => {
+    if (!challenge) return getWeeklyDotsForToday();
+    const enrolledIds = challenge.habit_ids && challenge.habit_ids.length > 0 ? challenge.habit_ids : habits.map((h) => h.id);
+    const enrolledHabits = habits.filter((h) => enrolledIds.includes(h.id));
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const currentDayIndex = now.getDay();
+    const distToMonday = currentDayIndex === 0 ? -6 : 1 - currentDayIndex;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + distToMonday);
+
+    const labels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const dots: { label: string; completed: boolean; isFuture: boolean }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = formatDateToISO(d);
+      const isFuture = d > now;
+      const done = enrolledHabits.length > 0 && enrolledHabits.some((h) => Boolean(h.logs?.[iso]));
+
+      dots.push({
+        label: labels[i],
+        completed: done,
+        isFuture,
+      });
+    }
+    return dots;
+  }, [challenge, habits, getWeeklyDotsForToday]);
 
   // Active quote
   const activeQuote = useMemo(() => {
@@ -757,19 +909,20 @@ export function MilestoneFlexCardModal({
     });
 
     if (mode === 'today') {
-      const roundedToday = Math.round(todayCompletionRate);
+      const roundedToday = Math.round(todayCompletionRate || 0);
       return {
-        title: 'Daily Execution Locked',
-        subtitle: 'All daily disciplines conquered with zero hesitation.',
+        title: roundedToday === 100 ? 'Daily Execution Mastered' : 'Daily Routine In Progress',
+        subtitle: roundedToday === 100 ? 'All daily disciplines conquered with zero hesitation.' : `${roundedToday}% of daily disciplines completed today.`,
         metricValue: roundedToday,
         metricUnit: '% TODAY',
         metricLabel: 'Daily Execution Score',
-        badgeText: 'DAILY DISCIPLINE MASTER',
+        badgeText: roundedToday === 100 ? 'DAILY DISCIPLINE MASTER' : 'DAILY PROGRESS',
         userName: displayName,
         habitTitle: `${habits.length} Habits Tracked`,
         bentoLabel: "TODAY'S TARGET",
         routineTag: 'Daily Execution',
         completionRate: roundedToday,
+        weeklyDots: getWeeklyDotsForToday(),
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -779,18 +932,20 @@ export function MilestoneFlexCardModal({
     }
 
     if (mode === 'challenge' && challenge) {
+      const challengeProg = computeChallengeProgress(challenge, habits);
       return {
         title: challenge.title,
-        subtitle: `${challenge.duration_days}-Day Sprint towards unbreakable momentum.`,
-        metricValue: challenge.duration_days,
-        metricUnit: 'DAY PROTOCOL',
+        subtitle: `Day ${challengeProg.currentDay} of ${challenge.duration_days} • ${challengeProg.daysRemaining} days left`,
+        metricValue: challengeProg.currentDay,
+        metricUnit: `OF ${challenge.duration_days} DAYS`,
         metricLabel: 'Discipline Sprint',
         badgeText: `${challenge.duration_days}-DAY HARD CHALLENGE`,
         userName: displayName,
         habitTitle: challenge.title,
         bentoLabel: 'ACTIVE SPRINT',
         routineTag: `${challenge.duration_days}-Day Protocol`,
-        completionRate: 88,
+        completionRate: challengeProg.adherencePercentage,
+        weeklyDots: getWeeklyDotsForChallenge(),
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -801,26 +956,38 @@ export function MilestoneFlexCardModal({
 
     if (mode === 'habit' && currentHabit) {
       let title = currentHabit.title;
-      let subtitle = currentHabit.subtitle || 'Daily routine locked';
+      let subtitle = currentHabit.subtitle || '';
       if (title.includes(' | ')) {
         const parts = title.split(' | ');
         title = parts[0];
-        subtitle = parts[1];
+        subtitle = parts[1] || subtitle;
       }
 
-      const streakVal = Math.max(1, habitStreak);
+      const streakVal = habitStreak;
+      const adherenceVal = calculateHabitAdherence(currentHabit);
+
       return {
         title: title,
-        subtitle: subtitle,
+        subtitle: subtitle || (streakVal > 0 ? `${streakVal}-day continuous discipline streak` : 'Rebuilding consistency momentum'),
         metricValue: streakVal,
-        metricUnit: streakVal === 1 ? 'DAY STREAK' : 'DAYS UNBROKEN',
+        metricUnit: streakVal === 1 ? 'DAY STREAK' : streakVal === 0 ? 'DAY STREAK' : 'DAYS UNBROKEN',
         metricLabel: 'Continuous Discipline Streak',
-        badgeText: streakVal >= 30 ? '30+ DAY IRON WILL' : 'HABIT MOMENTUM',
+        badgeText:
+          streakVal >= 30
+            ? '30+ DAY TITAN'
+            : streakVal >= 14
+            ? '14-DAY FORTITUDE'
+            : streakVal >= 7
+            ? '7-DAY STREAK'
+            : streakVal > 0
+            ? 'HABIT MOMENTUM'
+            : 'CONSISTENCY RESET',
         userName: displayName,
         habitTitle: title,
         bentoLabel: 'HABIT SPOTLIGHT',
-        routineTag: subtitle || 'Atomic Daily Habit',
-        completionRate: Math.min(100, Math.max(85, Math.round(todayCompletionRate || 95))),
+        routineTag: subtitle || (streakVal > 0 ? `${streakVal}d Active Streak` : 'Daily Ritual'),
+        completionRate: adherenceVal,
+        weeklyDots: getWeeklyDotsForHabit(currentHabit),
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -829,8 +996,11 @@ export function MilestoneFlexCardModal({
       };
     }
 
-    // Default: Overall Longest Streak
-    const effectiveStreak = Math.max(1, longestStreak);
+    // Default: Overall Top Streak (Spotlights the habit that ACTUALLY achieved the streak)
+    const targetHabit = bestStreakHabit?.habit || currentHabit;
+    const effectiveStreak = bestStreakHabit?.streak || longestStreak || 0;
+    const streakAdherence = calculateHabitAdherence(targetHabit);
+
     return {
       title: 'Iron Consistency Streak',
       subtitle: 'Momentum compounds over time. Systems defeat motivation.',
@@ -842,12 +1012,17 @@ export function MilestoneFlexCardModal({
           ? '30-DAY TITAN'
           : effectiveStreak >= 14
           ? '14-DAY FORTITUDE'
-          : 'CONSISTENCY SPRINT',
+          : effectiveStreak >= 7
+          ? '7-DAY STREAK'
+          : effectiveStreak > 0
+          ? 'CONSISTENCY SPRINT'
+          : 'FRESH START',
       userName: displayName,
-      habitTitle: currentHabit?.title?.split(' | ')[0] || 'Core Routine Stack',
-      bentoLabel: 'STREAK DISCIPLINE',
-      routineTag: 'Unbroken Momentum',
-      completionRate: Math.min(100, Math.max(85, Math.round(todayCompletionRate || 94))),
+      habitTitle: targetHabit ? targetHabit.title.split(' | ')[0] : 'Core Routine Stack',
+      bentoLabel: 'RECORD ROUTINE',
+      routineTag: effectiveStreak > 0 ? `${effectiveStreak}-Day Unbroken` : 'Daily Routine',
+      completionRate: streakAdherence,
+      weeklyDots: getWeeklyDotsForHabit(targetHabit),
       quote: activeQuote.quote,
       quoteAuthor: activeQuote.author,
       dateStr: todayStr,
@@ -858,6 +1033,7 @@ export function MilestoneFlexCardModal({
     mode,
     challenge,
     currentHabit,
+    bestStreakHabit,
     longestStreak,
     todayCompletionRate,
     habitStreak,
@@ -865,7 +1041,11 @@ export function MilestoneFlexCardModal({
     activeQuote,
     showQuote,
     showUser,
-    habits.length,
+    habits,
+    calculateHabitAdherence,
+    getWeeklyDotsForHabit,
+    getWeeklyDotsForToday,
+    getWeeklyDotsForChallenge,
   ]);
 
   // Offscreen canvas export renderer
