@@ -18,6 +18,9 @@ export interface FlexCardData {
   bentoLabel?: string;
   routineTag?: string;
   completionRate?: number;
+  adherenceLabel?: string;
+  footerLabel?: string;
+  metricDetails?: { label: string; value: string; subtext: string }[];
   weeklyDots?: { label: string; completed: boolean; isFuture?: boolean }[];
   quote?: string;
   quoteAuthor?: string;
@@ -409,7 +412,7 @@ function renderStoryLayout(
 
   ctx.font = `500 16px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('Verified Consistency', bento2X + 28, bentoY + 132);
+  ctx.fillText(data.adherenceLabel || 'Monthly Logged', bento2X + 28, bentoY + 132);
 
   // Mini progress track in bento 2
   ctx.fillStyle = theme.progressTrack;
@@ -419,7 +422,7 @@ function renderStoryLayout(
   roundRect(ctx, bento2X + 28, bentoY + 162, (bentoW - 56) * (pct / 100), 12, 6);
   ctx.fill();
 
-  // 6. Wisdom Quote Capsule or Integrity Protocol Box
+  // 6. Wisdom Quote Capsule or Dynamic Performance Breakdown Box
   const quoteY = bentoY + bentoH + 45;
   const quoteH = 340;
 
@@ -453,7 +456,7 @@ function renderStoryLayout(
     ctx.fillStyle = theme.accent;
     ctx.fillText(`— ${qAuthor}`, padX + 40, quoteY + quoteH - 40);
   } else {
-    // Protocol Integrity Card (fills height with premium breakdown)
+    // Dynamic Performance Metrics Card (100% data-driven, zero static filler)
     ctx.fillStyle = theme.cardBg;
     roundRect(ctx, padX, quoteY, contentW, quoteH, 28);
     ctx.fill();
@@ -463,20 +466,24 @@ function renderStoryLayout(
 
     ctx.font = `700 24px ${FONT_HEAD}`;
     ctx.fillStyle = theme.primaryText;
-    ctx.fillText('DISCIPLINE & CONSISTENCY ARCHIVE', padX + 36, quoteY + 45);
+    ctx.fillText('HABIT PERFORMANCE METRICS', padX + 36, quoteY + 45);
 
     ctx.font = `500 18px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
-    ctx.fillText('Continuous Habit Tracking • Zero Days Off Chain Verified', padX + 36, quoteY + 85);
+    const subHeader = `${data.habitTitle || 'Habit Stack'} • Authenticated tracker activity`;
+    ctx.fillText(truncateText(ctx, subHeader, contentW - 72), padX + 36, quoteY + 85);
 
-    // 3 Metric Pills inside protocol card
+    // 3 Dynamic Metric Pills
     const col3W = (contentW - 72 - 32) / 3;
     const pY = quoteY + 130;
-    const statsCols = [
-      { label: 'EXECUTION CHAIN', val: 'LOCKED', sub: 'Active Streak' },
-      { label: 'MOMENTUM', val: 'OPTIMAL', sub: 'Non-Negotiable' },
-      { label: 'PROTOCOL', val: 'TITAN', sub: 'V2.0 Core' },
-    ];
+    const weeklyCount = data.weeklyDots?.filter((d) => d.completed).length || 0;
+    const statsCols = data.metricDetails && data.metricDetails.length === 3
+      ? data.metricDetails
+      : [
+          { label: 'STREAK', value: `${data.metricValue}`, subtext: String(data.metricUnit || 'Days Unbroken') },
+          { label: 'ADHERENCE', value: `${pct}%`, subtext: data.adherenceLabel || 'Monthly Log' },
+          { label: '7-DAY PACE', value: `${weeklyCount}/7`, subtext: 'Days Completed' },
+        ];
 
     statsCols.forEach((col, idx) => {
       const cX = padX + 36 + idx * (col3W + 16);
@@ -490,16 +497,16 @@ function renderStoryLayout(
 
       ctx.font = `800 24px ${FONT_HEAD}`;
       ctx.fillStyle = theme.accent;
-      ctx.fillText(col.val, cX + 16, pY + 62);
+      ctx.fillText(col.value, cX + 16, pY + 62);
 
       ctx.font = `500 13px ${FONT_BODY}`;
       ctx.fillStyle = theme.secondaryText;
-      ctx.fillText(col.sub, cX + 16, pY + 88);
+      ctx.fillText(truncateText(ctx, col.subtext, col3W - 32), cX + 16, pY + 88);
     });
 
     ctx.font = `600 15px ${FONT_BODY}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText('• VERIFIED AUTONOMOUS PROOF ENGINE', padX + 36, quoteY + quoteH - 35);
+    ctx.fillText(`• ${data.adherenceLabel || 'VERIFIED TRACKER LOGS'}`, padX + 36, quoteY + quoteH - 35);
   }
 
   // 7. Divider Line
@@ -512,7 +519,7 @@ function renderStoryLayout(
 
   // 8. Footer Signature
   const footerY = height - 95;
-  renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme);
 }
 
 /**
@@ -600,7 +607,13 @@ function renderSquareLayout(
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
   ctx.font = `800 36px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
-  ctx.fillText(`${pct}%`, rightX, statsY + 78);
+  ctx.fillText(`${pct}%`, rightX, statsY + 74);
+
+  if (data.adherenceLabel) {
+    ctx.font = `500 13px ${FONT_BODY}`;
+    ctx.fillStyle = theme.secondaryText;
+    ctx.fillText(truncateText(ctx, data.adherenceLabel, contentW * 0.45), rightX, statsY + 98);
+  }
   ctx.textAlign = 'left';
 
   // Wisdom Quote or Mini Capsule (Fits cleanly without collision)
@@ -633,7 +646,7 @@ function renderSquareLayout(
     ctx.fillText(`— ${qAuthor}`, padX + 26, quoteY + quoteH - 26);
   } else {
     const dotsY = statsY + statsH + 40;
-    renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme);
+    renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, data.weeklyDots);
   }
 
   // Divider Line
@@ -646,7 +659,7 @@ function renderSquareLayout(
 
   // Footer Signature
   const footerY = height - 60;
-  renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme);
 }
 
 /**
@@ -730,9 +743,10 @@ function renderLandscapeLayout(
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('ADHERENCE SCORE', rightX + 22, cardY + 95);
 
-  ctx.font = `800 22px ${FONT_HEAD}`;
+  ctx.font = `800 20px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
-  ctx.fillText(`${pct}% Verified`, rightX + 160, cardY + 96);
+  const adhText = data.adherenceLabel ? `${pct}% (${data.adherenceLabel})` : `${pct}% Logged`;
+  ctx.fillText(truncateText(ctx, adhText, colW - 160), rightX + 150, cardY + 96);
 
   // Right Quote Box
   if (data.showQuote !== false) {
@@ -777,7 +791,7 @@ function renderLandscapeLayout(
 
   // Footer Signature across bottom
   const footerY = height - 42;
-  renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme);
 }
 
 /**
@@ -923,13 +937,13 @@ function renderFooterSignature(
   x: number,
   y: number,
   canvasWidth: number,
-  userName: string | null | undefined,
-  showUser: boolean | undefined,
+  data: FlexCardData,
   theme: ThemeColors
 ) {
-  const userLabel = (showUser !== false && userName && userName.trim())
-    ? `DISCIPLINE BY ${userName.trim().toUpperCase()}`
-    : 'VERIFIED DISCIPLINE ARCHIVE';
+  const userLabel =
+    data.showUser !== false && data.userName && data.userName.trim()
+      ? `DISCIPLINE BY ${data.userName.trim().toUpperCase()}`
+      : (data.footerLabel || 'HABIT TRACKER ARCHIVE');
 
   ctx.textBaseline = 'top';
   ctx.font = `700 15px ${FONT_HEAD}`;

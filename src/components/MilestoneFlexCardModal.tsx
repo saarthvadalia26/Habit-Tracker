@@ -124,7 +124,7 @@ function FlexCardVectorPreview({
   const userFooterLabel =
     data.showUser !== false && data.userName && data.userName.trim()
       ? `DISCIPLINE BY ${data.userName.trim().toUpperCase()}`
-      : 'VERIFIED DISCIPLINE ARCHIVE';
+      : (data.footerLabel || 'HABIT TRACKER ARCHIVE');
 
   if (format === 'landscape') {
     return (
@@ -240,6 +240,11 @@ function FlexCardVectorPreview({
                 <span className="font-clash font-extrabold text-[12px] block mt-0.5" style={{ color: theme.accent }}>
                   {pct}%
                 </span>
+                {data.adherenceLabel && (
+                  <span className="text-[6.5px] block opacity-60 truncate">
+                    {data.adherenceLabel}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -279,15 +284,23 @@ function FlexCardVectorPreview({
                   7-DAY CADENCE
                 </span>
                 <div className="flex items-center justify-between pt-0.5">
-                  {days.map((d, i) => (
+                  {weeklyDots.map((dot, i) => (
                     <div key={i} className="flex flex-col items-center gap-0.5">
-                      <div
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                        style={{ background: theme.accent }}
-                      >
-                        <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
-                      </div>
-                      <span className="text-[7px] font-bold tracking-wider opacity-60">{d}</span>
+                      {dot.completed ? (
+                        <div
+                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
+                          style={{ background: theme.accent }}
+                        >
+                          <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
+                        </div>
+                      ) : dot.isFuture ? (
+                        <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
+                          <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+                        </div>
+                      )}
+                      <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
                     </div>
                   ))}
                 </div>
@@ -418,6 +431,11 @@ function FlexCardVectorPreview({
             <span className="font-clash font-extrabold text-[13px] block mt-0.5" style={{ color: theme.accent }}>
               {pct}%
             </span>
+            {data.adherenceLabel && (
+              <span className="text-[6.5px] block opacity-60 truncate">
+                {data.adherenceLabel}
+              </span>
+            )}
           </div>
         </div>
 
@@ -633,11 +651,11 @@ function FlexCardVectorPreview({
           <div className="w-full h-1 rounded-full overflow-hidden my-0.5" style={{ background: theme.progressTrack }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: theme.accent }} />
           </div>
-          <span className="text-[7px] opacity-70 truncate">Verified Consistency</span>
+          <span className="text-[7px] opacity-70 truncate">{data.adherenceLabel || 'Monthly Log'}</span>
         </div>
       </div>
 
-      {/* 5. Wisdom Quote Capsule OR Protocol Bar */}
+      {/* 5. Wisdom Quote Capsule OR Dynamic Habit Metrics */}
       {data.showQuote !== false ? (
         <div
           className="relative z-10 p-1.5 px-2 rounded-xl border flex flex-col justify-center min-w-0 shrink-0"
@@ -663,19 +681,29 @@ function FlexCardVectorPreview({
         </div>
       ) : (
         <div
-          className="relative z-10 p-1.5 px-2 rounded-xl border flex items-center justify-between min-w-0 shrink-0"
+          className="relative z-10 p-1.5 px-2 rounded-xl border grid grid-cols-3 gap-1 shrink-0"
           style={{
             background: theme.cardBg,
             borderColor: theme.cardBorder,
           }}
         >
-          <div className="flex flex-col min-w-0">
-            <span className="text-[7px] font-bold uppercase tracking-wider opacity-70">72H PROTOCOL</span>
-            <span className="text-[8px] font-clash font-bold" style={{ color: theme.accent }}>LOCKED & VERIFIED</span>
-          </div>
-          <div className="px-1.5 py-0.5 rounded text-[7px] font-bold tracking-wider uppercase" style={{ background: theme.pillBg, color: theme.accent }}>
-            TITAN
-          </div>
+          {(data.metricDetails || [
+            { label: 'STREAK', value: `${data.metricValue}`, subtext: String(data.metricUnit || 'Days') },
+            { label: 'ADHERENCE', value: `${pct}%`, subtext: data.adherenceLabel || 'Monthly' },
+            { label: '7-DAY PACE', value: `${weeklyDots.filter((d) => d.completed).length}/7`, subtext: 'This Week' },
+          ]).map((m, idx) => (
+            <div key={idx} className="flex flex-col items-center text-center p-1 rounded-lg" style={{ background: theme.pillBg }}>
+              <span className="text-[6px] font-bold uppercase tracking-wider opacity-60 leading-tight">
+                {m.label}
+              </span>
+              <span className="font-clash font-extrabold text-[10.5px] leading-tight mt-0.5" style={{ color: theme.accent }}>
+                {m.value}
+              </span>
+              <span className="text-[6px] opacity-70 leading-tight mt-0.5 truncate max-w-full">
+                {m.subtext}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -781,13 +809,15 @@ export function MilestoneFlexCardModal({
     return calculateContinuousStreak(currentHabit.logs || {});
   }, [currentHabit]);
 
-  // Calculate authentic Month-to-Date adherence rate for any habit
-  const calculateHabitAdherence = useCallback((h: HabitWithLogs | null): number => {
-    if (!h) return 0;
+  // Calculate authentic Month-to-Date adherence stats for any habit
+  const getHabitMonthStats = useCallback((h: HabitWithLogs | null) => {
+    if (!h) return { completedCount: 0, currentDay: 1, rate: 0, monthName: 'This Month' };
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     const currentDay = now.getDate();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = monthNames[month];
 
     let completedCount = 0;
     for (let d = 1; d <= currentDay; d++) {
@@ -798,7 +828,8 @@ export function MilestoneFlexCardModal({
         completedCount++;
       }
     }
-    return currentDay > 0 ? Math.round((completedCount / currentDay) * 100) : 0;
+    const rate = currentDay > 0 ? Math.round((completedCount / currentDay) * 100) : 0;
+    return { completedCount, currentDay, rate, monthName };
   }, []);
 
   // Compute real Monday-through-Sunday completion dots for a target habit
@@ -895,34 +926,60 @@ export function MilestoneFlexCardModal({
     return dots;
   }, [challenge, habits, getWeeklyDotsForToday]);
 
+  // Compute real-time today execution metrics
+  const todayStats = useMemo(() => {
+    const now = new Date();
+    const todayIso = formatDateToISO(now);
+    const completedTodayCount = habits.filter((h) => Boolean(h.logs?.[todayIso])).length;
+    const totalHabits = habits.length;
+    const rate = totalHabits > 0 ? Math.round((completedTodayCount / totalHabits) * 100) : Math.round(todayCompletionRate || 0);
+    return { completedTodayCount, totalHabits, rate };
+  }, [habits, todayCompletionRate]);
+
   // Active quote
   const activeQuote = useMemo(() => {
     return MOTIVATION_QUOTES[selectedQuoteIndex % MOTIVATION_QUOTES.length] || MOTIVATION_QUOTES[0];
   }, [selectedQuoteIndex]);
 
-  // Build card data based on active mode
+  // Build card data based on active mode (100% Dynamic, ZERO Static Info)
   const cardData: FlexCardData = useMemo(() => {
-    const todayStr = new Date().toLocaleDateString('en-US', {
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
 
     if (mode === 'today') {
-      const roundedToday = Math.round(todayCompletionRate || 0);
+      const { completedTodayCount, totalHabits, rate: todayRate } = todayStats;
+      const weeklyDots = getWeeklyDotsForToday();
+      const weeklyDone = weeklyDots.filter((d) => d.completed).length;
+
       return {
-        title: roundedToday === 100 ? 'Daily Execution Mastered' : 'Daily Routine In Progress',
-        subtitle: roundedToday === 100 ? 'All daily disciplines conquered with zero hesitation.' : `${roundedToday}% of daily disciplines completed today.`,
-        metricValue: roundedToday,
+        title: `${completedTodayCount} of ${totalHabits} Habits Completed`,
+        subtitle:
+          todayRate === 100
+            ? `All ${totalHabits} daily habits accomplished today with 100% completion.`
+            : `${totalHabits - completedTodayCount} habit${totalHabits - completedTodayCount === 1 ? '' : 's'} left to check in today • ${todayRate}% daily progress.`,
+        metricValue: todayRate,
         metricUnit: '% TODAY',
-        metricLabel: 'Daily Execution Score',
-        badgeText: roundedToday === 100 ? 'DAILY DISCIPLINE MASTER' : 'DAILY PROGRESS',
+        metricLabel: `${completedTodayCount}/${totalHabits} Completed Today`,
+        badgeText: `TODAY'S SCORE • ${completedTodayCount}/${totalHabits} DONE`,
         userName: displayName,
-        habitTitle: `${habits.length} Habits Tracked`,
-        bentoLabel: "TODAY'S TARGET",
-        routineTag: 'Daily Execution',
-        completionRate: roundedToday,
-        weeklyDots: getWeeklyDotsForToday(),
+        habitTitle: `${completedTodayCount} of ${totalHabits} Completed Today`,
+        bentoLabel: "TODAY'S EXECUTION",
+        routineTag: `${todayRate}% Daily Completion`,
+        completionRate: todayRate,
+        adherenceLabel: `${completedTodayCount} of ${totalHabits} Habits Today`,
+        footerLabel: displayName
+          ? `DISCIPLINE BY ${displayName.toUpperCase()}`
+          : `${totalHabits} HABITS LOGGED • ${todayStr.toUpperCase()}`,
+        metricDetails: [
+          { label: 'COMPLETED', value: `${completedTodayCount}/${totalHabits}`, subtext: `${todayRate}% of Routine` },
+          { label: 'REMAINING', value: `${totalHabits - completedTodayCount}`, subtext: 'Habits Left' },
+          { label: '7-DAY PACE', value: `${weeklyDone}/7D`, subtext: 'Daily Consistency' },
+        ],
+        weeklyDots,
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -933,19 +990,30 @@ export function MilestoneFlexCardModal({
 
     if (mode === 'challenge' && challenge) {
       const challengeProg = computeChallengeProgress(challenge, habits);
+      const weeklyDots = getWeeklyDotsForChallenge();
+
       return {
         title: challenge.title,
-        subtitle: `Day ${challengeProg.currentDay} of ${challenge.duration_days} • ${challengeProg.daysRemaining} days left`,
+        subtitle: `Day ${challengeProg.currentDay} of ${challenge.duration_days} • ${challengeProg.daysRemaining} days remaining • ${challengeProg.totalCompletedChecks} of ${challengeProg.totalPossibleChecks} total checks (${challengeProg.adherencePercentage}%)`,
         metricValue: challengeProg.currentDay,
         metricUnit: `OF ${challenge.duration_days} DAYS`,
-        metricLabel: 'Discipline Sprint',
-        badgeText: `${challenge.duration_days}-DAY HARD CHALLENGE`,
+        metricLabel: `${challenge.duration_days}-Day Sprint`,
+        badgeText: `${challenge.duration_days}-DAY ${challenge.type ? challenge.type.toUpperCase() : 'SPRINT'} • DAY ${challengeProg.currentDay}`,
         userName: displayName,
         habitTitle: challenge.title,
-        bentoLabel: 'ACTIVE SPRINT',
-        routineTag: `${challenge.duration_days}-Day Protocol`,
+        bentoLabel: 'ACTIVE CHALLENGE',
+        routineTag: `${challengeProg.totalCompletedChecks}/${challengeProg.totalPossibleChecks} Checks (${challengeProg.adherencePercentage}%)`,
         completionRate: challengeProg.adherencePercentage,
-        weeklyDots: getWeeklyDotsForChallenge(),
+        adherenceLabel: `${challengeProg.totalCompletedChecks} of ${challengeProg.totalPossibleChecks} Checks Logged`,
+        footerLabel: displayName
+          ? `DISCIPLINE BY ${displayName.toUpperCase()}`
+          : `${challenge.title.toUpperCase()} • DAY ${challengeProg.currentDay}/${challenge.duration_days}`,
+        metricDetails: [
+          { label: 'CURRENT DAY', value: `${challengeProg.currentDay}/${challenge.duration_days}`, subtext: `${challengeProg.daysRemaining}d Left` },
+          { label: 'ADHERENCE', value: `${challengeProg.adherencePercentage}%`, subtext: 'Sprint Score' },
+          { label: 'TOTAL LOGS', value: `${challengeProg.totalCompletedChecks}`, subtext: `of ${challengeProg.totalPossibleChecks} Checks` },
+        ],
+        weeklyDots,
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -964,30 +1032,36 @@ export function MilestoneFlexCardModal({
       }
 
       const streakVal = habitStreak;
-      const adherenceVal = calculateHabitAdherence(currentHabit);
+      const stats = getHabitMonthStats(currentHabit);
+      const weeklyDots = getWeeklyDotsForHabit(currentHabit);
+      const weeklyDone = weeklyDots.filter((d) => d.completed).length;
 
       return {
         title: title,
-        subtitle: subtitle || (streakVal > 0 ? `${streakVal}-day continuous discipline streak` : 'Rebuilding consistency momentum'),
+        subtitle:
+          subtitle ||
+          (streakVal > 0
+            ? `${streakVal}-day active continuous streak • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`
+            : `0-day active streak • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`),
         metricValue: streakVal,
-        metricUnit: streakVal === 1 ? 'DAY STREAK' : streakVal === 0 ? 'DAY STREAK' : 'DAYS UNBROKEN',
-        metricLabel: 'Continuous Discipline Streak',
-        badgeText:
-          streakVal >= 30
-            ? '30+ DAY TITAN'
-            : streakVal >= 14
-            ? '14-DAY FORTITUDE'
-            : streakVal >= 7
-            ? '7-DAY STREAK'
-            : streakVal > 0
-            ? 'HABIT MOMENTUM'
-            : 'CONSISTENCY RESET',
+        metricUnit: streakVal === 1 ? 'DAY STREAK' : streakVal === 0 ? 'DAYS LOGGED (0)' : 'DAYS UNBROKEN',
+        metricLabel: `${title} Streak`,
+        badgeText: `${(currentHabit.category || 'HABIT').toUpperCase()} • ${streakVal}D STREAK`,
         userName: displayName,
         habitTitle: title,
-        bentoLabel: 'HABIT SPOTLIGHT',
-        routineTag: subtitle || (streakVal > 0 ? `${streakVal}d Active Streak` : 'Daily Ritual'),
-        completionRate: adherenceVal,
-        weeklyDots: getWeeklyDotsForHabit(currentHabit),
+        bentoLabel: 'SELECTED ROUTINE',
+        routineTag: `${(currentHabit.category || 'DAILY').toUpperCase()} • ${currentHabit.timeOfDay || 'ANYTIME'}`,
+        completionRate: stats.rate,
+        adherenceLabel: `${stats.completedCount} of ${stats.currentDay} Days in ${stats.monthName}`,
+        footerLabel: displayName
+          ? `DISCIPLINE BY ${displayName.toUpperCase()}`
+          : `${title.toUpperCase()} • ${streakVal}D STREAK`,
+        metricDetails: [
+          { label: 'ACTIVE STREAK', value: `${streakVal}D`, subtext: streakVal > 0 ? 'Continuous Run' : '0-Day Reset' },
+          { label: 'MONTH LOGS', value: `${stats.completedCount}/${stats.currentDay}`, subtext: `${stats.rate}% in ${stats.monthName}` },
+          { label: '7-DAY PACE', value: `${weeklyDone}/7D`, subtext: 'This Week' },
+        ],
+        weeklyDots,
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
         dateStr: todayStr,
@@ -999,30 +1073,37 @@ export function MilestoneFlexCardModal({
     // Default: Overall Top Streak (Spotlights the habit that ACTUALLY achieved the streak)
     const targetHabit = bestStreakHabit?.habit || currentHabit;
     const effectiveStreak = bestStreakHabit?.streak || longestStreak || 0;
-    const streakAdherence = calculateHabitAdherence(targetHabit);
+    const stats = getHabitMonthStats(targetHabit);
+    const weeklyDots = getWeeklyDotsForHabit(targetHabit);
+    const weeklyDone = weeklyDots.filter((d) => d.completed).length;
+    const habitName = targetHabit ? targetHabit.title.split(' | ')[0] : 'Daily Routine';
 
     return {
-      title: 'Iron Consistency Streak',
-      subtitle: 'Momentum compounds over time. Systems defeat motivation.',
+      title: habitName,
+      subtitle: targetHabit?.subtitle
+        ? `${targetHabit.subtitle} • ${effectiveStreak}d streak • ${stats.completedCount}/${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`
+        : effectiveStreak > 0
+        ? `${effectiveStreak}-day unbroken run • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`
+        : `0-day streak • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`,
       metricValue: effectiveStreak,
-      metricUnit: effectiveStreak === 1 ? 'DAY STREAK' : 'DAYS UNBROKEN',
-      metricLabel: 'Longest Continuous Streak',
-      badgeText:
-        effectiveStreak >= 30
-          ? '30-DAY TITAN'
-          : effectiveStreak >= 14
-          ? '14-DAY FORTITUDE'
-          : effectiveStreak >= 7
-          ? '7-DAY STREAK'
-          : effectiveStreak > 0
-          ? 'CONSISTENCY SPRINT'
-          : 'FRESH START',
+      metricUnit: effectiveStreak === 1 ? 'DAY STREAK' : effectiveStreak === 0 ? 'DAYS LOGGED (0)' : 'DAYS UNBROKEN',
+      metricLabel: 'Top Continuous Streak',
+      badgeText: `${(targetHabit?.category || 'CORE ROUTINE').toUpperCase()} • ${effectiveStreak}D STREAK`,
       userName: displayName,
-      habitTitle: targetHabit ? targetHabit.title.split(' | ')[0] : 'Core Routine Stack',
-      bentoLabel: 'RECORD ROUTINE',
-      routineTag: effectiveStreak > 0 ? `${effectiveStreak}-Day Unbroken` : 'Daily Routine',
-      completionRate: streakAdherence,
-      weeklyDots: getWeeklyDotsForHabit(targetHabit),
+      habitTitle: habitName,
+      bentoLabel: 'RECORD STREAK ROUTINE',
+      routineTag: `${(targetHabit?.category || 'DAILY').toUpperCase()} • ${effectiveStreak > 0 ? `${effectiveStreak}d Unbroken` : 'Active Routine'}`,
+      completionRate: stats.rate,
+      adherenceLabel: `${stats.completedCount} of ${stats.currentDay} Days in ${stats.monthName}`,
+      footerLabel: displayName
+        ? `DISCIPLINE BY ${displayName.toUpperCase()}`
+        : `${habitName.toUpperCase()} • ${effectiveStreak}D STREAK`,
+      metricDetails: [
+        { label: 'TOP STREAK', value: `${effectiveStreak}D`, subtext: effectiveStreak > 0 ? 'Continuous Run' : '0-Day Reset' },
+        { label: 'MONTH LOGS', value: `${stats.completedCount}/${stats.currentDay}`, subtext: `${stats.rate}% in ${stats.monthName}` },
+        { label: '7-DAY PACE', value: `${weeklyDone}/7D`, subtext: 'This Week' },
+      ],
+      weeklyDots,
       quote: activeQuote.quote,
       quoteAuthor: activeQuote.author,
       dateStr: todayStr,
@@ -1035,14 +1116,14 @@ export function MilestoneFlexCardModal({
     currentHabit,
     bestStreakHabit,
     longestStreak,
-    todayCompletionRate,
+    todayStats,
     habitStreak,
     displayName,
     activeQuote,
     showQuote,
     showUser,
     habits,
-    calculateHabitAdherence,
+    getHabitMonthStats,
     getWeeklyDotsForHabit,
     getWeeklyDotsForToday,
     getWeeklyDotsForChallenge,
