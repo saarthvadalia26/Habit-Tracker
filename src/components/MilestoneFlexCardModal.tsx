@@ -1042,9 +1042,9 @@ export function MilestoneFlexCardModal({
         metricLabel: `${completedTodayCount}/${totalHabits} Completed Today`,
         badgeText: `TODAY'S SCORE • ${completedTodayCount}/${totalHabits} DONE`,
         userName: displayName,
-        habitTitle: `${completedTodayCount} of ${totalHabits} Completed Today`,
+        habitTitle: `${completedTodayCount} of ${totalHabits} Completed`,
         bentoLabel: "TODAY'S EXECUTION",
-        routineTag: `${todayRate}% Daily Completion`,
+        routineTag: todayRate === 100 ? '100% Perfect Score' : `${todayRate}% Done Today`,
         completionRate: todayRate,
         adherenceLabel: `${completedTodayCount} of ${totalHabits} Habits Today`,
         footerLabel: displayName
@@ -1078,7 +1078,7 @@ export function MilestoneFlexCardModal({
         userName: displayName,
         habitTitle: challenge.title,
         bentoLabel: 'ACTIVE CHALLENGE',
-        routineTag: `${challengeProg.totalCompletedChecks}/${challengeProg.totalPossibleChecks} Checks (${challengeProg.adherencePercentage}%)`,
+        routineTag: `Day ${challengeProg.currentDay} of ${challenge.duration_days} Sprint`,
         completionRate: challengeProg.adherencePercentage,
         adherenceLabel: `${challengeProg.totalCompletedChecks} of ${challengeProg.totalPossibleChecks} Checks Logged`,
         footerLabel: displayName
@@ -1166,9 +1166,9 @@ export function MilestoneFlexCardModal({
       userName: displayName,
       habitTitle: `All ${totalHabitsCount} Tracked Habits`,
       bentoLabel: 'OVERALL ROUTINE',
-      routineTag: `${habitCountLabel} • ${overallMonthStats.rate}% MTD Adherence`,
+      routineTag: effectiveStreak > 0 ? `${effectiveStreak}d Unbroken Run` : 'Daily Routine Stack',
       completionRate: overallMonthStats.rate,
-      adherenceLabel: `${overallMonthStats.completedCount} of ${overallMonthStats.possibleCount} Total Logs in ${overallMonthStats.monthName}`,
+      adherenceLabel: `${overallMonthStats.completedCount} of ${overallMonthStats.possibleCount} Logs in ${overallMonthStats.monthName}`,
       footerLabel: displayName
         ? `DISCIPLINE BY ${displayName.toUpperCase()}`
         : `ALL ${totalHabitsCount} HABITS • ${effectiveStreak}D STREAK`,
