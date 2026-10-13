@@ -293,7 +293,7 @@ export function ActiveChallengeModal({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between w-full">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
                 <button
                   type="button"
                   onClick={() => setShowAbandonConfirm(true)}
@@ -304,7 +304,7 @@ export function ActiveChallengeModal({
                   <span>Reset challenge</span>
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {onFlexChallenge && (
                     <button
                       type="button"

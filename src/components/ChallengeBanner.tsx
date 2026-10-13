@@ -92,42 +92,42 @@ export function ChallengeBanner({
   return (
     <div
       id="active-challenge-banner"
-      className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#fbf8f1] dark:bg-[#1c1a16] shadow-framer-card p-5 sm:p-6 transition-all"
+      className="relative overflow-hidden rounded-[20px] sm:rounded-[28px] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#fbf8f1] dark:bg-[#1c1a16] shadow-framer-card p-3.5 sm:p-6 transition-all"
     >
       {/* Main Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 flex items-center justify-center shrink-0">
-            <Trophy className="w-5 h-5 stroke-[2.25]" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 flex items-center justify-center shrink-0">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.25]" />
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {progress.isUpcoming ? (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-[#ff5a1f]" />
+                <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20 flex items-center gap-1">
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#ff5a1f]" />
                   <span>Starts in {progress.daysUntilStart} {progress.daysUntilStart === 1 ? 'day' : 'days'}</span>
                 </span>
               ) : (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20">
+                <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff5a1f]/10 text-[#ff5a1f] border border-[#ff5a1f]/20">
                   ACTIVE CHALLENGE
                 </span>
               )}
-              <span className="text-xs font-archivo font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+              <span className="text-[11px] sm:text-xs font-archivo font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
                 {progress.isUpcoming
                   ? 'Starts ' + progress.formattedStartDate + ' • Day 0 of ' + progress.totalDays
                   : 'Day ' + progress.currentDay + ' of ' + progress.totalDays}
               </span>
             </div>
-            <h3 className="font-clash font-semibold text-lg sm:text-[22px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] mt-0.5 leading-snug">
+            <h3 className="font-clash font-semibold text-base sm:text-[22px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] mt-0.5 leading-snug truncate">
               {challenge.title}
             </h3>
           </div>
         </div>
 
         {/* Right side status & controls */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <span className="px-3 py-1.5 rounded-full bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 font-archivo font-semibold text-[12px] flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 self-start sm:self-auto flex-wrap">
+          <span className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 font-archivo font-semibold text-[11px] sm:text-[12px] flex items-center gap-1.5">
             {progress.isUpcoming ? (
               <>
                 <Clock className="w-3 h-3 text-[#ff5a1f]" />
@@ -144,7 +144,7 @@ export function ChallengeBanner({
             <button
               type="button"
               onClick={onOpenDetails}
-              className="px-3 py-1.5 rounded-full bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 hover:bg-[#ff5a1f]/10 hover:text-[#ff5a1f] text-[#15130f]/70 dark:text-[#fbf8f1]/70 font-archivo font-semibold text-[12px] transition-colors cursor-pointer flex items-center gap-1"
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 hover:bg-[#ff5a1f]/10 hover:text-[#ff5a1f] text-[#15130f]/70 dark:text-[#fbf8f1]/70 font-archivo font-semibold text-[11px] sm:text-[12px] transition-colors cursor-pointer flex items-center gap-1"
             >
               <span>Details</span>
               <ArrowUpRight className="w-3 h-3" />
@@ -159,7 +159,7 @@ export function ChallengeBanner({
                 setShowOptions(!showOptions);
                 setShowConfirmReset(false);
               }}
-              className="p-1.5 sm:p-2 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/8 transition-colors cursor-pointer"
+              className="p-1 sm:p-2 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/8 transition-colors cursor-pointer"
               title="Challenge options"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -229,15 +229,15 @@ export function ChallengeBanner({
       </div>
 
       {/* Progress Bar & Milestones Track */}
-      <div className="mt-4 space-y-2.5">
-        <div className="flex flex-col min-[420px]:flex-row min-[420px]:items-center justify-between gap-1 text-xs font-archivo">
+      <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-2.5">
+        <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs font-archivo flex-wrap">
           <span className="font-medium text-[#15130f]/60 dark:text-[#fbf8f1]/60">
             {progress.isUpcoming
               ? '0% Elapsed (Starts in ' + progress.daysUntilStart + (progress.daysUntilStart === 1 ? ' day)' : ' days)')
               : progress.percentElapsed + '% Elapsed'}
           </span>
-          <span className="font-semibold text-[#ff5a1f] flex items-center gap-1.5 flex-wrap">
-            <Flame className="w-3.5 h-3.5 fill-[#ff5a1f] shrink-0" />
+          <span className="font-semibold text-[#ff5a1f] flex items-center gap-1 flex-wrap">
+            <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#ff5a1f] shrink-0" />
             <span>
               {progress.isUpcoming
                 ? 'Awaiting Start Date'
@@ -247,7 +247,7 @@ export function ChallengeBanner({
         </div>
 
         {/* The Track with Framer Orange Fill */}
-        <div className="relative w-full h-2.5 sm:h-3 rounded-full bg-[#15130f]/6 dark:bg-[#fbf8f1]/8 overflow-hidden">
+        <div className="relative w-full h-2 sm:h-3 rounded-full bg-[#15130f]/6 dark:bg-[#fbf8f1]/8 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress.percentElapsed}%` }}
@@ -256,45 +256,45 @@ export function ChallengeBanner({
           />
         </div>
 
-        {/* Milestone Badges Strip */}
-        <div className="grid grid-cols-2 min-[420px]:grid-cols-4 gap-2 sm:gap-3 pt-2">
+        {/* Milestone Badges Strip: Always 4 columns in a sleek horizontal row */}
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-3 pt-1 sm:pt-2">
           {progress.milestones.map((m) => {
             const icon =
               m.threshold <= 25 ? (
-                <Award className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Award className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               ) : m.threshold <= 50 ? (
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ShieldCheck className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               ) : m.threshold <= 75 ? (
-                <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Trophy className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               ) : (
-                <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Crown className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               );
 
             return (
               <div
                 key={m.id}
-                className={`p-2.5 sm:p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                className={`py-1.5 px-1 sm:p-3 rounded-xl sm:rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-0.5 sm:gap-1 ${
                   m.isUnlocked
-                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] border-transparent shadow-sm'
+                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] border-transparent shadow-xs'
                     : 'bg-[#15130f]/2 dark:bg-[#fbf8f1]/3 border-[#15130f]/8 dark:border-[#fbf8f1]/8 text-[#15130f]/40 dark:text-[#fbf8f1]/40'
                 }`}
               >
                 <div className={m.isUnlocked ? 'text-[#ff5a1f]' : 'text-inherit opacity-70'}>
                   {icon}
                 </div>
-                <div className="font-clash font-semibold text-xs sm:text-[14px] tracking-tight">
+                <div className="font-clash font-semibold text-[11px] sm:text-[14px] tracking-tight leading-tight">
                   {m.threshold}%
                 </div>
                 <div
-                  className={`text-[10px] sm:text-[11px] font-archivo font-medium ${
+                  className={`text-[9px] sm:text-[11px] font-archivo font-medium leading-tight ${
                     m.isUnlocked ? 'opacity-70' : 'opacity-60'
                   }`}
                 >
                   Day {m.unlockedAtDay}
                 </div>
                 {m.isUnlocked && (
-                  <span className="mt-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-[#ff5a1f] text-white">
-                    Unlocked
+                  <span className="mt-0.5 px-1 py-0.2 rounded-full text-[7.5px] sm:text-[9px] font-bold bg-[#ff5a1f] text-white">
+                    Done
                   </span>
                 )}
               </div>

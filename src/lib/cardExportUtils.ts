@@ -457,11 +457,11 @@ function renderStoryLayout(
 
     ctx.font = `700 24px ${FONT_HEAD}`;
     ctx.fillStyle = theme.primaryText;
-    ctx.fillText('72-HOUR DISCIPLINE INTEGRITY PROTOCOL', padX + 36, quoteY + 45);
+    ctx.fillText('DISCIPLINE & CONSISTENCY ARCHIVE', padX + 36, quoteY + 45);
 
     ctx.font = `500 18px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
-    ctx.fillText('Continuous System Verification • Zero Days Off Chain Locked', padX + 36, quoteY + 85);
+    ctx.fillText('Continuous Habit Tracking • Zero Days Off Chain Verified', padX + 36, quoteY + 85);
 
     // 3 Metric Pills inside protocol card
     const col3W = (contentW - 72 - 32) / 3;
@@ -500,12 +500,12 @@ function renderStoryLayout(
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 170);
-  ctx.lineTo(width - padX, height - 170);
+  ctx.moveTo(padX, height - 140);
+  ctx.lineTo(width - padX, height - 140);
   ctx.stroke();
 
-  // 8. Footer Signature & Verification
-  const footerY = height - 140;
+  // 8. Footer Signature
+  const footerY = height - 95;
   renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
 }
 
@@ -634,12 +634,12 @@ function renderSquareLayout(
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 110);
-  ctx.lineTo(width - padX, height - 110);
+  ctx.moveTo(padX, height - 90);
+  ctx.lineTo(width - padX, height - 90);
   ctx.stroke();
 
   // Footer Signature
-  const footerY = height - 90;
+  const footerY = height - 60;
   renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
 }
 
@@ -765,12 +765,12 @@ function renderLandscapeLayout(
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 75);
-  ctx.lineTo(width - padX, height - 75);
+  ctx.moveTo(padX, height - 65);
+  ctx.lineTo(width - padX, height - 65);
   ctx.stroke();
 
   // Footer Signature across bottom
-  const footerY = height - 58;
+  const footerY = height - 42;
   renderFooterSignature(ctx, padX, footerY, width, data.userName, data.showUser, theme);
 }
 
@@ -907,18 +907,10 @@ function renderFooterSignature(
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText(userLabel, x, y);
 
-  ctx.font = `600 13px ${FONT_BODY}`;
-  ctx.fillStyle = theme.accent;
-  ctx.fillText('VERIFIED 72H INTEGRITY LOCK', x, y + 22);
-
   ctx.textAlign = 'right';
   ctx.font = `700 14px ${FONT_HEAD}`;
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('HABIT TRACKER', canvasWidth - x, y);
-
-  ctx.font = `500 12px ${FONT_BODY}`;
-  ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('V2.0 EVOLUTION ENGINE', canvasWidth - x, y + 20);
   ctx.textAlign = 'left';
 }
 

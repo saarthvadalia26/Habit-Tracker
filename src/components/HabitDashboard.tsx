@@ -1219,7 +1219,7 @@ export function HabitDashboard({
       {/* ============================================================== */}
       {/* 2. MOBILE NAVIGATION HEADER (< 1024px) */}
       {/* ============================================================== */}
-      <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-3 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
+      <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
         <h1 className="font-clash font-bold text-xl sm:text-[22px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
           Habit Tracker<span className="text-[#ff5a1f]">.</span>
         </h1>
@@ -1254,7 +1254,7 @@ export function HabitDashboard({
             aria-label="Toggle navigation menu"
             className="p-1.5 sm:p-2 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] cursor-pointer hover:border-[#ff5a1f]/40 transition-colors"
           >
-            <Menu className="w-4 h-4" />
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
         </div>
       </header>
@@ -1262,93 +1262,102 @@ export function HabitDashboard({
       {/* Mobile Menu Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden p-3.5 sm:p-4 bg-[#fbf8f1] dark:bg-[#1c1a16] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col gap-2 z-20 shadow-lg"
-          >
-            {/* Account Quick Row on Mobile */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 mb-1">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs shrink-0 shadow-xs">
-                  {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 lg:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="lg:hidden p-3.5 sm:p-4 bg-[#fbf8f1] dark:bg-[#1c1a16] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col gap-2 z-40 relative shadow-xl max-h-[85vh] overflow-y-auto"
+            >
+              {/* Account Quick Row on Mobile */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 mb-1">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center font-clash font-bold text-xs shrink-0 shadow-xs">
+                    {(personalizedName || userEmail || 'H').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
+                      {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
+                    </span>
+                    <span className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
+                      {userEmail || 'Local workspace'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold truncate text-[#15130f] dark:text-[#fbf8f1]">
-                    {personalizedName || (isGuestMode ? 'Guest Mode' : 'Connected')}
-                  </span>
-                  <span className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 truncate">
-                    {userEmail || 'Local workspace'}
-                  </span>
-                </div>
+
+                {isGuestMode ? (
+                  <button
+                    onClick={() => {
+                      setIsAuthModalOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-xs font-semibold text-[#ff5a1f] bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/20 px-2.5 py-1 rounded-full transition-colors shrink-0 cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsProfileModalOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-xs font-semibold text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] px-2.5 py-1 rounded-full border border-[#15130f]/10 dark:border-[#fbf8f1]/10 transition-colors shrink-0 cursor-pointer"
+                  >
+                    Profile
+                  </button>
+                )}
               </div>
 
-              {isGuestMode ? (
+              {[
+                { id: 'today', label: 'Today', icon: Home },
+                { id: 'calendar', label: 'Calendar Matrix & Heatmap', icon: CalendarDays },
+                { id: 'goals', label: '30-Day Challenges & Goals', icon: Trophy },
+                { id: 'journal', label: 'Monthly Reflection Journal', icon: BookOpen },
+                { id: 'settings', label: 'Personalize & Settings', icon: Sliders },
+              ].map((tab) => (
                 <button
+                  key={tab.id}
                   onClick={() => {
-                    setIsAuthModalOpen(true);
+                    setActiveTab(tab.id as typeof activeTab);
                     setMobileMenuOpen(false);
                   }}
-                  className="text-xs font-semibold text-[#ff5a1f] bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/20 px-2.5 py-1 rounded-full transition-colors shrink-0 cursor-pointer"
+                  className={`flex items-center gap-3 w-full p-2.5 rounded-xl text-sm font-medium transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                      : 'text-[#15130f]/80 dark:text-[#fbf8f1]/80 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
+                  }`}
                 >
-                  Sign In
+                  <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[#ff5a1f]' : 'text-[#ff5a1f]'}`} />
+                  <span>{tab.label}</span>
                 </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsProfileModalOpen(true);
-                    setMobileMenuOpen(false);
-                  }}
-                  className="text-xs font-semibold text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] px-2.5 py-1 rounded-full border border-[#15130f]/10 dark:border-[#fbf8f1]/10 transition-colors shrink-0 cursor-pointer"
-                >
-                  Profile
-                </button>
-              )}
-            </div>
+              ))}
 
-            {[
-              { id: 'today', label: 'Today', icon: Home },
-              { id: 'calendar', label: 'Calendar Matrix & Heatmap', icon: CalendarDays },
-              { id: 'goals', label: '30-Day Challenges & Goals', icon: Trophy },
-              { id: 'journal', label: 'Monthly Reflection Journal', icon: BookOpen },
-              { id: 'settings', label: 'Personalize & Settings', icon: Sliders },
-            ].map((tab) => (
               <button
-                key={tab.id}
                 onClick={() => {
-                  setActiveTab(tab.id as typeof activeTab);
+                  setIsRoadmapOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className={`flex items-center gap-3 w-full p-2.5 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
-                    : 'text-[#15130f]/80 dark:text-[#fbf8f1]/80 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5'
-                }`}
+                className="flex items-center justify-between w-full p-2.5 rounded-xl bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/15 text-[#ff5a1f] text-sm font-semibold transition-colors mt-0.5"
               >
-                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[#ff5a1f]' : 'text-[#ff5a1f]'}`} />
-                <span>{tab.label}</span>
+                <div className="flex items-center gap-2">
+                  <Rocket className="w-4 h-4" />
+                  <span>v2.0 Evolution Cycle (6 Drops)</span>
+                </div>
+                <ChevronRight className="w-4 h-4" />
               </button>
-            ))}
-
-            <button
-              onClick={() => {
-                setIsRoadmapOpen(true);
-                setMobileMenuOpen(false);
-              }}
-              className="flex items-center justify-between w-full p-2.5 rounded-xl bg-[#ff5a1f]/10 hover:bg-[#ff5a1f]/15 text-[#ff5a1f] text-sm font-semibold transition-colors mt-0.5"
-            >
-              <div className="flex items-center gap-2">
-                <Rocket className="w-4 h-4" />
-                <span>v2.0 Evolution Cycle (6 Drops)</span>
-              </div>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      <main className="flex-1 max-w-[1020px] w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-7 lg:py-8 flex flex-col gap-5 sm:gap-7">
+      <main className="flex-1 max-w-[1020px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-7 lg:py-8 flex flex-col gap-3.5 sm:gap-6">
         <AnimatePresence mode="wait" initial={true}>
           {/* VIEW 1: TODAY (Framer Layout & Motion) */}
           {activeTab === 'today' && (
@@ -1358,31 +1367,31 @@ export function HabitDashboard({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col gap-5 sm:gap-7 w-full"
+              className="flex flex-col gap-3.5 sm:gap-6 w-full"
             >
               {/* Header Row */}
               <motion.header
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28, delay: 0.04 }}
-                className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 sm:gap-4 w-full"
+                className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2.5 sm:gap-4 w-full"
               >
-              <div className="flex flex-col gap-1 sm:gap-1.5 min-w-0">
-                <p className="text-[11.5px] sm:text-[12.5px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
+              <div className="flex flex-col gap-0.5 sm:gap-1.5 min-w-0">
+                <p className="text-[11px] sm:text-[12.5px] font-semibold tracking-[0.08em] uppercase text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-archivo truncate">
                   {headerDateString}
                 </p>
-                <h2 className="font-clash font-semibold text-3xl min-[400px]:text-[32px] sm:text-[36px] lg:text-[38px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1] break-words">
+                <h2 className="font-clash font-semibold text-2xl min-[380px]:text-[28px] sm:text-[36px] lg:text-[38px] tracking-[-0.02em] leading-tight text-[#15130f] dark:text-[#fbf8f1] break-words">
                   {headerTitle}
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-auto self-start sm:self-auto">
                 {drop2Unlocked && (
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleOpenFlexCard('streak')}
-                    className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40 font-semibold text-[13px] sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40 font-semibold text-xs sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
                     title="Design & Export Milestone Flex Cards"
                   >
                     <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
@@ -1394,9 +1403,9 @@ export function HabitDashboard({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4.5 py-2.5 sm:px-5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-[13.5px] sm:text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="hidden sm:inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                   <span>New habit</span>
                 </motion.button>
               </div>
@@ -1416,23 +1425,23 @@ export function HabitDashboard({
               </div>
             )}
 
-            {/* Stats Row (3 Cards Grid) */}
+            {/* Stats Row (Responsive 2-col on mobile, 3-col on desktop) */}
             <motion.section
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.08 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full"
+              className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 w-full"
             >
-              {/* Card 1: Progress Ring Card (Dark Ink #15130f) */}
+              {/* Card 1: Progress Ring Card (Spans 2 cols on mobile, 1 col on desktop) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-4 sm:p-5 flex items-center gap-3.5 sm:gap-4.5 shadow-sm"
+                className="col-span-2 md:col-span-1 rounded-[20px] sm:rounded-[24px] bg-[#15130f] text-[#fbf8f1] p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4.5 shadow-sm"
               >
                 {/* Responsive Conic Ring */}
                 <div
-                  className="w-[68px] h-[68px] min-[380px]:w-[74px] min-[380px]:h-[74px] lg:w-[78px] lg:h-[78px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
+                  className="w-[56px] h-[56px] sm:w-[74px] sm:h-[74px] lg:w-[78px] lg:h-[78px] rounded-full flex items-center justify-center shrink-0 transition-all duration-700"
                   style={{
                     background: `conic-gradient(#ff5a1f 0deg ${Math.round(
                       (todayPercentage / 100) * 360
@@ -1441,8 +1450,8 @@ export function HabitDashboard({
                     )}deg)`,
                   }}
                 >
-                  <div className="w-[52px] h-[52px] min-[380px]:w-[58px] min-[380px]:h-[58px] lg:w-[62px] lg:h-[62px] rounded-full bg-[#15130f] flex items-center justify-center">
-                    <span className="font-clash font-semibold text-[17px] min-[380px]:text-[18px] lg:text-[19px] text-[#fbf8f1]">
+                  <div className="w-[42px] h-[42px] sm:w-[58px] sm:h-[58px] lg:w-[62px] lg:h-[62px] rounded-full bg-[#15130f] flex items-center justify-center">
+                    <span className="font-clash font-semibold text-[14px] sm:text-[18px] lg:text-[19px] text-[#fbf8f1]">
                       {todayPercentage}%
                     </span>
                   </div>
@@ -1450,21 +1459,21 @@ export function HabitDashboard({
 
                 {/* Progress Text */}
                 <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
-                  <h3 className="font-clash font-semibold text-[18px] sm:text-[19px] min-[1440px]:text-[20px] tracking-tight leading-tight text-[#fbf8f1] truncate">
+                  <h3 className="font-clash font-semibold text-[16px] sm:text-[19px] min-[1440px]:text-[20px] tracking-tight leading-tight text-[#fbf8f1] truncate">
                     {doneCount} of {totalCount} done
                   </h3>
-                  <p className="text-[12.5px] sm:text-[13px] text-[#fbf8f1]/65 leading-snug">
+                  <p className="text-[11.5px] sm:text-[13px] text-[#fbf8f1]/65 leading-snug">
                     {remainingCount === 0 ? (
-                      <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 flex-wrap">
                         <span>All habits completed! 🎉</span>
                         {drop2Unlocked && (
                           <button
                             type="button"
                             onClick={() => handleOpenFlexCard('today')}
-                            className="text-[#ff5a1f] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+                            className="text-[#ff5a1f] hover:underline font-semibold cursor-pointer inline-flex items-center gap-0.5"
                           >
                             <Share2 className="w-2.5 h-2.5" />
-                            <span>Flex 100%</span>
+                            <span>Flex</span>
                           </button>
                         )}
                       </span>
@@ -1477,61 +1486,61 @@ export function HabitDashboard({
                 </div>
               </motion.div>
 
-              {/* Card 2: Longest Current Streak */}
+              {/* Card 2: Longest Current Streak (1 col on mobile) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.08 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col justify-between min-h-[114px] sm:min-h-[126px] shadow-framer-card"
+                className="col-span-1 rounded-[20px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-3 sm:p-5 flex flex-col justify-between min-h-[96px] sm:min-h-[126px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Flame className="w-5 h-5 text-[#ff5a1f]" />
-                  <div className="flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-[#ff5a1f]" />
+                  <div className="flex items-center gap-1">
                     {drop2Unlocked && (
                       <button
                         type="button"
                         onClick={() => handleOpenFlexCard('streak')}
-                        title="Flex your streak on social stories"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
+                        title="Flex your streak"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-[#ff5a1f]/10 text-[#ff5a1f] hover:bg-[#ff5a1f] hover:text-white transition-all cursor-pointer"
                       >
-                        <Share2 className="w-2.5 h-2.5" />
+                        <Share2 className="w-2 h-2" />
                         <span>Flex</span>
                       </button>
                     )}
-                    <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                    <span className="text-[9.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                       Streak
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-2 sm:mt-2.5">
-                  <p className="font-clash font-semibold text-[28px] min-[380px]:text-[30px] sm:text-[32px] lg:text-[34px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
-                    {longestStreak} days
+                <div className="flex flex-col gap-0.5 mt-1 sm:mt-2.5">
+                  <p className="font-clash font-semibold text-[22px] min-[380px]:text-[26px] sm:text-[32px] lg:text-[34px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                    {longestStreak} {longestStreak === 1 ? 'day' : 'days'}
                   </p>
-                  <p className="text-[12.5px] sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
-                    Longest current streak
+                  <p className="text-[11px] sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal truncate">
+                    Current streak
                   </p>
                 </div>
               </motion.div>
 
-              {/* Card 3: Completion This Month */}
+              {/* Card 3: Completion This Month (1 col on mobile) */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.16 }}
-                className="rounded-[22px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-4 sm:p-5 flex flex-col justify-between min-h-[114px] sm:min-h-[126px] shadow-framer-card"
+                className="col-span-1 rounded-[20px] sm:rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 p-3 sm:p-5 flex flex-col justify-between min-h-[96px] sm:min-h-[126px] shadow-framer-card"
               >
                 <div className="flex items-center justify-between w-full">
-                  <Target className="w-5 h-5 text-[#15130f] dark:text-[#fbf8f1]" />
-                  <span className="text-[10.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                  <Target className="w-4 h-4 sm:w-5 sm:h-5 text-[#15130f] dark:text-[#fbf8f1]" />
+                  <span className="text-[9.5px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/40 dark:text-[#fbf8f1]/40">
                     Monthly
                   </span>
                 </div>
-                <div className="flex flex-col gap-0.5 mt-2 sm:mt-2.5">
-                  <p className="font-clash font-semibold text-[28px] min-[380px]:text-[30px] sm:text-[32px] lg:text-[34px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
+                <div className="flex flex-col gap-0.5 mt-1 sm:mt-2.5">
+                  <p className="font-clash font-semibold text-[22px] min-[380px]:text-[26px] sm:text-[32px] lg:text-[34px] tracking-[-0.03em] leading-none text-[#15130f] dark:text-[#fbf8f1]">
                     {monthlyCompletionRate}%
                   </p>
-                  <p className="text-[12.5px] sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal">
-                    {monthlyCompletedChecks} of {monthlyPossibleChecks} done this month
+                  <p className="text-[11px] sm:text-[13px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 font-normal truncate">
+                    {monthlyCompletedChecks} of {monthlyPossibleChecks} done
                   </p>
                 </div>
               </motion.div>
