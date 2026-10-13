@@ -205,26 +205,28 @@ habit-tracker/
 │   │   ├── layout.tsx             # Root layout with Geist font & ThemeProvider
 │   │   └── page.tsx               # Server component page with SSR data hydration
 │   ├── components/                # Modular UI Components
-│   │   ├── ActiveChallengeModal.tsx # Live challenge dashboard with metrics & controls
-│   │   ├── AmbientBackground.tsx  # Dynamic floating ambient orbs and dot matrix
-│   │   ├── AuthModal.tsx          # Login & registration modal dialog
-│   │   ├── ChallengeBanner.tsx    # Active challenge countdown, progress bar & quotes
-│   │   ├── CircularGauge.tsx      # SVG progress donut gauge with responsive viewBox
-│   │   ├── CreateChallengeModal.tsx # 75 Hard, 90 Monk & custom challenge creator
-│   │   ├── CreateHabitModal.tsx   # Habit creation modal with custom color picker
-│   │   ├── DailyProgressWaveChart.tsx # Bézier curve daily completion graph
-│   │   ├── DeleteAccountModal.tsx # Account wipe confirmation dialog with typing safety
-│   │   ├── HeaderNav.tsx          # Navigation header with account dropdown & theme toggle
-│   │   ├── NotesSection.tsx       # User-scoped markdown notes & reflection scratchpad
-│   │   ├── SmartTrackerDashboard.tsx # Comprehensive monthly matrix & analytics engine
-│   │   └── ThemeToggle.tsx        # Animated Light/Dark switch
+│   │   ├── ActiveChallengeModal.tsx   # Live challenge dashboard with metrics & controls
+│   │   ├── AuthModal.tsx              # Login & registration modal dialog
+│   │   ├── ChallengeBanner.tsx        # Active challenge countdown, milestones & quotes
+│   │   ├── CreateChallengeModal.tsx   # 75 Hard, 90 Monk & custom challenge creator
+│   │   ├── DeleteAccountModal.tsx     # Account wipe confirmation dialog with typing safety
+│   │   ├── HabitDashboard.tsx         # Core habit tracking grid, stats & calendar engine
+│   │   ├── MilestoneFlexCardModal.tsx # Shareable milestone flex cards with export engine
+│   │   ├── NotesSection.tsx           # User-scoped markdown notes & reflection scratchpad
+│   │   ├── PersonalizeProfileModal.tsx# Profile name & preferences modal
+│   │   ├── SignOutModal.tsx           # Confirmation modal for signing out
+│   │   ├── UpcomingReleaseToast.tsx   # Floating upcoming feature notification
+│   │   ├── UpcomingUpdateModal.tsx    # v2.0 roadmap & update release modal
+│   │   └── YearHeatmapMatrix.tsx      # Annual GitHub-style 365-day habit density matrix
 │   ├── context/
 │   │   └── ThemeContext.tsx       # Fast, lag-free Light/Dark theme provider
 │   ├── lib/
-│   │   ├── analytics.ts           # True monthly denominator & today score algorithms
+│   │   ├── analytics.ts           # Continuous streak & completion rate algorithms
+│   │   ├── auth-toast.ts          # Auth redirect notifications & flash toast queue
+│   │   ├── cardExportUtils.ts     # Multi-ratio canvas rendering engine (1:1, 9:16, 16:9)
 │   │   ├── challengeUtils.ts      # Presets (75 Hard, 90 Monk, 30 Sprint) & milestone math
-│   │   ├── constants.ts           # Predefined themes & dynamic color resolution
 │   │   ├── dateUtils.ts           # Date math, ISO formatters, rolling day windows
+│   │   ├── heatmapUtils.ts        # 365-day year matrix cell generation & color mapping
 │   │   ├── mockData.ts            # Sample habits for guest / preview mode
 │   │   ├── monthUtils.ts          # Monthly days generator, 72h rule calculations
 │   │   ├── quotes.ts              # 33 curated quotes on discipline, focus & grit
