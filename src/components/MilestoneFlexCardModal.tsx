@@ -798,6 +798,82 @@ export function MilestoneFlexCardModal({
     return { habit: top, streak: Math.max(0, max) };
   }, [habits]);
 
+  // Overall routine unbroken streak (consecutive days with habits completed in daily routine)
+  const overallRoutineStreak = useMemo(() => {
+    if (habits.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDateToISO(today);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatDateToISO(yesterday);
+
+    const anyDoneOnDate = (iso: string) => habits.some((h) => Boolean(h.logs?.[iso]));
+
+    let streak = 0;
+    let currentDate = new Date(today);
+
+    // If any habit is logged today, streak starts from today
+    if (anyDoneOnDate(todayStr)) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else if (anyDoneOnDate(yesterdayStr)) {
+      // If nothing logged today yet, allow streak to continue from yesterday
+      currentDate = yesterday;
+    } else {
+      // Neither today nor yesterday had any activity
+      return 0;
+    }
+
+    // Count backwards day by day as long as at least 1 habit was logged
+    while (true) {
+      const dateStr = formatDateToISO(currentDate);
+      if (anyDoneOnDate(dateStr)) {
+        if (currentDate.getTime() !== today.getTime()) {
+          streak++;
+        }
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }, [habits]);
+
+  // Authentic Month-to-Date adherence stats across ALL habits in routine
+  const overallMonthStats = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const currentDay = now.getDate();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = monthNames[month];
+
+    if (habits.length === 0) {
+      return { completedCount: 0, possibleCount: currentDay, rate: 0, monthName, currentDay };
+    }
+
+    let completedCount = 0;
+    const possibleCount = habits.length * currentDay;
+
+    habits.forEach((h) => {
+      for (let d = 1; d <= currentDay; d++) {
+        const mm = String(month + 1).padStart(2, '0');
+        const dd = String(d).padStart(2, '0');
+        const dateKey = `${year}-${mm}-${dd}`;
+        if (h.logs?.[dateKey]) {
+          completedCount++;
+        }
+      }
+    });
+
+    const rate = possibleCount > 0 ? Math.round((completedCount / possibleCount) * 100) : 0;
+    return { completedCount, possibleCount, rate, monthName, currentDay };
+  }, [habits]);
+
   // Selected single habit
   const currentHabit = useMemo(() => {
     return habits.find((h) => h.id === selectedHabitId) || habits[0] || null;
@@ -1070,38 +1146,36 @@ export function MilestoneFlexCardModal({
       };
     }
 
-    // Default: Overall Top Streak (Spotlights the habit that ACTUALLY achieved the streak)
-    const targetHabit = bestStreakHabit?.habit || currentHabit;
-    const effectiveStreak = bestStreakHabit?.streak || longestStreak || 0;
-    const stats = getHabitMonthStats(targetHabit);
-    const weeklyDots = getWeeklyDotsForHabit(targetHabit);
+    // Default: Overall Routine Streak (Aggregate consistency across ALL habits)
+    const effectiveStreak = Math.max(overallRoutineStreak, longestStreak || 0, bestStreakHabit?.streak || 0);
+    const weeklyDots = getWeeklyDotsForToday();
     const weeklyDone = weeklyDots.filter((d) => d.completed).length;
-    const habitName = targetHabit ? targetHabit.title.split(' | ')[0] : 'Daily Routine';
+    const totalHabitsCount = habits.length;
+    const habitCountLabel = totalHabitsCount === 1 ? '1 Habit Tracked' : `${totalHabitsCount} Habits Tracked`;
 
     return {
-      title: habitName,
-      subtitle: targetHabit?.subtitle
-        ? `${targetHabit.subtitle} • ${effectiveStreak}d streak • ${stats.completedCount}/${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`
-        : effectiveStreak > 0
-        ? `${effectiveStreak}-day unbroken run • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`
-        : `0-day streak • ${stats.completedCount} of ${stats.currentDay} days logged in ${stats.monthName} (${stats.rate}%)`,
+      title: 'Overall Routine Streak',
+      subtitle:
+        effectiveStreak > 0
+          ? `${effectiveStreak}-day unbroken consistency streak across your routine • ${overallMonthStats.completedCount} of ${overallMonthStats.possibleCount} total checks logged in ${overallMonthStats.monthName} (${overallMonthStats.rate}%)`
+          : `0-day streak • Momentum rebuilding • ${overallMonthStats.completedCount} of ${overallMonthStats.possibleCount} total checks logged in ${overallMonthStats.monthName} (${overallMonthStats.rate}%)`,
       metricValue: effectiveStreak,
       metricUnit: effectiveStreak === 1 ? 'DAY STREAK' : effectiveStreak === 0 ? 'DAYS LOGGED (0)' : 'DAYS UNBROKEN',
-      metricLabel: 'Top Continuous Streak',
-      badgeText: targetHabit?.subtitle ? `${targetHabit.subtitle.toUpperCase()} • ${effectiveStreak}D STREAK` : `CORE ROUTINE • ${effectiveStreak}D STREAK`,
+      metricLabel: 'Overall Continuous Streak',
+      badgeText: `OVERALL ROUTINE • ${effectiveStreak}D STREAK`,
       userName: displayName,
-      habitTitle: habitName,
-      bentoLabel: 'RECORD STREAK ROUTINE',
-      routineTag: targetHabit?.targetTime ? `SCHEDULED • ${targetHabit.targetTime}` : (effectiveStreak > 0 ? `${effectiveStreak}d Unbroken` : 'Active Routine'),
-      completionRate: stats.rate,
-      adherenceLabel: `${stats.completedCount} of ${stats.currentDay} Days in ${stats.monthName}`,
+      habitTitle: `All ${totalHabitsCount} Tracked Habits`,
+      bentoLabel: 'OVERALL ROUTINE',
+      routineTag: `${habitCountLabel} • ${overallMonthStats.rate}% MTD Adherence`,
+      completionRate: overallMonthStats.rate,
+      adherenceLabel: `${overallMonthStats.completedCount} of ${overallMonthStats.possibleCount} Total Logs in ${overallMonthStats.monthName}`,
       footerLabel: displayName
         ? `DISCIPLINE BY ${displayName.toUpperCase()}`
-        : `${habitName.toUpperCase()} • ${effectiveStreak}D STREAK`,
+        : `ALL ${totalHabitsCount} HABITS • ${effectiveStreak}D STREAK`,
       metricDetails: [
-        { label: 'TOP STREAK', value: `${effectiveStreak}D`, subtext: effectiveStreak > 0 ? 'Continuous Run' : '0-Day Reset' },
-        { label: 'MONTH LOGS', value: `${stats.completedCount}/${stats.currentDay}`, subtext: `${stats.rate}% in ${stats.monthName}` },
-        { label: '7-DAY PACE', value: `${weeklyDone}/7D`, subtext: 'This Week' },
+        { label: 'OVERALL STREAK', value: `${effectiveStreak}D`, subtext: effectiveStreak > 0 ? 'Unbroken Run' : '0-Day Reset' },
+        { label: 'TOTAL LOGS', value: `${overallMonthStats.completedCount}`, subtext: `in ${overallMonthStats.monthName} (${overallMonthStats.rate}%)` },
+        { label: '7-DAY PACE', value: `${weeklyDone}/7D`, subtext: 'Daily Consistency' },
       ],
       weeklyDots,
       quote: activeQuote.quote,
@@ -1116,6 +1190,8 @@ export function MilestoneFlexCardModal({
     currentHabit,
     bestStreakHabit,
     longestStreak,
+    overallRoutineStreak,
+    overallMonthStats,
     todayStats,
     habitStreak,
     displayName,
