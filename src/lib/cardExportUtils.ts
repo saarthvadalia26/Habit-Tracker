@@ -15,6 +15,8 @@ export interface FlexCardData {
   badgeText: string;
   userName?: string | null;
   habitTitle?: string;
+  bentoLabel?: string;
+  routineTag?: string;
   completionRate?: number;
   quote?: string;
   quoteAuthor?: string;
@@ -368,7 +370,7 @@ function renderStoryLayout(
 
   ctx.font = `600 16px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('TARGET ROUTINE', padX + 28, bentoY + 36);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + 28, bentoY + 36);
 
   ctx.font = `700 28px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
@@ -376,12 +378,15 @@ function renderStoryLayout(
   ctx.fillText(habitStr, padX + 28, bentoY + 84);
 
   // Routine badge chip inside bento 1
-  ctx.fillStyle = theme.pillBg;
-  roundRect(ctx, padX + 28, bentoY + 135, 180, 42, 14);
-  ctx.fill();
+  const tagText = (data.routineTag || 'Daily Discipline').toUpperCase();
   ctx.font = `700 15px ${FONT_BODY}`;
+  const measuredTagW = ctx.measureText(tagText).width + 36;
+  const chipW = Math.min(bentoW - 56, Math.max(140, measuredTagW));
+  ctx.fillStyle = theme.pillBg;
+  roundRect(ctx, padX + 28, bentoY + 135, chipW, 42, 14);
+  ctx.fill();
   ctx.fillStyle = theme.pillText;
-  ctx.fillText('ATOMIC DAILY RITUAL', padX + 44, bentoY + 162);
+  ctx.fillText(truncateText(ctx, tagText, chipW - 24), padX + 44, bentoY + 162);
 
   // Bento Box 2: Adherence Index
   const bento2X = padX + bentoW + 28;
@@ -577,7 +582,7 @@ function renderSquareLayout(
   // Inside Stats Row: Routine on Left, Adherence on Right
   ctx.font = `600 15px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('TARGET ROUTINE', padX + 26, statsY + 36);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + 26, statsY + 36);
 
   ctx.font = `700 26px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
@@ -712,7 +717,7 @@ function renderLandscapeLayout(
   // Inside Right Card
   ctx.font = `600 13px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('TARGET ROUTINE', rightX + 22, cardY + 28);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', rightX + 22, cardY + 28);
 
   ctx.font = `700 22px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;

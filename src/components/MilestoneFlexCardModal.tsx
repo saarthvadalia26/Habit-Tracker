@@ -583,12 +583,14 @@ function FlexCardVectorPreview({
             borderColor: theme.cardBorder,
           }}
         >
-          <span className="text-[7px] font-bold uppercase tracking-wider opacity-60">TARGET ROUTINE</span>
+          <span className="text-[7px] font-bold uppercase tracking-wider opacity-60">
+            {data.bentoLabel || 'TARGET ROUTINE'}
+          </span>
           <span className="font-bold text-[10px] truncate my-0.5">
             {data.habitTitle || 'Core Stack'}
           </span>
           <span className="text-[7.5px] font-medium truncate" style={{ color: theme.accent }}>
-            Atomic Daily Ritual
+            {data.routineTag || 'Daily Discipline'}
           </span>
         </div>
 
@@ -764,7 +766,9 @@ export function MilestoneFlexCardModal({
         metricLabel: 'Daily Execution Score',
         badgeText: 'DAILY DISCIPLINE MASTER',
         userName: displayName,
-        habitTitle: `${habits.length} Habits Locked`,
+        habitTitle: `${habits.length} Habits Tracked`,
+        bentoLabel: "TODAY'S TARGET",
+        routineTag: 'Daily Execution',
         completionRate: roundedToday,
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
@@ -783,7 +787,9 @@ export function MilestoneFlexCardModal({
         metricLabel: 'Discipline Sprint',
         badgeText: `${challenge.duration_days}-DAY HARD CHALLENGE`,
         userName: displayName,
-        habitTitle: `${challenge.habit_ids?.length || habits.length} Enrolled Routines`,
+        habitTitle: challenge.title,
+        bentoLabel: 'ACTIVE SPRINT',
+        routineTag: `${challenge.duration_days}-Day Protocol`,
         completionRate: 88,
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
@@ -811,7 +817,9 @@ export function MilestoneFlexCardModal({
         metricLabel: 'Continuous Discipline Streak',
         badgeText: streakVal >= 30 ? '30+ DAY IRON WILL' : 'HABIT MOMENTUM',
         userName: displayName,
-        habitTitle: currentHabit.subtitle || 'Core Non-Negotiable',
+        habitTitle: title,
+        bentoLabel: 'HABIT SPOTLIGHT',
+        routineTag: subtitle || 'Atomic Daily Habit',
         completionRate: Math.min(100, Math.max(85, Math.round(todayCompletionRate || 95))),
         quote: activeQuote.quote,
         quoteAuthor: activeQuote.author,
@@ -837,6 +845,8 @@ export function MilestoneFlexCardModal({
           : 'CONSISTENCY SPRINT',
       userName: displayName,
       habitTitle: currentHabit?.title?.split(' | ')[0] || 'Core Routine Stack',
+      bentoLabel: 'STREAK DISCIPLINE',
+      routineTag: 'Unbroken Momentum',
       completionRate: Math.min(100, Math.max(85, Math.round(todayCompletionRate || 94))),
       quote: activeQuote.quote,
       quoteAuthor: activeQuote.author,
