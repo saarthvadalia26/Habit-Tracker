@@ -293,3 +293,102 @@ CREATE POLICY "Users can delete their own monthly notes"
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.monthly_notes TO authenticated;
 GRANT ALL ON TABLE public.monthly_notes TO service_role;
 
+-- ==============================================================================
+-- 13. Drop 3: Streak Armor & Rest Cadence Schema Migration
+-- ==============================================================================
+
+-- Add cadence configurations to public.habits
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS cadence_type TEXT NOT NULL DEFAULT 'everyday' 
+    CONSTRAINT check_cadence_type CHECK (cadence_type IN ('everyday', 'weekdays', 'weekends', 'custom', 'frequency'));
+
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS cadence_days INT[] NOT NULL DEFAULT '{0,1,2,3,4,5,6}';
+
+-- Ensure cadence_days only holds valid days of week (0 to 6) and at most 7 elements
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_cadence_days_valid'
+    ) THEN
+        ALTER TABLE public.habits
+            ADD CONSTRAINT check_cadence_days_valid
+            CHECK (cardinality(cadence_days) <= 7 AND cadence_days <@ ARRAY[0,1,2,3,4,5,6]::int[]);
+    END IF;
+END $$;
+
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS target_frequency INT NOT NULL DEFAULT 7 
+    CONSTRAINT check_target_frequency CHECK (target_frequency >= 1 AND target_frequency <= 7);
+
+-- Add is_frozen flag to public.habit_logs
+ALTER TABLE public.habit_logs 
+    ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN NOT NULL DEFAULT false;
+
+-- Create streak_freezes table for detailed audit and notes
+CREATE TABLE IF NOT EXISTS public.streak_freezes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    habit_id UUID NOT NULL REFERENCES public.habits(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    reason TEXT DEFAULT '' CONSTRAINT check_freeze_reason CHECK (char_length(reason) <= 120),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT unique_habit_freeze_date UNIQUE (habit_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_streak_freezes_habit_date ON public.streak_freezes(habit_id, date);
+ALTER TABLE public.streak_freezes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view freezes for their own habits" ON public.streak_freezes;
+CREATE POLICY "Users can view freezes for their own habits"
+    ON public.streak_freezes FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.habits
+            WHERE public.habits.id = public.streak_freezes.habit_id
+            AND public.habits.user_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can insert freezes for their own habits" ON public.streak_freezes;
+CREATE POLICY "Users can insert freezes for their own habits"
+    ON public.streak_freezes FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.habits
+            WHERE public.habits.id = public.streak_freezes.habit_id
+            AND public.habits.user_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can update freezes for their own habits" ON public.streak_freezes;
+CREATE POLICY "Users can update freezes for their own habits"
+    ON public.streak_freezes FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.habits
+            WHERE public.habits.id = public.streak_freezes.habit_id
+            AND public.habits.user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.habits
+            WHERE public.habits.id = public.streak_freezes.habit_id
+            AND public.habits.user_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can delete freezes for their own habits" ON public.streak_freezes;
+CREATE POLICY "Users can delete freezes for their own habits"
+    ON public.streak_freezes FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.habits
+            WHERE public.habits.id = public.streak_freezes.habit_id
+            AND public.habits.user_id = auth.uid()
+        )
+    );
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.streak_freezes TO authenticated;
+GRANT ALL ON TABLE public.streak_freezes TO service_role;
+

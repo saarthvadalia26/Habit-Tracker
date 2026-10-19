@@ -3,7 +3,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Habit, HabitLog, HabitWithLogs } from '@/types/database.types';
-import { cleanHexColor, cleanText, isUuid, isValidDate } from '@/lib/validation';
+import {
+  cleanHexColor,
+  cleanText,
+  isUuid,
+  isValidDate,
+  isValidCadenceType,
+  cleanCadenceDays,
+  isValidFrequency,
+} from '@/lib/validation';
+import { calculateCadenceStreak, computeHabitShieldBank } from '@/lib/cadenceUtils';
 
 export interface ActionResponse<T> {
   data: T | null;
@@ -77,23 +86,43 @@ export async function getHabitsWithLogsAction(
       return { data: null, error: 'Unable to load habit history.' };
     }
 
-    // 3. Group logs by habit_id -> Record<date, is_completed>
+    // 3. Group logs by habit_id -> Record<date, is_completed> and frozenLogs -> Record<date, boolean>
     const logsByHabit: Record<string, Record<string, boolean>> = {};
+    const frozenLogsByHabit: Record<string, Record<string, boolean>> = {};
     habitIds.forEach((id) => {
       logsByHabit[id] = {};
+      frozenLogsByHabit[id] = {};
     });
 
     (logs || []).forEach((log: HabitLog) => {
       if (logsByHabit[log.habit_id]) {
         logsByHabit[log.habit_id][log.date] = log.is_completed;
+        if (log.is_frozen) {
+          frozenLogsByHabit[log.habit_id][log.date] = true;
+        }
       }
     });
 
-    // 4. Combine habits with logs
-    const result: HabitWithLogs[] = habits.map((habit) => ({
-      ...habit,
-      logs: logsByHabit[habit.id] || {},
-    }));
+    // 4. Combine habits with logs and cadence defaults
+    const result: HabitWithLogs[] = habits.map((habit) => {
+      const cadenceType = (habit.cadence_type as 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency') || 'everyday';
+      const cadenceDays = habit.cadence_days || [0, 1, 2, 3, 4, 5, 6];
+      const targetFrequency = habit.target_frequency || 7;
+
+      return {
+        ...habit,
+        cadence_type: cadenceType,
+        cadence_days: cadenceDays,
+        target_frequency: targetFrequency,
+        cadence: {
+          type: cadenceType,
+          daysOfWeek: cadenceDays,
+          frequencyPerWeek: targetFrequency,
+        },
+        logs: logsByHabit[habit.id] || {},
+        frozenLogs: frozenLogsByHabit[habit.id] || {},
+      };
+    });
 
     return { data: result, error: null };
   } catch {
@@ -102,11 +131,14 @@ export async function getHabitsWithLogsAction(
 }
 
 /**
- * Creates a new habit for the current user with strict input sanitization
+ * Creates a new habit for the current user with strict input sanitization and optional cadence
  */
 export async function createHabitAction(
   title: string,
-  colorTheme: string = '#6366F1'
+  colorTheme: string = '#6366F1',
+  cadenceType: string = 'everyday',
+  cadenceDays?: number[],
+  targetFrequency?: number
 ): Promise<ActionResponse<Habit>> {
   try {
     const trimmedTitle = cleanText(title, 60);
@@ -130,24 +162,258 @@ export async function createHabitAction(
       };
     }
 
-    const { data, error } = await supabase
+    const validCadence = isValidCadenceType(cadenceType) ? cadenceType : 'everyday';
+    const validDays = cleanCadenceDays(cadenceDays) ?? [0, 1, 2, 3, 4, 5, 6];
+    const validFrequency = isValidFrequency(targetFrequency) ? targetFrequency : 7;
+
+    // Try inserting with cadence columns; fallback if schema has not been updated yet
+    const payload: any = {
+      user_id: user.id,
+      title: trimmedTitle,
+      color_theme: validatedColor,
+      cadence_type: validCadence,
+      cadence_days: validDays,
+      target_frequency: validFrequency,
+    };
+
+    let { data, error } = await supabase
       .from('habits')
-      .insert({
-        user_id: user.id,
-        title: trimmedTitle,
-        color_theme: validatedColor,
-      })
+      .insert(payload)
       .select()
       .single();
+
+    if (error) {
+      // Graceful fallback without new columns if remote DB is older schema
+      const fallback = await supabase
+        .from('habits')
+        .insert({
+          user_id: user.id,
+          title: trimmedTitle,
+          color_theme: validatedColor,
+        })
+        .select()
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       return { data: null, error: 'Unable to create this habit.' };
     }
 
     revalidatePath('/');
-    return { data, error: null };
+    return { data: data as Habit, error: null };
   } catch {
     return { data: null, error: 'Unable to create this habit.' };
+  }
+}
+
+/**
+ * Updates a habit's weekly rest cadence configuration with strict validation and ownership checks
+ */
+export async function updateHabitCadenceAction(
+  habitId: string,
+  cadenceType: string,
+  cadenceDays: number[],
+  targetFrequency: number = 7
+): Promise<ActionResponse<{ habitId: string; cadenceType: string }>> {
+  try {
+    if (!isUuid(habitId)) {
+      return { data: null, error: 'Invalid habit ID.' };
+    }
+
+    if (!isValidCadenceType(cadenceType)) {
+      return { data: null, error: 'Invalid cadence schedule type.' };
+    }
+
+    const validDays = cleanCadenceDays(cadenceDays);
+    if (!validDays || validDays.length === 0) {
+      return { data: null, error: 'At least one active day of the week is required.' };
+    }
+
+    const validFrequency = isValidFrequency(targetFrequency) ? targetFrequency : validDays.length;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    // Verify habit ownership explicitly before mutating
+    const { data: habit, error: habitError } = await supabase
+      .from('habits')
+      .select('id')
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (habitError || !habit) {
+      return { data: null, error: 'Habit not found or unauthorized.' };
+    }
+
+    const { error } = await supabase
+      .from('habits')
+      .update({
+        cadence_type: cadenceType,
+        cadence_days: validDays,
+        target_frequency: validFrequency,
+      })
+      .eq('id', habitId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      return { data: null, error: 'Unable to update cadence settings.' };
+    }
+
+    revalidatePath('/');
+    return { data: { habitId, cadenceType }, error: null };
+  } catch {
+    return { data: null, error: 'Unable to update cadence settings.' };
+  }
+}
+
+/**
+ * Toggles a Streak Armor freeze shield for a habit on a specific date.
+ * Enforces ownership, date integrity window, and shield bank limits.
+ */
+export async function toggleStreakFreezeAction(
+  habitId: string,
+  date: string,
+  isFrozen: boolean,
+  reason?: string
+): Promise<ActionResponse<{ habitId: string; date: string; isFrozen: boolean }>> {
+  try {
+    if (!isUuid(habitId) || !isValidDate(date) || typeof isFrozen !== 'boolean') {
+      return { data: null, error: 'Invalid habit, date, or freeze state.' };
+    }
+
+    const sanitizedReason = cleanText(reason, 120) || '';
+
+    // Business Rules:
+    // 1. Cannot freeze days more than 14 days in the future
+    // 2. Cannot freeze missed days older than 72 hours (3 calendar days)
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(y, m - 1, d));
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const diffDays = Math.round((todayUTC.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < -14) {
+      return {
+        data: null,
+        error: 'Streak shields cannot be scheduled more than 14 days in advance.',
+      };
+    }
+
+    if (diffDays > 3) {
+      return {
+        data: null,
+        error: '72-hour integrity window expired: Streak shields cannot protect missed days older than 3 days.',
+      };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    // Verify habit ownership explicitly before mutating
+    const { data: habit, error: habitError } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (habitError || !habit) {
+      return { data: null, error: 'Habit not found or unauthorized.' };
+    }
+
+    // If freezing, verify shield bank availability (prevent infinite shield abuse)
+    if (isFrozen) {
+      const { data: logs } = await supabase
+        .from('habit_logs')
+        .select('date, is_completed, is_frozen')
+        .eq('habit_id', habitId);
+
+      const logsMap: Record<string, boolean> = {};
+      const frozenMap: Record<string, boolean> = {};
+      (logs || []).forEach((l: any) => {
+        if (l.is_completed) logsMap[l.date] = true;
+        if (l.is_frozen) frozenMap[l.date] = true;
+      });
+
+      // If already frozen on this specific date, it's idempotent
+      if (!frozenMap[date]) {
+        const habitCadence = habit.cadence_type
+          ? {
+              type: habit.cadence_type as 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency',
+              daysOfWeek: habit.cadence_days,
+              frequencyPerWeek: habit.target_frequency,
+            }
+          : undefined;
+
+        const streakResult = calculateCadenceStreak(logsMap, frozenMap, habitCadence);
+        const usedCount = Object.values(frozenMap).filter(Boolean).length;
+        const shieldStats = computeHabitShieldBank(streakResult.currentStreak, usedCount);
+
+        if (shieldStats.available <= 0) {
+          return {
+            data: null,
+            error: 'No Streak Shields available in your vault. Earn more shields by building a 7-day streak.',
+          };
+        }
+      }
+    }
+
+    // Upsert into habit_logs with is_frozen flag
+    const { error: logError } = await supabase
+      .from('habit_logs')
+      .upsert(
+        {
+          habit_id: habitId,
+          date,
+          is_completed: false,
+          is_frozen: isFrozen,
+        },
+        { onConflict: 'habit_id, date' }
+      );
+
+    if (logError) {
+      return { data: null, error: 'Unable to update streak shield.' };
+    }
+
+    // Maintain streak_freezes table if enabled
+    try {
+      if (isFrozen) {
+        await supabase.from('streak_freezes').upsert(
+          {
+            habit_id: habitId,
+            date,
+            reason: sanitizedReason,
+          },
+          { onConflict: 'habit_id, date' }
+        );
+      } else {
+        await supabase.from('streak_freezes').delete().eq('habit_id', habitId).eq('date', date);
+      }
+    } catch {
+      // streak_freezes table is optional audit log; ignore if not yet migrated
+    }
+
+    revalidatePath('/');
+    return { data: { habitId, date, isFrozen }, error: null };
+  } catch {
+    return { data: null, error: 'Unable to update streak shield.' };
   }
 }
 

@@ -1,4 +1,6 @@
 import { HabitWithLogs } from '@/types/database.types';
+import { isHabitRestDay, isHabitScheduledForDay } from '@/lib/cadenceUtils';
+import { CadenceConfig } from '@/types/cadence.types';
 
 export interface HeatmapDay {
   dateString: string;
@@ -17,11 +19,15 @@ export interface DayCompletionData {
   totalHabits: number;
   completionRate: number; // 0.0 to 1.0
   intensityLevel: 0 | 1 | 2 | 3 | 4;
+  isFrozen?: boolean;
+  isRestDay?: boolean;
   habits: {
     id: string;
     title: string;
     color: string;
     completed: boolean;
+    isFrozen?: boolean;
+    isRest?: boolean;
   }[];
 }
 
@@ -182,15 +188,33 @@ export function computeHeatmapData(
   days.forEach((day) => {
     const { dateString, isFuture, month } = day;
 
-    const habitStatuses = activeHabits.map((habit) => ({
-      id: habit.id,
-      title: habit.title,
-      color: habit.color_theme,
-      completed: Boolean(habit.logs?.[dateString]),
-    }));
+    let scheduledHabitsCount = 0;
+    let anyFrozen = false;
+    let allRest = activeHabits.length > 0;
 
-    const completedCount = habitStatuses.filter((h) => h.completed).length;
-    const rate = totalHabitsCount > 0 ? completedCount / totalHabitsCount : 0;
+    const habitStatuses = activeHabits.map((habit) => {
+      const isCompleted = Boolean(habit.logs?.[dateString]);
+      const isFrozen = Boolean(habit.frozenLogs?.[dateString]);
+      const isRest = isHabitRestDay(habit.cadence as CadenceConfig | undefined, dateString);
+      const isScheduled = isHabitScheduledForDay(habit.cadence as CadenceConfig | undefined, dateString);
+
+      if (isScheduled) scheduledHabitsCount++;
+      if (isFrozen) anyFrozen = true;
+      if (!isRest) allRest = false;
+
+      return {
+        id: habit.id,
+        title: habit.title,
+        color: habit.color_theme,
+        completed: isCompleted,
+        isFrozen,
+        isRest,
+      };
+    });
+
+    const completedCount = habitStatuses.filter((h) => h.completed || h.isFrozen).length;
+    const denominator = scheduledHabitsCount > 0 ? scheduledHabitsCount : totalHabitsCount;
+    const rate = denominator > 0 ? completedCount / denominator : 0;
 
     let intensityLevel: 0 | 1 | 2 | 3 | 4 = 0;
     if (completedCount > 0) {
@@ -203,9 +227,11 @@ export function computeHeatmapData(
     dayDataMap[dateString] = {
       dateString,
       completedCount,
-      totalHabits: totalHabitsCount,
+      totalHabits: denominator,
       completionRate: rate,
       intensityLevel,
+      isFrozen: anyFrozen,
+      isRestDay: allRest,
       habits: habitStatuses,
     };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Mail, ArrowRight, ShieldCheck, UserPlus, LogIn, AlertCircle, User } from 'lucide-react';
 import { signInAction, signUpAction } from '@/app/actions/auth';
@@ -26,6 +26,13 @@ export function AuthModal({
   const [nickname, setNickname] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(defaultMode);
+      setError(null);
+    }
+  }, [isOpen, defaultMode]);
 
   // Live preview for dashboard header title
   const previewTitle = (() => {
@@ -115,38 +122,6 @@ export function AuthModal({
               className="p-1 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Mode Switcher Pill */}
-          <div className="p-1 rounded-full bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex items-center">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('signin');
-                setError(null);
-              }}
-              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                mode === 'signin'
-                  ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
-                  : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('signup');
-                setError(null);
-              }}
-              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                mode === 'signup'
-                  ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-sm'
-                  : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:text-[#ff5a1f] dark:hover:text-[#ff5a1f]'
-              }`}
-            >
-              Create Account
             </button>
           </div>
 
@@ -266,6 +241,39 @@ export function AuthModal({
                 </>
               )}
             </motion.button>
+
+            {/* Toggle Mode Link */}
+            <div className="text-center pt-1 text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65">
+              {mode === 'signup' ? (
+                <span>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('signin');
+                      setError(null);
+                    }}
+                    className="font-semibold text-[#ff5a1f] hover:underline cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </span>
+              ) : (
+                <span>
+                  Don&apos;t have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('signup');
+                      setError(null);
+                    }}
+                    className="font-semibold text-[#ff5a1f] hover:underline cursor-pointer"
+                  >
+                    Create one free
+                  </button>
+                </span>
+              )}
+            </div>
           </form>
 
           {/* Footer note */}

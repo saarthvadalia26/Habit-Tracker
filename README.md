@@ -77,6 +77,20 @@ Whether executing **75 Hard**, entering **90-Day Monk Mode**, or building atomic
 - **Smart Luminance Math (YIQ):** Dynamic high-contrast text color selection so light, pastel, or white habit chips remain clearly legible.
 - **Ultra-Smooth Dark/Light Mode:** Zero-flicker CSS variable theme engine with ambient floating background orbs and subtle micro-dot matrix texture.
 
+### 🛡️ 6. Streak Armor & Rest Cadence (v2.0 • Drop 3 · 24 Oct)
+- **Earned Streak Freeze Shields (Streak Armor):**
+  - Base vault of 2 emergency shields per user/habit + 1 earned for every 7 days of unbroken streak (up to 5 max).
+  - Deploy shields to freeze missed days or upcoming emergency/travel days.
+  - Frozen dates are visually badged (`🛡️ Frozen`) with glowing amber crystal styling and preserve your streak without reset.
+  - 1-click shield reclamation to return unused shields to the bank.
+- **Flexible Weekly Rest Cadence:**
+  - Non-7-day schedules: **Everyday (7d)**, **Weekdays (Mon-Fri)**, **Weekends (Sat-Sun)**, or **3x / Week (MWF)** and custom day sets.
+  - Interactive day-of-week pills selector (Mon-Sun) with real-time active vs rest day projections.
+- **Guilt-Free Planned Recovery Days:**
+  - Rest days are distinctly badged (`☕ Rest Day`) and do **not** break streaks.
+  - Mathematically accurate monthly completion: Denominators calculate against *scheduled active days*, meaning 3/3 gym workouts = 100% adherence.
+  - Bonus checkmarks: Optionally check in on a rest day for extra credit without penalty.
+
 ---
 
 <a id="tech-stack"></a>
@@ -215,6 +229,7 @@ habit-tracker/
 │   │   ├── NotesSection.tsx           # User-scoped markdown notes & reflection scratchpad
 │   │   ├── PersonalizeProfileModal.tsx# Profile name & preferences modal
 │   │   ├── SignOutModal.tsx           # Confirmation modal for signing out
+│   │   ├── StreakArmorModal.tsx       # Streak freeze shields & rest cadence studio modal
 │   │   ├── UpcomingReleaseToast.tsx   # Floating upcoming feature notification
 │   │   ├── UpcomingUpdateModal.tsx    # v2.0 roadmap & update release modal
 │   │   └── YearHeatmapMatrix.tsx      # Annual GitHub-style 365-day habit density matrix
@@ -223,6 +238,7 @@ habit-tracker/
 │   ├── lib/
 │   │   ├── analytics.ts           # Continuous streak & completion rate algorithms
 │   │   ├── auth-toast.ts          # Auth redirect notifications & flash toast queue
+│   │   ├── cadenceUtils.ts        # Weekly schedule generator, streak shield math & rest rules
 │   │   ├── cardExportUtils.ts     # Multi-ratio canvas rendering engine (1:1, 9:16, 16:9)
 │   │   ├── challengeUtils.ts      # Presets (75 Hard, 90 Monk, 30 Sprint) & milestone math
 │   │   ├── dateUtils.ts           # Date math, ISO formatters, rolling day windows
@@ -234,6 +250,7 @@ habit-tracker/
 │   │   └── supabase/              # Supabase SSR clients (server, browser, and middleware)
 │   ├── proxy.ts                   # Edge proxy with CSP, HSTS & security headers
 │   ├── types/
+│   │   ├── cadence.types.ts       # TypeScript definitions for weekly cadences & streak shields
 │   │   ├── challenge.types.ts     # TypeScript interfaces for challenges & milestones
 │   │   └── database.types.ts      # TypeScript definitions for database entities
 ├── supabase/

@@ -50,13 +50,28 @@ import {
   Award,
   XCircle,
   Share2,
+  ShieldCheck,
+  Shield,
 } from 'lucide-react';
 import { HabitWithLogs } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
+import { CadenceConfig } from '@/types/cadence.types';
 import { formatDateToISO, getTodayDateString, isLeapYear } from '@/lib/dateUtils';
 import { calculateContinuousStreak } from '@/lib/analytics';
+import {
+  getCadenceLabel,
+  isHabitRestDay,
+  isHabitScheduledForDay,
+  computeHabitShieldBank,
+} from '@/lib/cadenceUtils';
 import { MONTH_NAMES } from '@/lib/monthUtils';
-import { toggleHabitLogAction, deleteHabitAction, createHabitAction } from '@/app/actions/habits';
+import {
+  toggleHabitLogAction,
+  deleteHabitAction,
+  createHabitAction,
+  updateHabitCadenceAction,
+  toggleStreakFreezeAction,
+} from '@/app/actions/habits';
 import {
   createChallengeAction,
   completeChallengeAction,
@@ -74,12 +89,14 @@ import { PersonalizeProfileModal } from '@/components/PersonalizeProfileModal';
 import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { ActiveChallengeModal } from '@/components/ActiveChallengeModal';
 import { MilestoneFlexCardModal } from '@/components/MilestoneFlexCardModal';
+import { StreakArmorModal } from '@/components/StreakArmorModal';
 import { NotesSection } from '@/components/NotesSection';
 import { YearHeatmapMatrix } from '@/components/YearHeatmapMatrix';
 import { ChallengeBanner } from '@/components/ChallengeBanner';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
-import { isDrop1Unlocked, isDrop2Unlocked } from '@/config/releases';
+import { StreakArmorAnnouncementToast } from '@/components/StreakArmorAnnouncementToast';
+import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked } from '@/config/releases';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -205,9 +222,14 @@ export function HabitDashboard({
   const [isFlexCardModalOpen, setIsFlexCardModalOpen] = useState(false);
   const [flexCardInitialMode, setFlexCardInitialMode] = useState<'streak' | 'today' | 'challenge' | 'habit'>('streak');
   const [flexCardHabitId, setFlexCardHabitId] = useState<string | undefined>(undefined);
+  const [flexCardInitialShowGuide, setFlexCardInitialShowGuide] = useState(false);
 
   const handleOpenFlexCard = useCallback(
-    (cardMode: 'streak' | 'today' | 'challenge' | 'habit' = 'streak', habitId?: string) => {
+    (
+      cardMode: 'streak' | 'today' | 'challenge' | 'habit' = 'streak',
+      habitId?: string,
+      showGuide: boolean = false
+    ) => {
       if (!isDrop2Unlocked()) {
         toast.info('Drop 2: Milestone Flex Cards', {
           description: 'Milestone Flex Cards release on October 17th! Opening roadmap...',
@@ -217,7 +239,32 @@ export function HabitDashboard({
       }
       setFlexCardInitialMode(cardMode);
       setFlexCardHabitId(habitId);
+      setFlexCardInitialShowGuide(showGuide);
       setIsFlexCardModalOpen(true);
+    },
+    []
+  );
+
+  // Drop 3: Streak Armor & Rest Cadence Studio state
+  const [isArmorModalOpen, setIsArmorModalOpen] = useState(false);
+  const [armorInitialHabitId, setArmorInitialHabitId] = useState<string | undefined>(undefined);
+  const [armorInitialTab, setArmorInitialTab] = useState<'armor' | 'cadence'>('armor');
+  const [armorInitialShowGuide, setArmorInitialShowGuide] = useState(false);
+  const [drop3Unlocked, setDrop3Unlocked] = useState(false);
+
+  const handleOpenArmorModal = useCallback(
+    (habitId?: string, tab: 'armor' | 'cadence' = 'armor', showGuide: boolean = false) => {
+      if (!isDrop3Unlocked()) {
+        toast.info('Drop 3: Streak Armor & Rest Cadence', {
+          description: 'Streak Armor & Rest Cadence release on October 24th! Opening roadmap...',
+        });
+        setIsRoadmapOpen(true);
+        return;
+      }
+      setArmorInitialHabitId(habitId);
+      setArmorInitialTab(tab);
+      setArmorInitialShowGuide(showGuide);
+      setIsArmorModalOpen(true);
     },
     []
   );
@@ -258,6 +305,7 @@ export function HabitDashboard({
   useEffect(() => {
     setDrop1Unlocked(isDrop1Unlocked());
     setDrop2Unlocked(isDrop2Unlocked());
+    setDrop3Unlocked(isDrop3Unlocked());
   }, []);
 
   // Permanently lock desktop sidebar to viewport: prevent wheel/touch scroll propagation
@@ -875,6 +923,73 @@ export function HabitDashboard({
     }
   };
 
+  // Drop 3: Update Habit Cadence
+  const handleUpdateHabitCadence = useCallback(
+    (habitId: string, cadence: CadenceConfig) => {
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id === habitId) {
+            return {
+              ...h,
+              cadence,
+              cadence_type: cadence.type,
+              cadence_days: cadence.daysOfWeek,
+              target_frequency: cadence.frequencyPerWeek,
+            };
+          }
+          return h;
+        })
+      );
+
+      if (!isGuestMode) {
+        updateHabitCadenceAction(
+          habitId,
+          cadence.type,
+          cadence.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
+          cadence.frequencyPerWeek || 7
+        ).catch(() => {});
+      }
+    },
+    [isGuestMode]
+  );
+
+  // Drop 3: Toggle Streak Freeze Shield
+  const handleToggleStreakFreeze = useCallback(
+    (habitId: string, dateStr: string, isFrozen: boolean, reason?: string) => {
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id === habitId) {
+            const nextFrozenLogs = { ...(h.frozenLogs || {}) };
+            if (isFrozen) {
+              nextFrozenLogs[dateStr] = true;
+            } else {
+              delete nextFrozenLogs[dateStr];
+            }
+            return {
+              ...h,
+              frozenLogs: nextFrozenLogs,
+            };
+          }
+          return h;
+        })
+      );
+
+      if (!isGuestMode) {
+        toggleStreakFreezeAction(habitId, dateStr, isFrozen, reason).catch(() => {});
+      }
+    },
+    [isGuestMode]
+  );
+
+  // Compute total available shields across all habits
+  const totalAvailableShields = useMemo(() => {
+    return habits.reduce((acc, h) => {
+      const frozenCount = h.frozenLogs ? Object.values(h.frozenLogs).filter(Boolean).length : 0;
+      const stats = computeHabitShieldBank(h.currentStreak || 0, frozenCount);
+      return acc + stats.available;
+    }, 0);
+  }, [habits]);
+
   // Close menus when clicking outside
   useEffect(() => {
     const handleDocClick = (e: MouseEvent) => {
@@ -1035,6 +1150,11 @@ export function HabitDashboard({
 
       {/* Floating Upcoming Release Toast */}
       <UpcomingReleaseToast onOpenRoadmap={() => setIsRoadmapOpen(true)} />
+
+      {/* Drop 3 Announcement Toast (First visit after update) */}
+      <StreakArmorAnnouncementToast
+        onOpenGuide={() => handleOpenArmorModal(undefined, 'armor', true)}
+      />
 
       {/* ============================================================== */}
       {/* 1. DESKTOP LOCKED SIDEBAR (Brand: Habit Tracker) */}
@@ -1386,6 +1506,22 @@ export function HabitDashboard({
               </div>
 
               <div className="flex items-center gap-2 w-auto self-start sm:self-auto">
+                {drop3Unlocked && (
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleOpenArmorModal(undefined, 'armor')}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-amber-500/30 hover:border-amber-500 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    title="Streak Armor Vault & Rest Cadence Studio"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="hidden min-[420px]:inline">Streak Armor</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold">
+                      {totalAvailableShields} 🛡️
+                    </span>
+                  </motion.button>
+                )}
+
                 {drop2Unlocked && (
                   <motion.button
                     whileHover={{ scale: 1.03 }}
@@ -1623,24 +1759,40 @@ export function HabitDashboard({
                             </div>
 
                             <div className="flex flex-col min-w-0">
-                              <h4
-                                className={`font-clash font-semibold text-[16px] sm:text-[17px] tracking-[-0.01em] truncate transition-all ${
-                                  isDone
-                                    ? 'line-through text-[#fbf8f1]/90'
-                                    : 'text-[#15130f] dark:text-[#fbf8f1]'
-                                }`}
-                              >
-                                {displayTitle}
-                              </h4>
-                              <p
-                                className={`text-[13px] sm:text-[13.5px] truncate font-normal ${
-                                  isDone
-                                    ? 'text-[#fbf8f1]/55'
-                                    : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
-                                }`}
-                              >
-                                {displaySubtitle}
-                              </p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h4
+                                  className={`font-clash font-semibold text-[16px] sm:text-[17px] tracking-[-0.01em] truncate transition-all ${
+                                    isDone
+                                      ? 'line-through text-[#fbf8f1]/90'
+                                      : 'text-[#15130f] dark:text-[#fbf8f1]'
+                                  }`}
+                                >
+                                  {displayTitle}
+                                </h4>
+                                {Boolean(habit.frozenLogs?.[todayStr]) && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                                    <Shield className="w-2.5 h-2.5 fill-current" />
+                                    <span>Frozen</span>
+                                  </span>
+                                )}
+                                {!isDone && isHabitRestDay(habit.cadence, todayStr) && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25">
+                                    <Coffee className="w-2.5 h-2.5" />
+                                    <span>Rest Day</span>
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[12px] sm:text-[13px] truncate">
+                                <p
+                                  className={`text-[13px] sm:text-[13.5px] truncate font-normal ${
+                                    isDone
+                                      ? 'text-[#fbf8f1]/55'
+                                      : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
+                                  }`}
+                                >
+                                  {displaySubtitle}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
@@ -1785,6 +1937,38 @@ export function HabitDashboard({
                                             >
                                               <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
                                               <span>Flex habit milestone</span>
+                                            </button>
+                                          </>
+                                        )}
+
+                                        {drop3Unlocked && (
+                                          <>
+                                            <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenuHabitId(null);
+                                                handleOpenArmorModal(habit.id, 'cadence');
+                                              }}
+                                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                                            >
+                                              <Coffee className="w-3.5 h-3.5 text-sky-500" />
+                                              <span>Rest cadence ({getCadenceLabel(habit.cadence)})</span>
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenuHabitId(null);
+                                                handleOpenArmorModal(habit.id, 'armor');
+                                              }}
+                                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                                            >
+                                              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                                              <span>Deploy Streak Armor 🛡️</span>
                                             </button>
                                           </>
                                         )}
@@ -2080,6 +2264,8 @@ export function HabitDashboard({
                           const dd = String(i + 1).padStart(2, '0');
                           const dateKey = `${selectedYear}-${mm}-${dd}`;
                           const isDone = Boolean(h.logs?.[dateKey]);
+                          const isFrozen = Boolean(h.frozenLogs?.[dateKey]);
+                          const isRest = isHabitRestDay(h.cadence, dateKey);
                           const isCellToday = dateKey === todayStr;
 
                           const cellDate = new Date(Date.UTC(selectedYear, selectedMonth, i + 1));
@@ -2093,6 +2279,10 @@ export function HabitDashboard({
                           let titleText = `${h.title} on ${dateKey}: ${isDone ? 'Done' : 'Incomplete'}`;
                           if (isGuestMode) {
                             titleText = `${h.title} on ${dateKey}: Sign in required to log habits`;
+                          } else if (isFrozen) {
+                            titleText = `${h.title} on ${dateKey}: Protected with Streak Armor (0 streak lost)`;
+                          } else if (!isDone && isRest) {
+                            titleText = `${h.title} on ${dateKey}: Scheduled Rest Day (Streak preserved). Tap to log bonus.`;
                           } else if (isFuture) {
                             titleText = `${h.title} on ${dateKey}: Future date locked`;
                           } else if (isExpired) {
@@ -2103,6 +2293,12 @@ export function HabitDashboard({
                             cellButtonClasses += isEditable
                               ? 'bg-[#ff5a1f] hover:bg-[#e04a12] text-white shadow-sm cursor-pointer hover:scale-110 active:scale-95'
                               : 'bg-[#ff5a1f] text-white cursor-not-allowed shadow-xs';
+                          } else if (isFrozen) {
+                            cellButtonClasses += 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-sm hover:scale-110 cursor-pointer active:scale-95';
+                          } else if (isRest) {
+                            cellButtonClasses += isEditable
+                              ? 'bg-sky-500/5 dark:bg-sky-500/10 border border-dashed border-sky-500/35 text-sky-500/70 hover:bg-sky-500/20 hover:border-sky-500/60 cursor-pointer hover:scale-110 active:scale-95'
+                              : 'bg-sky-500/5 border border-dashed border-sky-500/20 text-sky-500/40 cursor-not-allowed';
                           } else {
                             if (isFuture) {
                               cellButtonClasses += 'opacity-25 cursor-not-allowed bg-[#15130f]/3 dark:bg-[#fbf8f1]/4 border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15';
@@ -2119,11 +2315,23 @@ export function HabitDashboard({
                           return (
                             <td key={i} className="p-1 text-center">
                               <button
-                                onClick={(e) => handleToggleHabit(h.id, e, dateKey)}
+                                onClick={(e) => {
+                                  if (isFrozen) {
+                                    handleOpenArmorModal(h.id, 'armor');
+                                  } else {
+                                    handleToggleHabit(h.id, e, dateKey);
+                                  }
+                                }}
                                 className={cellButtonClasses}
                                 title={titleText}
                               >
-                                {isDone && <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />}
+                                {isDone ? (
+                                  <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />
+                                ) : isFrozen ? (
+                                  <Shield className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+                                ) : isRest ? (
+                                  <Coffee className="w-2.5 h-2.5 text-sky-500/70 shrink-0" />
+                                ) : null}
                               </button>
                             </td>
                           );
@@ -2847,6 +3055,22 @@ export function HabitDashboard({
           todayCompletionRate={todayPercentage}
           initialHabitId={flexCardHabitId}
           initialMode={flexCardInitialMode}
+          initialShowGuide={flexCardInitialShowGuide}
+        />
+      )}
+
+      {/* Drop 3: Streak Armor & Rest Cadence Studio Modal */}
+      {isArmorModalOpen && (
+        <StreakArmorModal
+          isOpen={isArmorModalOpen}
+          onClose={() => setIsArmorModalOpen(false)}
+          habits={habits}
+          isGuestMode={isGuestMode}
+          onUpdateHabitCadence={handleUpdateHabitCadence}
+          onToggleStreakFreeze={handleToggleStreakFreeze}
+          initialHabitId={armorInitialHabitId}
+          initialTab={armorInitialTab}
+          initialShowGuide={armorInitialShowGuide}
         />
       )}
     </div>

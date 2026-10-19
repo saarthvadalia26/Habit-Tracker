@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Lock,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -56,6 +57,7 @@ interface MilestoneFlexCardModalProps {
   todayCompletionRate?: number;
   initialHabitId?: string;
   initialMode?: 'streak' | 'today' | 'challenge' | 'habit';
+  initialShowGuide?: boolean;
 }
 
 type CardMode = 'streak' | 'today' | 'challenge' | 'habit';
@@ -738,6 +740,7 @@ export function MilestoneFlexCardModal({
   todayCompletionRate = 100,
   initialHabitId,
   initialMode = 'streak',
+  initialShowGuide,
 }: MilestoneFlexCardModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -751,6 +754,25 @@ export function MilestoneFlexCardModal({
   const [showQuote, setShowQuote] = useState(true);
   const [showUser, setShowUser] = useState(true);
   const [selectedQuoteIndex, setSelectedQuoteIndex] = useState(0);
+
+  // How it works guide toggle with first-visit memory
+  const [showGuide, setShowGuide] = useState(() => {
+    if (initialShowGuide !== undefined) return initialShowGuide;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ht_flex_card_guide_seen_v1') !== 'true';
+    }
+    return false;
+  });
+
+  const handleToggleGuide = (explicitState?: boolean) => {
+    setShowGuide((prev) => {
+      const next = typeof explicitState === 'boolean' ? explicitState : !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ht_flex_card_guide_seen_v1', 'true');
+      }
+      return next;
+    });
+  };
 
   // Mobile responsive view toggle (Customize vs Preview)
   const [mobileTab, setMobileTab] = useState<'customize' | 'preview'>('customize');
@@ -1281,52 +1303,53 @@ export function MilestoneFlexCardModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md overflow-y-auto font-archivo">
         <motion.div
           initial={{ opacity: 0, scale: 0.98, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 8 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full max-w-5xl max-h-[94vh] rounded-[28px] sm:rounded-[32px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl flex flex-col text-[#15130f] dark:text-[#fbf8f1] overflow-hidden"
+          className="relative w-full max-w-5xl max-h-[95dvh] sm:max-h-[94vh] rounded-[22px] sm:rounded-[32px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl flex flex-col text-[#15130f] dark:text-[#fbf8f1] overflow-hidden"
           style={{ willChange: 'auto' }}
         >
           {/* Studio Header */}
-          <div className="flex items-center justify-between px-4 sm:px-7 py-3.5 sm:py-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center justify-between px-3 sm:px-7 py-2.5 sm:py-4 border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 shrink-0 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-clash font-semibold text-lg sm:text-xl tracking-tight leading-none truncate">
-                    Milestone Flex Cards
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h3 className="font-clash font-semibold text-base sm:text-xl tracking-tight leading-none truncate">
+                    Flex Cards
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#ff5a1f] text-white shrink-0">
+                  <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-[#ff5a1f] text-white shrink-0">
                     Drop 2
                   </span>
                 </div>
-                <p className="text-[11.5px] sm:text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 mt-0.5 truncate hidden sm:block">
+                <p className="text-[11px] sm:text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 mt-0.5 truncate hidden md:block">
                   Design bespoke, shareable graphics for Instagram Stories, X, and WhatsApp
                 </p>
               </div>
             </div>
 
-            {/* Mobile Tab Switcher (Customize vs Preview) */}
-            <div className="flex items-center gap-2">
-              <div className="flex lg:hidden items-center p-1 rounded-full bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 mr-1">
+            {/* Actions & Mobile Tab Switcher */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Mobile Tab Switcher (Customize vs Preview) */}
+              <div className="flex lg:hidden items-center p-0.5 sm:p-1 rounded-full bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
                 <button
                   type="button"
                   onClick={() => setMobileTab('customize')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[10.5px] sm:text-[11px] font-semibold transition-all cursor-pointer ${
                     mobileTab === 'customize'
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-xs'
                       : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60'
                   }`}
                 >
                   <Sliders className="w-3 h-3" />
-                  <span>Customize</span>
+                  <span>Edit</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMobileTab('preview')}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[10.5px] sm:text-[11px] font-semibold transition-all cursor-pointer ${
                     mobileTab === 'preview'
                       ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-xs'
                       : 'text-[#15130f]/60 dark:text-[#fbf8f1]/60'
@@ -1338,17 +1361,95 @@ export function MilestoneFlexCardModal({
               </div>
 
               <button
+                type="button"
+                onClick={() => handleToggleGuide()}
+                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
+                  showGuide
+                    ? 'bg-[#ff5a1f] text-white border-[#ff5a1f] shadow-xs'
+                    : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:border-[#ff5a1f]/40 hover:text-[#ff5a1f]'
+                }`}
+                title="How Milestone Flex Cards work"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">How it works</span>
+                <span className="sm:hidden text-[10.5px]">Guide</span>
+              </button>
+
+              <button
                 onClick={onClose}
                 aria-label="Close modal"
-                className="p-1.5 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer shrink-0"
+                className="p-1 sm:p-1.5 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
+          {/* Collapsible How It Works Guide Drawer */}
+          <AnimatePresence>
+            {showGuide && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.24, ease: 'easeInOut' }}
+                className="overflow-hidden border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-linear-to-r from-amber-500/10 via-orange-500/5 to-transparent shrink-0 max-h-[35vh] sm:max-h-none overflow-y-auto"
+              >
+                <div className="p-3.5 sm:p-5 px-3.5 sm:px-7 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-[#ff5a1f]" />
+                      <h4 className="font-clash font-semibold text-sm sm:text-base text-[#15130f] dark:text-[#fbf8f1]">
+                        How Milestone Flex Cards Work
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleGuide(false)}
+                      className="text-[11px] font-semibold text-[#15130f]/50 dark:text-[#fbf8f1]/50 hover:text-[#ff5a1f] cursor-pointer"
+                    >
+                      Hide guide ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-[#fbf8f1]/90 dark:bg-[#15130f]/90 border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-xs">
+                        <Flame className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                        <span>1. Choose Milestone</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Showcase your unbroken <strong>Routine Streak</strong>, <strong>Today&apos;s Score</strong>, <strong>30-Day Sprint</strong> challenge, or a standout <strong>Single Habit</strong>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#fbf8f1]/90 dark:bg-[#15130f]/90 border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-bold text-xs">
+                        <LayoutTemplate className="w-3.5 h-3.5 text-orange-500" />
+                        <span>2. Aspect & Aesthetics</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Format for <strong>Story (9:16)</strong>, <strong>Square (1:1)</strong>, or <strong>Landscape (16:9)</strong>. Pick between 5 luxury themes (Obsidian, Warm Ivory, Cyber Violet, Sunset Flame, Emerald).
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#fbf8f1]/90 dark:bg-[#15130f]/90 border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                        <Share2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>3. 1-Tap Share & 4K PNG</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Share directly to Instagram Stories or WhatsApp via native mobile share sheet, or download a crystal-clear high-res PNG for your records.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Main Body: 2 Balanced Columns on Desktop, Switchable on Mobile */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-7 items-start">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-7 items-start">
             {/* Left Controls Panel (6 Cols) */}
             <div
               className={`lg:col-span-6 flex flex-col gap-4 sm:gap-5 ${
@@ -1580,12 +1681,12 @@ export function MilestoneFlexCardModal({
               <div className="w-full flex flex-col items-center justify-center py-1 sm:py-2 px-1">
                 {/* Visual Vector Display Frame */}
                 <div
-                  className={`relative flex items-center justify-center shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 shrink-0 ${
+                  className={`relative flex items-center justify-center shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 shrink-0 max-w-full ${
                     format === 'story'
-                      ? 'h-[450px] sm:h-[475px] aspect-[9/16]'
+                      ? 'h-[360px] xs:h-[400px] sm:h-[475px] max-h-[50vh] sm:max-h-none aspect-[9/16]'
                       : format === 'square'
-                      ? 'h-[330px] sm:h-[355px] aspect-square'
-                      : 'w-[320px] sm:w-[410px] aspect-[16/9]'
+                      ? 'w-[260px] xs:w-[290px] sm:w-[355px] max-h-[48vh] sm:max-h-none aspect-square'
+                      : 'w-full max-w-[320px] sm:max-w-[420px] aspect-[16/9]'
                   }`}
                   style={{
                     WebkitFontSmoothing: 'antialiased',
@@ -1616,16 +1717,16 @@ export function MilestoneFlexCardModal({
           </div>
 
           {/* Studio Footer Action Bar */}
-          <div className="px-4 sm:px-7 py-3 sm:py-3.5 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 shrink-0">
-            <div className="flex items-center gap-2 text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60 self-start sm:self-auto">
+          <div className="px-3 sm:px-7 py-2.5 sm:py-3.5 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60 self-start sm:self-auto">
               {isAnonymous ? (
                 <>
-                  <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+                  <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
                   <span>Sign in required to export</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
                   <span>Full 1080p export ready</span>
                 </>
               )}
@@ -1638,9 +1739,9 @@ export function MilestoneFlexCardModal({
                   type="button"
                   onClick={handleNativeShare}
                   disabled={isExporting}
-                  className="flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#ff5a1f]/15 hover:bg-[#ff5a1f]/25 text-[#ff5a1f] text-xs font-semibold transition-all cursor-pointer"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#ff5a1f]/15 hover:bg-[#ff5a1f]/25 text-[#ff5a1f] text-xs font-semibold transition-all cursor-pointer truncate"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Share2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Share Story</span>
                 </button>
               )}
@@ -1650,14 +1751,14 @@ export function MilestoneFlexCardModal({
                 type="button"
                 onClick={handleDownload}
                 disabled={isExporting}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50 truncate"
               >
                 {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
                 ) : isAnonymous ? (
-                  <Lock className="w-4 h-4" />
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
                 ) : (
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5 shrink-0" />
                 )}
                 <span>{isAnonymous ? 'Sign in to Download' : 'Download PNG'}</span>
               </button>

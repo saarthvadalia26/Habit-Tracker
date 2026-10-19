@@ -20,12 +20,14 @@ export const V2_RELEASE_INFO = {
   version: 'v2.0',
   title: 'The v2.0 Evolution Cycle',
   subtitle: '6 weekly staged drops designed to systematically refine your discipline.',
-  currentDrop: 2,
+  currentDrop: 3,
   totalDrops: 6,
-  nextDropDate: '17th October 2026',
+  nextDropDate: '24th October 2026',
 };
 
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
+export const DROP_2_RELEASE_DATE = '2026-10-17T00:00:00';
+export const DROP_3_RELEASE_DATE = '2026-10-24T00:00:00';
 
 /**
  * Gets current effective timestamp, allowing optional ?mock_date=YYYY-MM-DD for testing
@@ -168,6 +170,10 @@ export function getDrop1DaysRemaining(): number {
  * - Automatically unlocks on production when reaching Oct 17, 2026 00:00
  */
 export function isDrop2Unlocked(): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
   if (typeof window !== 'undefined') {
     try {
       const search = window.location.search;
@@ -190,6 +196,42 @@ export function isDrop2Unlocked(): boolean {
  */
 export function getDrop2DaysRemaining(): number {
   return getDropDaysRemaining(V2_DROPS[1]);
+}
+
+/**
+ * Checks whether Drop 3 (Streak Armor & Rest Cadence) is unlocked.
+ * - Always unlocked on localhost (NODE_ENV === 'development')
+ * - Unlocked if ?preview=true, ?drop3=true, ?armor=true, ?cadence=true, or ?beta=true query param is present
+ * - Automatically unlocks on production when reaching Oct 24, 2026 00:00
+ */
+export function isDrop3Unlocked(): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      if (
+        search.includes('preview=true') ||
+        search.includes('drop3=true') ||
+        search.includes('armor=true') ||
+        search.includes('cadence=true') ||
+        search.includes('beta=true')
+      ) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return isDropReleased(V2_DROPS[2]);
+}
+
+/**
+ * Returns days remaining until Drop 3 launch
+ */
+export function getDrop3DaysRemaining(): number {
+  return getDropDaysRemaining(V2_DROPS[2]);
 }
 
 export const V2_DROPS: V2Drop[] = [
@@ -224,8 +266,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 2',
     targetDate: '17th October 2026',
     releaseDate: '2026-10-17T00:00:00',
-    status: 'up_next',
-    statusBadge: 'SPOTLIGHT • RELEASING OCT 17',
+    status: 'in_development',
+    statusBadge: 'RELEASED • OCT 17',
     category: '🎨 CELEBRATION',
     tagline: 'Turn 30, 60, and 100-day streaks into bespoke shareable graphics.',
     description:
@@ -246,8 +288,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 3',
     targetDate: '24th October 2026',
     releaseDate: '2026-10-24T00:00:00',
-    status: 'planned',
-    statusBadge: 'RELEASING OCT 24',
+    status: 'up_next',
+    statusBadge: 'SPOTLIGHT • RELEASING OCT 24',
     category: '🛡️ RESILIENCE',
     tagline: 'Streak shields & guilt-free recovery days.',
     description:

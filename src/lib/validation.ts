@@ -44,3 +44,25 @@ export function isValidEmail(value: unknown): value is string {
 export function isValidPassword(value: unknown): value is string {
   return typeof value === 'string' && value.length >= 6 && value.length <= 128;
 }
+
+export const ALLOWED_CADENCE_TYPES = ['everyday', 'weekdays', 'weekends', 'custom', 'frequency'] as const;
+export type ValidCadenceType = (typeof ALLOWED_CADENCE_TYPES)[number];
+
+export function isValidCadenceType(value: unknown): value is ValidCadenceType {
+  return typeof value === 'string' && (ALLOWED_CADENCE_TYPES as readonly string[]).includes(value);
+}
+
+export function cleanCadenceDays(value: unknown): number[] | null {
+  if (!Array.isArray(value)) return null;
+  if (value.length > 7) return null;
+  const days = value.filter(
+    (d): d is number => typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 6
+  );
+  if (days.length === 0) return null;
+  return [...new Set(days)].sort((a, b) => a - b);
+}
+
+export function isValidFrequency(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 7;
+}
+

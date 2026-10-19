@@ -44,51 +44,26 @@ export interface MonthlyAnalytics {
   perfectDaysCount: number;
 }
 
+import {
+  calculateCadenceStreak,
+  getActiveDaysCountInMonth,
+  isHabitScheduledForDay,
+} from '@/lib/cadenceUtils';
+import { CadenceConfig } from '@/types/cadence.types';
+
 /**
- * Calculates continuous streak backwards starting from today across month/year boundaries
+ * Calculates continuous streak backwards starting from today across month/year boundaries,
+ * taking into account Streak Armor freezes and scheduled Rest Cadence days.
  */
-export function calculateContinuousStreak(logs: Record<string, boolean>): number {
-  if (!logs || Object.keys(logs).length === 0) return 0;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const todayStr = formatDateToISO(today);
-
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = formatDateToISO(yesterday);
-
-  let streak = 0;
-  let currentDate = new Date(today);
-
-  // If today is completed, streak starts from today
-  if (logs[todayStr]) {
-    streak++;
-    currentDate.setDate(currentDate.getDate() - 1);
-  } else if (logs[yesterdayStr]) {
-    // If today is not completed yet, allow streak to continue from yesterday
-    currentDate = yesterday;
-  } else {
-    // Neither today nor yesterday completed: active streak is broken
+export function calculateContinuousStreak(
+  logs: Record<string, boolean>,
+  frozenLogs: Record<string, boolean> = {},
+  cadence?: CadenceConfig
+): number {
+  if ((!logs || Object.keys(logs).length === 0) && (!frozenLogs || Object.keys(frozenLogs).length === 0)) {
     return 0;
   }
-
-  // Count backwards day by day as long as habit log is true
-  while (true) {
-    const dateStr = formatDateToISO(currentDate);
-    if (logs[dateStr]) {
-      // If we didn't count yesterday already in the first step
-      if (currentDate.getTime() !== today.getTime()) {
-        streak++;
-      }
-      currentDate.setDate(currentDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+  return calculateCadenceStreak(logs, frozenLogs, cadence).currentStreak;
 }
 
 export function computeMonthlyAnalytics(
@@ -99,10 +74,53 @@ export function computeMonthlyAnalytics(
   const totalHabits = habits.length;
   const daysInMonth = days.length;
 
-  // True total possible checkmarks for the entire month (e.g. 7 habits × 31 days = 217)
-  const totalPossible = totalHabits * daysInMonth;
+  // Determine year and month from days array
+  const sampleDate = days[0]?.dateString ? new Date(`${days[0].dateString}T00:00:00`) : new Date();
+  const year = sampleDate.getFullYear();
+  const month = sampleDate.getMonth();
 
-  // 1. Day Metrics
+  // 1. Habit Metrics & Cadence-Aware Goals
+  const habitMetrics: Record<string, HabitMetric> = {};
+  let totalPossible = 0;
+
+  habits.forEach((habit) => {
+    let completedCountInMonth = 0;
+    days.forEach((day) => {
+      if (habit.logs[day.dateString] || habit.frozenLogs?.[day.dateString]) {
+        completedCountInMonth++;
+      }
+    });
+
+    // The monthly goal respects the habit's active cadence days
+    const habitGoal = getActiveDaysCountInMonth(year, month, habit.cadence as CadenceConfig | undefined);
+    totalPossible += habitGoal;
+
+    const percentage = habitGoal > 0 ? Math.round((completedCountInMonth / habitGoal) * 100) : 0;
+
+    // Continuous streak with Streak Armor & Rest Cadence
+    const currentStreak = calculateContinuousStreak(
+      habit.logs,
+      habit.frozenLogs,
+      habit.cadence as CadenceConfig | undefined
+    );
+
+    habitMetrics[habit.id] = {
+      habitId: habit.id,
+      title: habit.title,
+      colorTheme: habit.color_theme,
+      completedDays: completedCountInMonth,
+      goal: habitGoal,
+      percentage,
+      currentStreak,
+    };
+  });
+
+  // Fallback to totalHabits * daysInMonth if totalPossible is 0 but habits exist
+  if (totalPossible === 0 && totalHabits > 0) {
+    totalPossible = totalHabits * daysInMonth;
+  }
+
+  // 2. Day Metrics
   const dayMetrics: Record<string, DayMetric> = {};
   const dayMetricsList: DayMetric[] = [];
   let totalCompletedAll = 0;
@@ -110,15 +128,26 @@ export function computeMonthlyAnalytics(
 
   days.forEach((day) => {
     let completedOnDay = 0;
+    let scheduledOnDay = 0;
+
     habits.forEach((habit) => {
-      if (habit.logs[day.dateString]) {
+      const isScheduled = isHabitScheduledForDay(
+        habit.cadence as CadenceConfig | undefined,
+        day.dateString
+      );
+      if (isScheduled) {
+        scheduledOnDay++;
+      }
+
+      if (habit.logs[day.dateString] || habit.frozenLogs?.[day.dateString]) {
         completedOnDay++;
       }
     });
 
-    const incompleteOnDay = Math.max(0, totalHabits - completedOnDay);
-    const percentage = totalHabits > 0 ? Math.round((completedOnDay / totalHabits) * 100) : 0;
-    const isPerfect = totalHabits > 0 && completedOnDay === totalHabits;
+    const targetDenominator = scheduledOnDay > 0 ? scheduledOnDay : totalHabits;
+    const incompleteOnDay = Math.max(0, targetDenominator - completedOnDay);
+    const percentage = targetDenominator > 0 ? Math.round((completedOnDay / targetDenominator) * 100) : 0;
+    const isPerfect = targetDenominator > 0 && completedOnDay >= targetDenominator;
 
     if (isPerfect && !day.isUpcoming) {
       perfectDaysCount++;
@@ -141,40 +170,21 @@ export function computeMonthlyAnalytics(
     dayMetricsList.push(metric);
   });
 
-  // Today specific metrics (e.g. 3 of 7 habits completed today = 43%)
+  // Today specific metrics (accounting for scheduled active habits today)
   const todayDay = days.find((d) => d.isToday);
   const todayCompleted = todayDay ? dayMetrics[todayDay.dateString]?.completedCount || 0 : 0;
-  const todayTotal = totalHabits;
-  const todayPercentage = todayTotal > 0 ? Math.round((todayCompleted / todayTotal) * 100) : 0;
-
-  // 2. Habit Metrics & Continuous Streaks
-  const habitMetrics: Record<string, HabitMetric> = {};
-
-  habits.forEach((habit) => {
-    let completedCountInMonth = 0;
-    days.forEach((day) => {
-      if (habit.logs[day.dateString]) {
-        completedCountInMonth++;
+  
+  let todayScheduledCount = 0;
+  if (todayDay) {
+    habits.forEach((h) => {
+      if (isHabitScheduledForDay(h.cadence as CadenceConfig | undefined, todayDay.dateString)) {
+        todayScheduledCount++;
       }
     });
+  }
+  const todayTotal = todayScheduledCount > 0 ? todayScheduledCount : totalHabits;
+  const todayPercentage = todayTotal > 0 ? Math.round((todayCompleted / todayTotal) * 100) : 0;
 
-    // The monthly goal for a habit is the total days in that month (e.g. 31 days)
-    const goal = daysInMonth;
-    const percentage = goal > 0 ? Math.round((completedCountInMonth / goal) * 100) : 0;
-
-    // Continuous streak across all dates in habit.logs (preserves cross-month streaks)
-    const currentStreak = calculateContinuousStreak(habit.logs);
-
-    habitMetrics[habit.id] = {
-      habitId: habit.id,
-      title: habit.title,
-      colorTheme: habit.color_theme,
-      completedDays: completedCountInMonth,
-      goal,
-      percentage,
-      currentStreak,
-    };
-  });
 
   // 3. Weekly Metrics (Each week measured by its actual days in that week: totalHabits * week.days.length)
   const weekMetrics: WeekMetric[] = weeks.map((week) => {
