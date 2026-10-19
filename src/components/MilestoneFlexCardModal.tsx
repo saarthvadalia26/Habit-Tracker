@@ -58,6 +58,8 @@ import {
   renderFlexCardToCanvas,
   downloadCanvasAsPng,
   shareCanvasImage,
+  CardStyleTheme,
+  getEffectiveCardStyling,
 } from '@/lib/cardExportUtils';
 
 interface MilestoneFlexCardModalProps {
@@ -115,23 +117,25 @@ function CardVectorArtLayer({
   customization,
   theme,
   format,
+  styleTheme,
 }: {
   customization: FlexCardCustomization;
   theme: ThemeColors;
   format: FlexCardFormat;
+  styleTheme?: CardStyleTheme;
 }) {
-  const isIvory = customization.colour === 'ivory';
-  const dotGridBg = isIvory
-    ? 'radial-gradient(rgba(0,0,0,0.06) 1.2px, transparent 1.2px)'
-    : 'radial-gradient(rgba(255,255,255,0.06) 1.2px, transparent 1.2px)';
+  const effectiveStyle = styleTheme || getEffectiveCardStyling(customization, theme);
+  const isIvory = customization.colour === 'ivory' || effectiveStyle.id === 'paper' || effectiveStyle.id === 'cartoon';
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-      {/* 1. Base Gradient */}
+      {/* 1. Base Gradient / Card Background */}
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(145deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
+          background: effectiveStyle.cardBg.startsWith('#') || effectiveStyle.cardBg.startsWith('rgb')
+            ? effectiveStyle.cardBg
+            : `linear-gradient(145deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
         }}
       />
 
@@ -232,229 +236,245 @@ function CardVectorArtLayer({
         </>
       )}
 
-      {/* 3. Procedural Style Vector Graphics Artwork */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* 3. Holistic Procedural Style Artwork (Full-Bleed Across the Entire Flex Card) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {customization.style === 'paper' && (
-          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <defs>
-              <radialGradient id="domPaperGrad" cx="38%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#faf5ee" />
-                <stop offset="60%" stopColor="#e5d5be" />
-                <stop offset="100%" stopColor="#8c775d" />
-              </radialGradient>
-              <clipPath id="domPaperClip">
-                <circle cx="200" cy="190" r="95" />
-              </clipPath>
+              <filter id="domPaperShadow" x="-10%" y="-10%" width="130%" height="130%">
+                <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#2c261e" floodOpacity="0.22" />
+              </filter>
             </defs>
-            <circle cx="200" cy="190" r="95" fill="url(#domPaperGrad)" />
-            <g clipPath="url(#domPaperClip)">
-              <polygon points="120,150 180,125 220,165 160,190" fill="#e2c8a0" opacity="0.7" />
-              <polygon points="175,125 260,120 270,180 215,165" fill="#f7f1e5" opacity="0.8" />
-              <polygon points="215,165 270,180 250,240 190,215" fill="#a38c6d" opacity="0.6" />
-              <polygon points="145,190 190,215 170,265 110,230" fill="#c4ad8d" opacity="0.75" />
-              <polygon points="190,215 250,240 215,290 170,265" fill="#8c7352" opacity="0.7" />
-            </g>
-          </svg>
-        )}
-
-        {customization.style === 'lowpoly' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
-            <defs>
-              <clipPath id="domLowpolyClip">
-                <circle cx="200" cy="190" r="95" />
-              </clipPath>
-            </defs>
-            <g clipPath="url(#domLowpolyClip)">
-              <polygon points="200,95 160,135 200,145" fill="#e9d5ff" />
-              <polygon points="200,95 200,145 240,135" fill="#d8b4fe" />
-              <polygon points="160,135 110,165 160,185" fill="#c084fc" />
-              <polygon points="160,135 200,145 160,185" fill="#d8b4fe" />
-              <polygon points="200,145 240,135 240,185" fill="#a855f7" />
-              <polygon points="240,135 290,165 240,185" fill="#9333ea" />
-              <polygon points="110,165 105,215 150,225" fill="#9333ea" />
-              <polygon points="110,165 160,185 150,225" fill="#a855f7" />
-              <polygon points="160,185 200,145 200,215" fill="#c084fc" />
-              <polygon points="200,145 240,185 200,215" fill="#9333ea" />
-              <polygon points="240,185 290,165 295,215" fill="#7e22ce" />
-              <polygon points="240,185 250,225 295,215" fill="#6b21a8" />
-              <polygon points="200,215 240,185 250,225" fill="#7e22ce" />
-              <polygon points="150,225 200,215 200,255" fill="#7e22ce" />
-              <polygon points="200,215 250,225 200,255" fill="#6b21a8" />
-              <polygon points="150,225 105,215 145,265" fill="#6b21a8" />
-              <polygon points="150,225 200,255 145,265" fill="#581c87" />
-              <polygon points="250,225 295,215 255,265" fill="#581c87" />
-              <polygon points="250,225 200,255 255,265" fill="#3b0764" />
-              <polygon points="145,265 200,255 200,285" fill="#3b0764" />
-              <polygon points="200,255 255,265 200,285" fill="#2e1065" />
-            </g>
-          </svg>
-        )}
-
-        {customization.style === 'watercolor' && (
-          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
-            <defs>
-              <radialGradient id="domWcGrad" cx="38%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#fef08a" />
-                <stop offset="40%" stopColor="#67e8f9" />
-                <stop offset="75%" stopColor="#93c5fd" />
-                <stop offset="100%" stopColor="#6366f1" />
-              </radialGradient>
-            </defs>
-            <circle cx="200" cy="190" r="95" fill="url(#domWcGrad)" />
-            <circle cx="200" cy="190" r="88" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="4" />
-          </svg>
-        )}
-
-        {(customization.style === '3d' || customization.style === 'sphere') && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <radialGradient id="dom3dSphereGrad" cx="35%" cy="35%" r="65%">
-                <stop offset="0%" stopColor={theme.accent} />
-                <stop offset="50%" stopColor={theme.accentGlow} />
-                <stop offset="85%" stopColor={theme.backgroundStart} />
-                <stop offset="100%" stopColor="#000000" />
-              </radialGradient>
-            </defs>
-            <circle cx="200" cy="190" r="115" fill="none" stroke={theme.accentGlow} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.6" />
-            <circle cx="200" cy="190" r="95" fill="url(#dom3dSphereGrad)" />
-            <ellipse cx="168" cy="158" rx="28" ry="18" fill="#ffffff" opacity="0.75" transform="rotate(-30 168 158)" />
-          </svg>
-        )}
-
-        {customization.style === 'illustrated' && (
-          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
-            <defs>
-              <clipPath id="domIllClip">
-                <circle cx="200" cy="190" r="95" />
-              </clipPath>
-            </defs>
-            <circle cx="200" cy="190" r="95" fill="#fb923c" />
-            <g clipPath="url(#domIllClip)">
-              <path d="M 80 120 Q 140 95 200 120 T 320 110 L 320 150 Q 260 125 200 150 T 80 140 Z" fill="#f43f5e" />
-              <path d="M 80 150 Q 140 125 200 150 T 320 140 L 320 180 Q 260 155 200 180 T 80 170 Z" fill="#fb923c" />
-              <path d="M 80 180 Q 140 155 200 180 T 320 170 L 320 210 Q 260 185 200 210 T 80 200 Z" fill="#facc15" />
-              <path d="M 80 210 Q 140 185 200 210 T 320 200 L 320 240 Q 260 215 200 240 T 80 230 Z" fill="#22d3ee" />
-              <path d="M 80 240 Q 140 215 200 240 T 320 230 L 320 285 L 80 285 Z" fill="#c084fc" />
-            </g>
-          </svg>
-        )}
-
-        {customization.style === 'anime' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
-            <defs>
-              <linearGradient id="domAnimeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#fbcfe8" />
-                <stop offset="50%" stopColor="#fed7aa" />
-                <stop offset="100%" stopColor="#a7f3d0" />
-              </linearGradient>
-            </defs>
-            <circle cx="200" cy="190" r="95" fill="url(#domAnimeGrad)" />
-            <circle cx="170" cy="190" r="10" fill="#1e1b4b" />
-            <circle cx="230" cy="190" r="10" fill="#1e1b4b" />
-            <circle cx="174" cy="186" r="3.5" fill="#ffffff" />
-            <circle cx="234" cy="186" r="3.5" fill="#ffffff" />
-            <ellipse cx="150" cy="210" rx="14" ry="8" fill="#f43f5e" opacity="0.55" />
-            <ellipse cx="250" cy="210" rx="14" ry="8" fill="#f43f5e" opacity="0.55" />
-            <path d="M 192 205 Q 200 218 208 205" stroke="#1e1b4b" strokeWidth="4" fill="none" strokeLinecap="round" />
-          </svg>
-        )}
-
-        {customization.style === 'collage' && (
-          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
-            <g transform="translate(200, 190)">
-              {[0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240, 264, 288, 312, 336].map((deg, i) => {
-                const colors = ['#fbcfe8', '#fed7aa', '#fef08a', '#bbf7d0', '#bae6fd', '#ddd6fe'];
-                return (
-                  <rect
-                    key={deg}
-                    x="50"
-                    y="-16"
-                    width="60"
-                    height="32"
-                    fill={colors[i % colors.length]}
-                    stroke="rgba(0,0,0,0.15)"
-                    strokeWidth="2"
-                    transform={`rotate(${deg})`}
-                  />
-                );
-              })}
-            </g>
-            <circle cx="200" cy="190" r="65" fill="#f8fafc" />
-            <circle cx="200" cy="190" r="65" fill="none" stroke={theme.accent} strokeWidth="2" />
+            <rect width="100%" height="100%" fill="#f4ece1" />
+            {/* Layer 1: Terracotta Undulating Wave across top and right */}
+            <path
+              d="M 0,0 L 400,0 L 400,360 Q 320,400 240,320 Q 160,260 80,340 Q 30,380 0,330 Z"
+              fill="#df7a5e"
+              filter="url(#domPaperShadow)"
+            />
+            {/* Layer 2: Warm Mustard Ochre Wave across middle right */}
+            <path
+              d="M 400,180 L 400,480 Q 310,430 220,480 Q 120,530 40,460 L 0,470 L 0,310 Q 90,290 190,330 Q 290,370 400,180 Z"
+              fill="#e9c46a"
+              filter="url(#domPaperShadow)"
+            />
+            {/* Layer 3: Sage Green Organic Paper Layer across lower section */}
+            <path
+              d="M 0,400 Q 120,430 220,370 Q 300,310 400,350 L 400,560 Q 280,600 150,530 Q 60,480 0,550 Z"
+              fill="#9da78c"
+              filter="url(#domPaperShadow)"
+            />
+            {/* Layer 4: Upper-Middle Arched Horizon Paper Cutout (Frames weekly cadence / stats) */}
+            <path
+              d="M 70,260 Q 200,160 330,260 L 330,300 L 70,300 Z"
+              fill="#e5d5be"
+              filter="url(#domPaperShadow)"
+            />
+            {/* Mountain ridge paper cutout inside the arch */}
+            <path
+              d="M 70,300 L 120,245 L 160,270 L 220,210 L 270,250 L 330,225 L 330,300 Z"
+              fill="#d5c4aa"
+            />
           </svg>
         )}
 
         {customization.style === 'cartoon' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <defs>
-              <clipPath id="domCartoonClip">
-                <circle cx="200" cy="190" r="95" />
-              </clipPath>
+              <pattern id="domHalftoneDots" width="16" height="16" patternUnits="userSpaceOnUse">
+                <circle cx="8" cy="8" r="2.2" fill="#ef4444" opacity="0.14" />
+              </pattern>
             </defs>
-            <g stroke={theme.accentGlow} strokeWidth="3" opacity="0.6">
-              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
-                <line
-                  key={deg}
-                  x1="200"
-                  y1="190"
-                  x2={200 + Math.cos((deg * Math.PI) / 180) * 160}
-                  y2={190 + Math.sin((deg * Math.PI) / 180) * 160}
-                />
-              ))}
+            <rect width="100%" height="100%" fill="#fffbeb" />
+            <g>
+              {[0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345].map((deg, idx) => {
+                const rad = (deg * Math.PI) / 180;
+                const nextRad = ((deg + 7.5) * Math.PI) / 180;
+                return (
+                  <path
+                    key={deg}
+                    d={`M 200,310 L ${200 + Math.cos(rad) * 600},${310 + Math.sin(rad) * 600} L ${200 + Math.cos(nextRad) * 600},${310 + Math.sin(nextRad) * 600} Z`}
+                    fill={idx % 2 === 0 ? '#fde047' : '#fef08a'}
+                  />
+                );
+              })}
             </g>
-            <g clipPath="url(#domCartoonClip)">
-              <rect x="105" y="95" width="48" height="190" fill="#ef4444" />
-              <rect x="153" y="95" width="47" height="190" fill="#06b6d4" />
-              <rect x="200" y="95" width="47" height="190" fill="#facc15" />
-              <rect x="247" y="95" width="48" height="190" fill="#ffffff" />
-            </g>
-            <circle cx="200" cy="190" r="95" fill="none" stroke="#18181b" strokeWidth="6" />
+            <rect width="100%" height="100%" fill="url(#domHalftoneDots)" />
           </svg>
         )}
 
-        {customization.style === 'goth' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+        {customization.style === 'illustrated' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#1a1528" />
+            <path d="M 0,0 L 400,0 L 400,120 Q 280,70 180,120 T 0,100 Z" fill="#6366f1" />
+            <path d="M 0,90 Q 120,50 220,110 T 400,80 L 400,200 Q 280,150 180,210 T 0,180 Z" fill="#a855f7" />
+            <path d="M 0,170 Q 120,130 220,190 T 400,160 L 400,280 Q 280,230 180,290 T 0,260 Z" fill="#22d3ee" />
+            <path d="M 0,250 Q 120,210 220,270 T 400,240 L 400,360 Q 280,310 180,370 T 0,340 Z" fill="#facc15" />
+            <path d="M 0,330 Q 120,290 220,350 T 400,320 L 400,450 Q 280,400 180,460 T 0,430 Z" fill="#fb923c" />
+            <path d="M 0,420 Q 120,380 220,440 T 400,410 L 400,540 Q 280,490 180,550 T 0,520 Z" fill="#f43f5e" />
+            <path d="M 0,510 Q 120,470 220,530 T 400,500 L 400,700 L 0,700 Z" fill="#ec4899" />
+          </svg>
+        )}
+
+        {customization.style === 'lowpoly' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#130822" />
+            {[
+              { p: "0,0 80,0 0,90", c: "#2e1065" }, { p: "80,0 160,0 80,95", c: "#3b0764" },
+              { p: "160,0 240,0 170,85", c: "#581c87" }, { p: "240,0 320,0 250,95", c: "#6b21a8" },
+              { p: "320,0 400,0 330,85", c: "#7e22ce" }, { p: "400,0 400,100 330,85", c: "#9333ea" },
+              { p: "0,90 80,0 80,95", c: "#4c1d95" }, { p: "80,95 160,0 170,85", c: "#6b21a8" },
+              { p: "170,85 240,0 250,95", c: "#7e22ce" }, { p: "250,95 320,0 330,85", c: "#9333ea" },
+              { p: "0,90 80,95 0,190", c: "#581c87" }, { p: "80,95 170,85 90,195", c: "#7e22ce" },
+              { p: "170,85 250,95 180,185", c: "#9333ea" }, { p: "250,95 330,85 260,195", c: "#a855f7" },
+              { p: "330,85 400,100 400,200", c: "#c084fc" }, { p: "330,85 260,195 400,200", c: "#9333ea" },
+              { p: "0,190 80,95 90,195", c: "#6b21a8" }, { p: "90,195 170,85 180,185", c: "#8b5cf6" },
+              { p: "180,185 250,95 260,195", c: "#a855f7" },
+              { p: "0,190 90,195 0,300", c: "#3b0764" }, { p: "90,195 180,185 85,290", c: "#6b21a8" },
+              { p: "180,185 260,195 175,295", c: "#7e22ce" }, { p: "260,195 400,200 270,300", c: "#9333ea" },
+              { p: "270,300 400,200 400,310", c: "#a855f7" }, { p: "0,300 90,195 85,290", c: "#581c87" },
+              { p: "85,290 180,185 175,295", c: "#7e22ce" }, { p: "175,295 260,195 270,300", c: "#8b5cf6" },
+              { p: "0,300 85,290 0,420", c: "#2e1065" }, { p: "85,290 175,295 90,410", c: "#581c87" },
+              { p: "175,295 270,300 185,415", c: "#6b21a8" }, { p: "270,300 400,310 280,410", c: "#7e22ce" },
+              { p: "280,410 400,310 400,420", c: "#9333ea" }, { p: "0,420 85,290 90,410", c: "#4c1d95" },
+              { p: "90,410 175,295 185,415", c: "#6b21a8" }, { p: "185,415 270,300 280,410", c: "#7e22ce" },
+              { p: "0,420 90,410 0,560", c: "#1e1b4b" }, { p: "90,410 185,415 80,550", c: "#3b0764" },
+              { p: "185,415 280,410 175,560", c: "#581c87" }, { p: "280,410 400,420 270,555", c: "#6b21a8" },
+              { p: "270,555 400,420 400,560", c: "#7e22ce" }, { p: "0,560 90,410 80,550", c: "#312e81" },
+              { p: "80,550 185,415 175,560", c: "#4c1d95" }, { p: "175,560 280,410 270,555", c: "#581c87" },
+              { p: "0,560 80,550 0,700", c: "#0f172a" }, { p: "80,550 175,560 90,700", c: "#1e1b4b" },
+              { p: "175,560 270,555 190,700", c: "#2e1065" }, { p: "270,555 400,560 290,700", c: "#3b0764" },
+              { p: "290,700 400,560 400,700", c: "#4c1d95" }, { p: "0,700 80,550 90,700", c: "#1e1b4b" },
+              { p: "90,700 175,560 190,700", c: "#2e1065" }, { p: "190,700 270,555 290,700", c: "#3b0764" },
+            ].map((t, idx) => (
+              <polygon key={idx} points={t.p} fill={t.c} stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+            ))}
+          </svg>
+        )}
+
+        {customization.style === 'anime' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <defs>
-              <clipPath id="domGothClip">
-                <circle cx="200" cy="190" r="95" />
-              </clipPath>
+              <linearGradient id="domAnimeSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fce7f3" />
+                <stop offset="35%" stopColor="#fed7aa" />
+                <stop offset="70%" stopColor="#bae6fd" />
+                <stop offset="100%" stopColor="#ddd6fe" />
+              </linearGradient>
             </defs>
-            <circle cx="200" cy="190" r="95" fill="#ffffff" />
-            <g clipPath="url(#domGothClip)">
-              <path d="M 125 150 Q 215 140 270 230 A 95 95 0 0 1 105 190 Q 110 165 125 150 Z" fill="#18181b" transform="rotate(20 200 190)" />
+            <rect width="100%" height="100%" fill="url(#domAnimeSky)" />
+            {/* Soft Puffy Clouds */}
+            <g fill="rgba(255, 255, 255, 0.72)">
+              <circle cx="80" cy="140" r="50" />
+              <circle cx="120" cy="145" r="40" />
+              <circle cx="50" cy="145" r="35" />
+              <circle cx="310" cy="240" r="65" />
+              <circle cx="355" cy="245" r="48" />
+              <circle cx="265" cy="245" r="42" />
+              <circle cx="140" cy="460" r="58" />
+              <circle cx="185" cy="465" r="44" />
+              <circle cx="95" cy="465" r="38" />
+              <circle cx="330" cy="560" r="52" />
+              <circle cx="365" cy="565" r="38" />
             </g>
-            <circle cx="200" cy="190" r="95" fill="none" stroke="#18181b" strokeWidth="6" />
+            {/* Drifting Sakura Petals (Strictly Zero Sparkles) */}
+            <g fill="rgba(244, 114, 182, 0.55)">
+              <ellipse cx="60" cy="80" rx="9" ry="4" transform="rotate(25 60 80)" />
+              <ellipse cx="180" cy="190" rx="8" ry="3.5" transform="rotate(-30 180 190)" />
+              <ellipse cx="290" cy="110" rx="10" ry="4.5" transform="rotate(45 290 110)" />
+              <ellipse cx="70" cy="330" rx="8" ry="3.5" transform="rotate(15 70 330)" />
+              <ellipse cx="240" cy="380" rx="9" ry="4" transform="rotate(-40 240 380)" />
+              <ellipse cx="340" cy="440" rx="8" ry="3.5" transform="rotate(35 340 440)" />
+              <ellipse cx="110" cy="610" rx="9" ry="4" transform="rotate(-20 110 610)" />
+              <ellipse cx="270" cy="640" rx="8" ry="3.5" transform="rotate(50 270 640)" />
+            </g>
           </svg>
         )}
 
         {customization.style === 'artdeco' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
-            <defs>
-              <radialGradient id="domArtDecoGrad" cx="35%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#047857" />
-                <stop offset="65%" stopColor="#064e3b" />
-                <stop offset="100%" stopColor="#022c22" />
-              </radialGradient>
-            </defs>
-            <circle cx="200" cy="190" r="95" fill="url(#domArtDecoGrad)" />
-            <circle cx="200" cy="190" r="80" fill="none" stroke="#fbbf24" strokeWidth="4" />
-            <circle cx="200" cy="190" r="55" fill="none" stroke="#f59e0b" strokeWidth="3" />
-            <circle cx="200" cy="190" r="35" fill="none" stroke="#fbbf24" strokeWidth="4" />
-            <circle cx="200" cy="190" r="22" fill="#10b981" stroke="#fbbf24" strokeWidth="3" />
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#09090b" />
+            <rect x="25" y="25" width="350" height="650" fill="none" stroke="#fbbf24" strokeWidth="1.8" rx="8" />
+            <rect x="35" y="35" width="330" height="630" fill="none" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="1" rx="6" />
+            {[[25, 25, 0], [375, 25, 90], [375, 675, 180], [25, 675, -90]].map(([fx, fy, fa], i) => (
+              <g key={i} transform={`translate(${fx}, ${fy}) rotate(${fa})`} stroke="#fbbf24" strokeWidth="1">
+                {[0, 15, 30, 45, 60, 75, 90].map((deg) => (
+                  <line key={deg} x1="0" y1="0" x2={Math.cos((deg * Math.PI) / 180) * 36} y2={Math.sin((deg * Math.PI) / 180) * 36} />
+                ))}
+                <path d="M 0,22 A 22,22 0 0,0 22,0" fill="none" />
+                <path d="M 0,34 A 34,34 0 0,0 34,0" fill="none" />
+              </g>
+            ))}
+          </svg>
+        )}
+
+        {(customization.style === '3d' || customization.style === 'sphere') && (
+          <div className="w-full h-full relative overflow-hidden">
+            <div
+              className="absolute -top-12 -left-12 w-48 h-48 rounded-full blur-3xl opacity-35"
+              style={{ background: theme.accent }}
+            />
+            <div
+              className="absolute top-1/3 -right-12 w-56 h-56 rounded-full blur-3xl opacity-25"
+              style={{ background: theme.accentGlow }}
+            />
+            <div
+              className="absolute -bottom-12 left-1/4 w-52 h-52 rounded-full blur-3xl opacity-30"
+              style={{ background: theme.accent }}
+            />
+          </div>
+        )}
+
+        {customization.style === 'watercolor' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#f8fafc" />
+            <circle cx="100" cy="140" r="160" fill="rgba(103, 232, 249, 0.35)" filter="blur(20px)" />
+            <circle cx="300" cy="245" r="180" fill="rgba(147, 197, 253, 0.4)" filter="blur(24px)" />
+            <circle cx="160" cy="455" r="200" fill="rgba(196, 181, 253, 0.35)" filter="blur(25px)" />
+            <circle cx="320" cy="595" r="160" fill="rgba(254, 240, 138, 0.3)" filter="blur(22px)" />
+          </svg>
+        )}
+
+        {customization.style === 'collage' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#f5efe6" />
+            <g fill="rgba(0, 0, 0, 0.04)">
+              <rect x="25" y="40" width="75" height="620" />
+              <rect x="115" y="40" width="75" height="620" />
+              <rect x="205" y="40" width="75" height="620" />
+              <rect x="295" y="40" width="75" height="620" />
+            </g>
+            <rect x="20" y="25" width="60" height="20" fill="rgba(251, 146, 60, 0.55)" transform="rotate(-15 50 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="320" y="25" width="60" height="20" fill="rgba(56, 189, 248, 0.55)" transform="rotate(20 350 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="20" y="650" width="60" height="20" fill="rgba(74, 222, 128, 0.55)" transform="rotate(15 50 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="320" y="650" width="60" height="20" fill="rgba(244, 114, 182, 0.55)" transform="rotate(-20 350 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+          </svg>
+        )}
+
+        {customization.style === 'goth' && (
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#09090b" />
+            <g stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1">
+              {Array.from({ length: 45 }).map((_, i) => (
+                <line key={i} x1={-300 + i * 24} y1="0" x2={i * 24} y2="700" />
+              ))}
+            </g>
           </svg>
         )}
 
         {customization.style === 'cinema' && (
-          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+          <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="#080a0f" />
+            <rect x="0" y="0" width="400" height="45" fill="#000000" />
+            <rect x="0" y="655" width="400" height="45" fill="#000000" />
             <defs>
-              <radialGradient id="domCinemaGrad" cx="30%" cy="30%" r="70%">
-                <stop offset="0%" stopColor="#d6c7b2" />
-                <stop offset="40%" stopColor="#8c7d6b" />
-                <stop offset="85%" stopColor="#3e3428" />
-                <stop offset="100%" stopColor="#1a1610" />
-              </radialGradient>
+              <linearGradient id="domCinemaBeam" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="rgba(6, 182, 212, 0.28)" />
+                <stop offset="50%" stopColor="rgba(245, 158, 11, 0.2)" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
             </defs>
-            <circle cx="200" cy="190" r="95" fill="url(#domCinemaGrad)" />
+            <polygon points="0,120 400,480 400,600 0,240" fill="url(#domCinemaBeam)" />
           </svg>
         )}
 
@@ -619,19 +639,11 @@ function CardVectorArtLayer({
           }}
         />
       )}
-      {customization.mood === 'clean' && (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-80"
-          style={{ backgroundImage: dotGridBg, backgroundSize: '16px 16px' }}
-        />
-      )}
     </div>
   );
 }
 
-/**
- * Helper to render individual style spheres in preview tiles (zero sparkles)
- */
+
 function RenderStylePreviewSphere({ styleId, theme }: { styleId: string; theme: ThemeColors }) {
   if (styleId === '3d' || styleId === 'sphere') {
     return (
@@ -1144,6 +1156,8 @@ function ThumbnailPreviewTile({
  * Razor-Sharp Vector DOM Preview Card Component
  * Eliminates all downsampling blur by rendering native CSS vectors & typography.
  */
+
+
 function FlexCardVectorPreview({
   data,
   themeKey,
@@ -1159,6 +1173,8 @@ function FlexCardVectorPreview({
     themeKey ? { ...DEFAULT_CUSTOMIZATION, colour: (themeKey === 'obsidian' ? 'ember' : themeKey) as FlexCardColour } : DEFAULT_CUSTOMIZATION
   );
   const theme = COLOUR_PALETTES[activeCustomization.colour] || COLOUR_PALETTES.ember;
+  const styleTheme = getEffectiveCardStyling(activeCustomization, theme);
+
   const fallbackDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((label) => ({
     label,
     completed: false,
@@ -1167,23 +1183,22 @@ function FlexCardVectorPreview({
   const weeklyDots = data.weeklyDots && data.weeklyDots.length === 7 ? data.weeklyDots : fallbackDays;
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
 
-  const dividerColor =
-    activeCustomization.colour === 'ivory'
-      ? 'rgba(21, 19, 15, 0.12)'
-      : 'rgba(255, 255, 255, 0.12)';
-
   const userFooterLabel =
     data.showUser !== false && data.userName && data.userName.trim()
       ? `DISCIPLINE BY ${data.userName.trim().toUpperCase()}`
       : (data.footerLabel || 'HABIT TRACKER ARCHIVE');
 
+  // ================= LANDSCAPE (16:9) =================
   if (format === 'landscape') {
     return (
       <div
-        className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
+        className="w-full h-full relative p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
         style={{
-          border: `1.5px solid ${theme.cardBorder}`,
-          color: theme.primaryText,
+          background: styleTheme.cardBg,
+          border: styleTheme.cardBorder,
+          boxShadow: styleTheme.cardShadow,
+          borderRadius: styleTheme.cardRadius,
+          color: styleTheme.primaryText,
         }}
       >
         {/* Procedural Vector Art Background Layer */}
@@ -1191,26 +1206,27 @@ function FlexCardVectorPreview({
           customization={activeCustomization}
           theme={theme}
           format={format}
+          styleTheme={styleTheme}
         />
 
         {/* Top Header */}
         <div
           className="relative z-10 w-full flex items-center justify-between border-b pb-1.5 shrink-0"
-          style={{ borderColor: dividerColor }}
+          style={{ borderColor: styleTheme.headerDivider }}
         >
           <div className="flex items-center gap-1.5 shrink-0">
             <BrandLogoIcon size={18} theme={theme} />
             <span
               className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
-              style={{ whiteSpace: 'nowrap' }}
+              style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
             >
               HABIT TRACKER
             </span>
           </div>
           {data.dateStr && (
             <span
-              className="text-[8.5px] font-bold uppercase tracking-wider opacity-60 shrink-0"
-              style={{ whiteSpace: 'nowrap' }}
+              className="text-[8.5px] font-bold uppercase tracking-wider shrink-0"
+              style={{ color: styleTheme.dateColor, opacity: 0.75, whiteSpace: 'nowrap' }}
             >
               {data.dateStr}
             </span>
@@ -1222,11 +1238,13 @@ function FlexCardVectorPreview({
           {/* Left Col: Hero */}
           <div className="flex flex-col justify-center gap-0.5 min-w-0">
             <span
-              className="self-start px-2 py-0.5 rounded-full text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
+              className="self-start px-2 py-0.5 text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
               style={{
-                background: theme.pillBg,
-                borderColor: theme.accent,
-                color: theme.pillText,
+                background: styleTheme.badgeBg,
+                border: styleTheme.badgeBorder,
+                color: styleTheme.badgeText,
+                boxShadow: styleTheme.badgeShadow,
+                borderRadius: '9999px',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -1234,25 +1252,34 @@ function FlexCardVectorPreview({
             </span>
 
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="font-clash font-extrabold text-[34px] sm:text-[38px] leading-none tracking-tight">
+              <span
+                className="font-clash font-extrabold text-[34px] sm:text-[38px] leading-none tracking-tight"
+                style={{
+                  color: styleTheme.metricColor,
+                  textShadow: styleTheme.metricShadow,
+                }}
+              >
                 {data.metricValue}
               </span>
               {data.metricUnit && (
                 <span
                   className="text-[9px] font-bold uppercase tracking-wider leading-none"
-                  style={{ color: theme.accent, whiteSpace: 'nowrap' }}
+                  style={{ color: styleTheme.accent, whiteSpace: 'nowrap' }}
                 >
                   {data.metricUnit}
                 </span>
               )}
             </div>
 
-            <h4 className="font-clash font-bold text-[11.5px] leading-tight truncate">
+            <h4
+              className="font-clash font-bold text-[11.5px] leading-tight truncate"
+              style={{ color: styleTheme.primaryText }}
+            >
               {data.title}
             </h4>
             <p
               className="text-[8.5px] leading-snug line-clamp-2"
-              style={{ color: theme.secondaryText }}
+              style={{ color: styleTheme.secondaryText }}
             >
               {data.subtitle}
             </p>
@@ -1260,31 +1287,48 @@ function FlexCardVectorPreview({
 
           {/* Right Col: Stats & Quote / Dots */}
           <div className="flex flex-col gap-1.5 min-w-0">
-            {/* Routine & Adherence card */}
+            {/* Bento Target Routine & Adherence card */}
             <div
-              className="p-1.5 rounded-xl border flex items-center justify-between gap-1.5"
+              className="p-1.5 border flex items-center justify-between gap-1.5"
               style={{
-                background: theme.cardBg,
-                borderColor: theme.cardBorder,
+                background: styleTheme.bentoBg,
+                border: styleTheme.bentoBorder,
+                boxShadow: styleTheme.bentoShadow,
+                borderRadius: styleTheme.bentoRadius,
               }}
             >
               <div className="min-w-0 flex-1">
-                <span className="text-[7px] font-semibold block uppercase tracking-wider opacity-60 leading-none">
-                  TARGET ROUTINE
+                <span
+                  className="text-[7px] font-semibold block uppercase tracking-wider leading-none"
+                  style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+                >
+                  {data.bentoLabel || 'TARGET ROUTINE'}
                 </span>
-                <span className="font-bold text-[10px] truncate block mt-0.5">
+                <span
+                  className="font-bold text-[10px] truncate block mt-0.5"
+                  style={{ color: styleTheme.bentoTitleColor }}
+                >
                   {data.habitTitle || 'Core Stack'}
                 </span>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-[7px] font-semibold block uppercase tracking-wider opacity-60 leading-none">
+                <span
+                  className="text-[7px] font-semibold block uppercase tracking-wider leading-none"
+                  style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+                >
                   ADHERENCE
                 </span>
-                <span className="font-clash font-extrabold text-[12px] block mt-0.5" style={{ color: theme.accent }}>
+                <span
+                  className="font-clash font-extrabold text-[12px] block mt-0.5"
+                  style={{ color: styleTheme.bentoAccentColor }}
+                >
                   {pct}%
                 </span>
                 {data.adherenceLabel && (
-                  <span className="text-[6.5px] block opacity-60 truncate">
+                  <span
+                    className="text-[6.5px] block truncate"
+                    style={{ color: styleTheme.bentoSubColor, opacity: 0.7 }}
+                  >
                     {data.adherenceLabel}
                   </span>
                 )}
@@ -1294,36 +1338,49 @@ function FlexCardVectorPreview({
             {/* Quote box OR Consistency Cadence */}
             {data.showQuote !== false ? (
               <div
-                className="p-1.5 rounded-xl border flex flex-col justify-center min-w-0"
+                className="p-1.5 border flex flex-col justify-center min-w-0"
                 style={{
-                  background: theme.quoteBoxBg,
-                  borderColor: theme.quoteBoxBorder,
+                  background: styleTheme.quoteBg,
+                  border: styleTheme.quoteBorder,
+                  boxShadow: styleTheme.quoteShadow,
+                  borderRadius: styleTheme.quoteRadius,
                 }}
               >
                 <div className="flex gap-1 items-start min-w-0">
-                  <span className="font-serif text-xs leading-none opacity-80 shrink-0" style={{ color: theme.accent }}>
+                  <span
+                    className="font-serif text-xs leading-none shrink-0"
+                    style={{ color: styleTheme.quoteMarkColor, opacity: 0.9 }}
+                  >
                     “
                   </span>
-                  <p className="text-[8px] italic font-serif leading-tight line-clamp-2">
+                  <p
+                    className="text-[8px] italic font-serif leading-tight line-clamp-2"
+                    style={{ color: styleTheme.quoteTextColor }}
+                  >
                     {data.quote}
                   </p>
                 </div>
                 <span
                   className="text-[7.5px] font-semibold mt-0.5 self-end truncate max-w-full"
-                  style={{ color: theme.accent }}
+                  style={{ color: styleTheme.quoteAuthorColor }}
                 >
                   — {data.quoteAuthor}
                 </span>
               </div>
             ) : (
               <div
-                className="p-1.5 rounded-xl border flex flex-col justify-center gap-0.5"
+                className="p-1.5 border flex flex-col justify-center gap-0.5"
                 style={{
-                  background: theme.cardBg,
-                  borderColor: theme.cardBorder,
+                  background: styleTheme.bentoBg,
+                  border: styleTheme.bentoBorder,
+                  boxShadow: styleTheme.bentoShadow,
+                  borderRadius: styleTheme.bentoRadius,
                 }}
               >
-                <span className="text-[7px] font-bold uppercase tracking-wider opacity-60">
+                <span
+                  className="text-[7px] font-bold uppercase tracking-wider"
+                  style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+                >
                   7-DAY CADENCE
                 </span>
                 <div className="flex items-center justify-between pt-0.5">
@@ -1332,18 +1389,32 @@ function FlexCardVectorPreview({
                       {dot.completed ? (
                         <div
                           className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                          style={{ background: theme.accent }}
+                          style={{ background: styleTheme.dotActiveBg }}
                         >
                           <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
                         </div>
                       ) : dot.isFuture ? (
-                        <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+                        <div
+                          className="w-3.5 h-3.5 rounded-full border border-dashed shrink-0"
+                          style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+                        />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
-                          <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+                        <div
+                          className="w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0"
+                          style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.5 }}
+                        >
+                          <div
+                            className="w-1 h-1 rounded-full"
+                            style={{ background: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+                          />
                         </div>
                       )}
-                      <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
+                      <span
+                        className="text-[7px] font-bold tracking-wider"
+                        style={{ color: styleTheme.dotTextColor, opacity: 0.8 }}
+                      >
+                        {dot.label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1354,8 +1425,11 @@ function FlexCardVectorPreview({
 
         {/* Footer */}
         <div
-          className="relative z-10 flex items-center justify-between text-[7.5px] font-semibold border-t pt-1 opacity-75 shrink-0"
-          style={{ borderColor: dividerColor }}
+          className="relative z-10 flex items-center justify-between text-[7.5px] font-semibold border-t pt-1 shrink-0"
+          style={{
+            borderColor: styleTheme.footerDivider,
+            color: styleTheme.footerColor,
+          }}
         >
           <span className="truncate max-w-[65%]" style={{ whiteSpace: 'nowrap' }}>{userFooterLabel}</span>
           <span className="shrink-0 font-bold" style={{ whiteSpace: 'nowrap' }}>HABIT TRACKER</span>
@@ -1364,13 +1438,17 @@ function FlexCardVectorPreview({
     );
   }
 
+  // ================= SQUARE (1:1) =================
   if (format === 'square') {
     return (
       <div
-        className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
+        className="w-full h-full relative p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
         style={{
-          border: `1.5px solid ${theme.cardBorder}`,
-          color: theme.primaryText,
+          background: styleTheme.cardBg,
+          border: styleTheme.cardBorder,
+          boxShadow: styleTheme.cardShadow,
+          borderRadius: styleTheme.cardRadius,
+          color: styleTheme.primaryText,
         }}
       >
         {/* Procedural Vector Art Background Layer */}
@@ -1378,26 +1456,27 @@ function FlexCardVectorPreview({
           customization={activeCustomization}
           theme={theme}
           format={format}
+          styleTheme={styleTheme}
         />
 
         {/* Header */}
         <div
           className="relative z-10 w-full flex items-center justify-between border-b pb-1.5 shrink-0"
-          style={{ borderColor: dividerColor }}
+          style={{ borderColor: styleTheme.headerDivider }}
         >
           <div className="flex items-center gap-1.5 shrink-0">
             <BrandLogoIcon size={18} theme={theme} />
             <span
               className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
-              style={{ whiteSpace: 'nowrap' }}
+              style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
             >
               HABIT TRACKER
             </span>
           </div>
           {data.dateStr && (
             <span
-              className="text-[8.5px] font-bold uppercase tracking-wider opacity-60 shrink-0"
-              style={{ whiteSpace: 'nowrap' }}
+              className="text-[8.5px] font-bold uppercase tracking-wider shrink-0"
+              style={{ color: styleTheme.dateColor, opacity: 0.75, whiteSpace: 'nowrap' }}
             >
               {data.dateStr}
             </span>
@@ -1407,11 +1486,13 @@ function FlexCardVectorPreview({
         {/* Milestone Badge & Hero Number */}
         <div className="relative z-10 flex flex-col gap-0.5 min-w-0">
           <span
-            className="self-start px-2 py-0.5 rounded-full text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
+            className="self-start px-2 py-0.5 text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
             style={{
-              background: theme.pillBg,
-              borderColor: theme.accent,
-              color: theme.pillText,
+              background: styleTheme.badgeBg,
+              border: styleTheme.badgeBorder,
+              color: styleTheme.badgeText,
+              boxShadow: styleTheme.badgeShadow,
+              borderRadius: '9999px',
               whiteSpace: 'nowrap',
             }}
           >
@@ -1419,25 +1500,34 @@ function FlexCardVectorPreview({
           </span>
 
           <div className="flex items-baseline gap-1.5 mt-0.5">
-            <span className="font-clash font-extrabold text-[36px] sm:text-[40px] leading-none tracking-tight">
+            <span
+              className="font-clash font-extrabold text-[36px] sm:text-[40px] leading-none tracking-tight"
+              style={{
+                color: styleTheme.metricColor,
+                textShadow: styleTheme.metricShadow,
+              }}
+            >
               {data.metricValue}
             </span>
             {data.metricUnit && (
               <span
                 className="text-[10px] font-bold uppercase tracking-wider leading-none"
-                style={{ color: theme.accent, whiteSpace: 'nowrap' }}
+                style={{ color: styleTheme.accent, whiteSpace: 'nowrap' }}
               >
                 {data.metricUnit}
               </span>
             )}
           </div>
 
-          <h4 className="font-clash font-bold text-[12px] leading-tight truncate">
+          <h4
+            className="font-clash font-bold text-[12px] leading-tight truncate"
+            style={{ color: styleTheme.primaryText }}
+          >
             {data.title}
           </h4>
           <p
             className="text-[8.5px] leading-tight line-clamp-2"
-            style={{ color: theme.secondaryText }}
+            style={{ color: styleTheme.secondaryText }}
           >
             {data.subtitle}
           </p>
@@ -1445,29 +1535,46 @@ function FlexCardVectorPreview({
 
         {/* Bento Stats Row */}
         <div
-          className="relative z-10 p-1.5 sm:p-2 rounded-xl border flex items-center justify-between gap-2 shrink-0"
+          className="relative z-10 p-1.5 sm:p-2 border flex items-center justify-between gap-2 shrink-0"
           style={{
-            background: theme.cardBg,
-            borderColor: theme.cardBorder,
+            background: styleTheme.bentoBg,
+            border: styleTheme.bentoBorder,
+            boxShadow: styleTheme.bentoShadow,
+            borderRadius: styleTheme.bentoRadius,
           }}
         >
           <div className="min-w-0 flex-1">
-            <span className="text-[7px] font-semibold block uppercase tracking-wider opacity-60 leading-none">
-              TARGET ROUTINE
+            <span
+              className="text-[7px] font-semibold block uppercase tracking-wider leading-none"
+              style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+            >
+              {data.bentoLabel || 'TARGET ROUTINE'}
             </span>
-            <span className="font-bold text-[10.5px] truncate block mt-0.5">
+            <span
+              className="font-bold text-[10.5px] truncate block mt-0.5"
+              style={{ color: styleTheme.bentoTitleColor }}
+            >
               {data.habitTitle || 'Core Stack'}
             </span>
           </div>
           <div className="text-right shrink-0">
-            <span className="text-[7px] font-semibold block uppercase tracking-wider opacity-60 leading-none">
+            <span
+              className="text-[7px] font-semibold block uppercase tracking-wider leading-none"
+              style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+            >
               ADHERENCE
             </span>
-            <span className="font-clash font-extrabold text-[13px] block mt-0.5" style={{ color: theme.accent }}>
+            <span
+              className="font-clash font-extrabold text-[13px] block mt-0.5"
+              style={{ color: styleTheme.bentoAccentColor }}
+            >
               {pct}%
             </span>
             {data.adherenceLabel && (
-              <span className="text-[6.5px] block opacity-60 truncate">
+              <span
+                className="text-[6.5px] block truncate"
+                style={{ color: styleTheme.bentoSubColor, opacity: 0.7 }}
+              >
                 {data.adherenceLabel}
               </span>
             )}
@@ -1477,23 +1584,31 @@ function FlexCardVectorPreview({
         {/* Quote Capsule OR Consistency Row */}
         {data.showQuote !== false ? (
           <div
-            className="relative z-10 p-1.5 sm:p-2 rounded-xl border flex flex-col justify-center min-w-0 shrink-0"
+            className="relative z-10 p-1.5 sm:p-2 border flex flex-col justify-center min-w-0 shrink-0"
             style={{
-              background: theme.quoteBoxBg,
-              borderColor: theme.quoteBoxBorder,
+              background: styleTheme.quoteBg,
+              border: styleTheme.quoteBorder,
+              boxShadow: styleTheme.quoteShadow,
+              borderRadius: styleTheme.quoteRadius,
             }}
           >
             <div className="flex gap-1 items-start min-w-0">
-              <span className="font-serif text-sm leading-none opacity-80 shrink-0" style={{ color: theme.accent }}>
+              <span
+                className="font-serif text-sm leading-none shrink-0"
+                style={{ color: styleTheme.quoteMarkColor, opacity: 0.9 }}
+              >
                 “
               </span>
-              <p className="text-[8.5px] italic font-serif leading-snug line-clamp-2">
+              <p
+                className="text-[8.5px] italic font-serif leading-snug line-clamp-2"
+                style={{ color: styleTheme.quoteTextColor }}
+              >
                 {data.quote}
               </p>
             </div>
             <span
               className="text-[7.5px] font-semibold mt-0.5 self-end truncate max-w-full"
-              style={{ color: theme.accent }}
+              style={{ color: styleTheme.quoteAuthorColor }}
             >
               — {data.quoteAuthor}
             </span>
@@ -1501,25 +1616,39 @@ function FlexCardVectorPreview({
         ) : (
           <div
             className="relative z-10 flex items-center justify-between py-1 border-y shrink-0"
-            style={{ borderColor: dividerColor }}
+            style={{ borderColor: styleTheme.headerDivider }}
           >
             {weeklyDots.map((dot, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5">
                 {dot.completed ? (
                   <div
                     className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                    style={{ background: theme.accent }}
+                    style={{ background: styleTheme.dotActiveBg }}
                   >
                     <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
                   </div>
                 ) : dot.isFuture ? (
-                  <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+                  <div
+                    className="w-3.5 h-3.5 rounded-full border border-dashed shrink-0"
+                    style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+                  />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
-                    <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+                  <div
+                    className="w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0"
+                    style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.5 }}
+                  >
+                    <div
+                      className="w-1 h-1 rounded-full"
+                      style={{ background: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+                    />
                   </div>
                 )}
-                <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
+                <span
+                  className="text-[7px] font-bold tracking-wider"
+                  style={{ color: styleTheme.dotTextColor, opacity: 0.8 }}
+                >
+                  {dot.label}
+                </span>
               </div>
             ))}
           </div>
@@ -1527,8 +1656,11 @@ function FlexCardVectorPreview({
 
         {/* Footer */}
         <div
-          className="relative z-10 flex items-center justify-between text-[7.5px] font-semibold border-t pt-1 opacity-75 shrink-0"
-          style={{ borderColor: dividerColor }}
+          className="relative z-10 flex items-center justify-between text-[7.5px] font-semibold border-t pt-1 shrink-0"
+          style={{
+            borderColor: styleTheme.footerDivider,
+            color: styleTheme.footerColor,
+          }}
         >
           <span className="truncate max-w-[65%]" style={{ whiteSpace: 'nowrap' }}>{userFooterLabel}</span>
           <span className="shrink-0 font-bold" style={{ whiteSpace: 'nowrap' }}>HABIT TRACKER</span>
@@ -1537,13 +1669,16 @@ function FlexCardVectorPreview({
     );
   }
 
-  // DEFAULT: Story Layout (9:16)
+  // ================= STORY (9:16) =================
   return (
     <div
-      className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
+      className="w-full h-full relative p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
       style={{
-        border: `1.5px solid ${theme.cardBorder}`,
-        color: theme.primaryText,
+        background: styleTheme.cardBg,
+        border: styleTheme.cardBorder,
+        boxShadow: styleTheme.cardShadow,
+        borderRadius: styleTheme.cardRadius,
+        color: styleTheme.primaryText,
       }}
     >
       {/* Procedural Vector Art Background Layer */}
@@ -1551,26 +1686,27 @@ function FlexCardVectorPreview({
         customization={activeCustomization}
         theme={theme}
         format={format}
+        styleTheme={styleTheme}
       />
 
       {/* 1. Top Header */}
       <div
         className="relative z-10 w-full flex items-center justify-between border-b pb-1.5 shrink-0"
-        style={{ borderColor: dividerColor }}
+        style={{ borderColor: styleTheme.headerDivider }}
       >
         <div className="flex items-center gap-1.5 shrink-0">
           <BrandLogoIcon size={18} theme={theme} />
           <span
             className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
-            style={{ whiteSpace: 'nowrap' }}
+            style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
           >
             HABIT TRACKER
           </span>
         </div>
         {data.dateStr && (
           <span
-            className="text-[8.5px] font-bold uppercase tracking-wider opacity-60 shrink-0"
-            style={{ whiteSpace: 'nowrap' }}
+            className="text-[8.5px] font-bold uppercase tracking-wider shrink-0"
+            style={{ color: styleTheme.dateColor, opacity: 0.75, whiteSpace: 'nowrap' }}
           >
             {data.dateStr}
           </span>
@@ -1580,11 +1716,13 @@ function FlexCardVectorPreview({
       {/* 2. Milestone Badge & Big Number */}
       <div className="relative z-10 flex flex-col gap-0.5 min-w-0">
         <span
-          className="self-start px-2 py-0.5 rounded-full text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
+          className="self-start px-2 py-0.5 text-[7.5px] font-bold tracking-wider uppercase border truncate max-w-full"
           style={{
-            background: theme.pillBg,
-            borderColor: theme.accent,
-            color: theme.pillText,
+            background: styleTheme.badgeBg,
+            border: styleTheme.badgeBorder,
+            color: styleTheme.badgeText,
+            boxShadow: styleTheme.badgeShadow,
+            borderRadius: '9999px',
             whiteSpace: 'nowrap',
           }}
         >
@@ -1592,25 +1730,34 @@ function FlexCardVectorPreview({
         </span>
 
         <div className="flex items-baseline gap-1.5 mt-0.5">
-          <span className="font-clash font-extrabold text-[36px] leading-none tracking-tight">
+          <span
+            className="font-clash font-extrabold text-[36px] leading-none tracking-tight"
+            style={{
+              color: styleTheme.metricColor,
+              textShadow: styleTheme.metricShadow,
+            }}
+          >
             {data.metricValue}
           </span>
           {data.metricUnit && (
             <span
               className="text-[9.5px] font-black uppercase tracking-wider leading-none"
-              style={{ color: theme.accent, whiteSpace: 'nowrap' }}
+              style={{ color: styleTheme.accent, whiteSpace: 'nowrap' }}
             >
               {data.metricUnit}
             </span>
           )}
         </div>
 
-        <h3 className="font-clash font-bold text-[12px] leading-tight truncate">
+        <h3
+          className="font-clash font-bold text-[12px] leading-tight truncate"
+          style={{ color: styleTheme.primaryText }}
+        >
           {data.title}
         </h3>
         <p
           className="text-[8.5px] leading-snug line-clamp-2"
-          style={{ color: theme.secondaryText }}
+          style={{ color: styleTheme.secondaryText }}
         >
           {data.subtitle}
         </p>
@@ -1619,25 +1766,39 @@ function FlexCardVectorPreview({
       {/* 3. Weekly Consistency Dots Row */}
       <div
         className="relative z-10 flex items-center justify-between py-1 border-y shrink-0"
-        style={{ borderColor: dividerColor }}
+        style={{ borderColor: styleTheme.headerDivider }}
       >
         {weeklyDots.map((dot, i) => (
           <div key={i} className="flex flex-col items-center gap-0.5">
             {dot.completed ? (
               <div
                 className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                style={{ background: theme.accent }}
+                style={{ background: styleTheme.dotActiveBg }}
               >
                 <div className="w-1 h-1 rounded-full bg-white shadow-xs" />
               </div>
             ) : dot.isFuture ? (
-              <div className="w-3.5 h-3.5 rounded-full border border-dashed border-current opacity-25 shrink-0" />
+              <div
+                className="w-3.5 h-3.5 rounded-full border border-dashed shrink-0"
+                style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+              />
             ) : (
-              <div className="w-3.5 h-3.5 rounded-full border border-current opacity-30 flex items-center justify-center shrink-0">
-                <div className="w-1 h-1 rounded-full bg-current opacity-30" />
+              <div
+                className="w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0"
+                style={{ borderColor: styleTheme.dotInactiveBorder, opacity: 0.5 }}
+              >
+                <div
+                  className="w-1 h-1 rounded-full"
+                  style={{ background: styleTheme.dotInactiveBorder, opacity: 0.4 }}
+                />
               </div>
             )}
-            <span className="text-[7px] font-bold tracking-wider opacity-60">{dot.label}</span>
+            <span
+              className="text-[7px] font-bold tracking-wider"
+              style={{ color: styleTheme.dotTextColor, opacity: 0.8 }}
+            >
+              {dot.label}
+            </span>
           </div>
         ))}
       </div>
@@ -1645,73 +1806,115 @@ function FlexCardVectorPreview({
       {/* 4. Dual Bento Cards */}
       <div className="relative z-10 grid grid-cols-2 gap-1.5 shrink-0">
         <div
-          className="p-1.5 rounded-xl border flex flex-col justify-between min-w-0"
+          className="p-1.5 border flex flex-col justify-between min-w-0"
           style={{
-            background: theme.cardBg,
-            borderColor: theme.cardBorder,
+            background: styleTheme.bentoBg,
+            border: styleTheme.bentoBorder,
+            boxShadow: styleTheme.bentoShadow,
+            borderRadius: styleTheme.bentoRadius,
           }}
         >
-          <span className="text-[7px] font-bold uppercase tracking-wider opacity-60">
+          <span
+            className="text-[7px] font-bold uppercase tracking-wider"
+            style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+          >
             {data.bentoLabel || 'TARGET ROUTINE'}
           </span>
-          <span className="font-bold text-[10px] truncate my-0.5">
+          <span
+            className="font-bold text-[10px] truncate my-0.5"
+            style={{ color: styleTheme.bentoTitleColor }}
+          >
             {data.habitTitle || 'Core Stack'}
           </span>
-          <span className="text-[7.5px] font-medium truncate" style={{ color: theme.accent }}>
+          <span
+            className="text-[7.5px] font-medium truncate"
+            style={{ color: styleTheme.bentoAccentColor }}
+          >
             {data.routineTag || 'Daily Discipline'}
           </span>
         </div>
 
         <div
-          className="p-1.5 rounded-xl border flex flex-col justify-between min-w-0"
+          className="p-1.5 border flex flex-col justify-between min-w-0"
           style={{
-            background: theme.cardBg,
-            borderColor: theme.cardBorder,
+            background: styleTheme.bentoBg,
+            border: styleTheme.bentoBorder,
+            boxShadow: styleTheme.bentoShadow,
+            borderRadius: styleTheme.bentoRadius,
           }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[7px] font-bold uppercase tracking-wider opacity-60">ADHERENCE</span>
-            <span className="font-clash font-extrabold text-[12px] leading-none" style={{ color: theme.accent }}>
+            <span
+              className="text-[7px] font-bold uppercase tracking-wider"
+              style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+            >
+              ADHERENCE
+            </span>
+            <span
+              className="font-clash font-extrabold text-[12px] leading-none"
+              style={{ color: styleTheme.bentoAccentColor }}
+            >
               {pct}%
             </span>
           </div>
-          <div className="w-full h-1 rounded-full overflow-hidden my-0.5" style={{ background: theme.progressTrack }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: theme.accent }} />
+          <div
+            className="w-full h-1 rounded-full overflow-hidden my-0.5"
+            style={{ background: styleTheme.progressTrack }}
+          >
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${pct}%`, background: styleTheme.progressFill }}
+            />
           </div>
-          <span className="text-[7px] opacity-70 truncate">{data.adherenceLabel || 'Monthly Log'}</span>
+          <span
+            className="text-[7px] truncate"
+            style={{ color: styleTheme.bentoSubColor, opacity: 0.75 }}
+          >
+            {data.adherenceLabel || 'Monthly Log'}
+          </span>
         </div>
       </div>
 
       {/* 5. Wisdom Quote Capsule OR Dynamic Habit Metrics */}
       {data.showQuote !== false ? (
         <div
-          className="relative z-10 p-1.5 px-2 rounded-xl border flex flex-col justify-center min-w-0 shrink-0"
+          className="relative z-10 p-1.5 px-2 border flex flex-col justify-center min-w-0 shrink-0"
           style={{
-            background: theme.quoteBoxBg,
-            borderColor: theme.quoteBoxBorder,
+            background: styleTheme.quoteBg,
+            border: styleTheme.quoteBorder,
+            boxShadow: styleTheme.quoteShadow,
+            borderRadius: styleTheme.quoteRadius,
           }}
         >
           <div className="flex gap-1 items-start min-w-0">
-            <span className="font-serif text-xs leading-none opacity-80 shrink-0" style={{ color: theme.accent }}>
+            <span
+              className="font-serif text-xs leading-none shrink-0"
+              style={{ color: styleTheme.quoteMarkColor, opacity: 0.9 }}
+            >
               “
             </span>
-            <p className="text-[8px] italic font-serif leading-tight line-clamp-2">
+            <p
+              className="text-[8px] italic font-serif leading-tight line-clamp-2"
+              style={{ color: styleTheme.quoteTextColor }}
+            >
               {data.quote}
             </p>
           </div>
           <span
             className="text-[7px] font-semibold mt-0.5 self-end truncate max-w-full"
-            style={{ color: theme.accent }}
+            style={{ color: styleTheme.quoteAuthorColor }}
           >
             — {data.quoteAuthor}
           </span>
         </div>
       ) : (
         <div
-          className="relative z-10 p-1.5 px-2 rounded-xl border grid grid-cols-3 gap-1 shrink-0"
+          className="relative z-10 p-1.5 px-2 border grid grid-cols-3 gap-1 shrink-0"
           style={{
-            background: theme.cardBg,
-            borderColor: theme.cardBorder,
+            background: styleTheme.bentoBg,
+            border: styleTheme.bentoBorder,
+            boxShadow: styleTheme.bentoShadow,
+            borderRadius: styleTheme.bentoRadius,
           }}
         >
           {(data.metricDetails || [
@@ -1719,14 +1922,21 @@ function FlexCardVectorPreview({
             { label: 'ADHERENCE', value: `${pct}%`, subtext: data.adherenceLabel || 'Monthly' },
             { label: '7-DAY PACE', value: `${weeklyDots.filter((d) => d.completed).length}/7`, subtext: 'This Week' },
           ]).map((m, idx) => (
-            <div key={idx} className="flex flex-col items-center text-center p-1 rounded-lg" style={{ background: theme.pillBg }}>
-              <span className="text-[6px] font-bold uppercase tracking-wider opacity-60 leading-tight">
+            <div
+              key={idx}
+              className="flex flex-col items-center text-center p-1 rounded-lg"
+              style={{ background: styleTheme.badgeBg, color: styleTheme.badgeText }}
+            >
+              <span className="text-[6px] font-bold uppercase tracking-wider leading-tight opacity-75">
                 {m.label}
               </span>
-              <span className="font-clash font-extrabold text-[10.5px] leading-tight mt-0.5" style={{ color: theme.accent }}>
+              <span
+                className="font-clash font-extrabold text-[10.5px] leading-tight mt-0.5"
+                style={{ color: styleTheme.bentoAccentColor }}
+              >
                 {m.value}
               </span>
-              <span className="text-[6px] opacity-70 leading-tight mt-0.5 truncate max-w-full">
+              <span className="text-[6px] opacity-75 leading-tight mt-0.5 truncate max-w-full">
                 {m.subtext}
               </span>
             </div>
@@ -1736,8 +1946,11 @@ function FlexCardVectorPreview({
 
       {/* 6. Footer Signature */}
       <div
-        className="relative z-10 flex items-center justify-between text-[7px] font-semibold border-t pt-1 opacity-80 shrink-0"
-        style={{ borderColor: dividerColor }}
+        className="relative z-10 flex items-center justify-between text-[7px] font-semibold border-t pt-1 shrink-0"
+        style={{
+          borderColor: styleTheme.footerDivider,
+          color: styleTheme.footerColor,
+        }}
       >
         <div className="flex flex-col min-w-0 max-w-[65%]">
           <span className="font-bold truncate" style={{ whiteSpace: 'nowrap' }}>
