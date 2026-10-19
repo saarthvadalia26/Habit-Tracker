@@ -271,9 +271,9 @@ export const V2_DROPS: V2Drop[] = [
     category: '🎨 CELEBRATION',
     tagline: 'Turn 30, 60, and 100-day streaks into bespoke shareable graphics.',
     description:
-      'Export high-resolution 9:16 Instagram Story and X cards celebrating milestone achievements with custom card themes and real stats.',
+      'Export real 4K Ultra HD Instagram Story, Square, and X cards celebrating milestone achievements with custom card themes and real stats.',
     highlights: [
-      '1-tap 9:16 canvas exporter for social stories',
+      '1-tap real 4K canvas exporter for social stories & posts',
       'Dark obsidian and cyber-minimalist themes',
       'Automatic stats breakdown & streak milestones',
     ],

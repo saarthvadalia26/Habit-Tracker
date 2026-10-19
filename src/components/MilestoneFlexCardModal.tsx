@@ -1240,7 +1240,7 @@ export function MilestoneFlexCardModal({
   const handleDownload = async () => {
     if (isAnonymous) {
       toast.info('Sign in required to download', {
-        description: 'Please sign in or create an account to download your Milestone Flex Card in full 1080p.',
+        description: 'Please sign in or create an account to download your Milestone Flex Card in real 4K Ultra HD.',
       });
       onRequireAuth?.();
       return;
@@ -1249,10 +1249,10 @@ export function MilestoneFlexCardModal({
     setIsExporting(true);
     try {
       ensureCanvasRendered();
-      const filename = `habit-flex-${mode}-${format}.png`;
+      const filename = `habit-flex-${mode}-${format}-4k.png`;
       await downloadCanvasAsPng(canvasRef.current, filename);
-      toast.success('Flex Card downloaded in full 1080p!', {
-        description: 'Saved high-resolution PNG to your device.',
+      toast.success('Flex Card downloaded in real 4K Ultra HD!', {
+        description: `Saved ${FORMAT_DIMENSIONS[format].width} × ${FORMAT_DIMENSIONS[format].height}px PNG to your device.`,
       });
       confetti({
         particleCount: 70,
@@ -1436,10 +1436,10 @@ export function MilestoneFlexCardModal({
                     <div className="p-3 rounded-xl bg-[#fbf8f1]/90 dark:bg-[#15130f]/90 border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
                       <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
                         <Share2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>3. 1-Tap Share & 1080p PNG</span>
+                        <span>3. 1-Tap Share & Real 4K PNG</span>
                       </div>
                       <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
-                        Share directly to Instagram Stories or WhatsApp via native mobile share sheet, or download a crystal-clear 1080p high-res PNG for your records.
+                        Share directly to Instagram Stories or WhatsApp via native mobile share sheet, or download a crystal-clear real 4K Ultra HD PNG ({FORMAT_DIMENSIONS[format].width} × {FORMAT_DIMENSIONS[format].height}px) for your records.
                       </p>
                     </div>
                   </div>
@@ -1701,7 +1701,7 @@ export function MilestoneFlexCardModal({
                   />
                 </div>
 
-                {/* Off-screen canvas used exclusively for 1080p high-res export */}
+                {/* Off-screen canvas used exclusively for real 4K Ultra HD export */}
                 <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
 
                 <div className="mt-3 flex items-center gap-2 text-[10.5px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60">
@@ -1710,7 +1710,7 @@ export function MilestoneFlexCardModal({
                     {FORMAT_DIMENSIONS[format].width} × {FORMAT_DIMENSIONS[format].height}px
                   </span>
                   <span>•</span>
-                  <span>100% Vector Crisp Preview</span>
+                  <span>Real 4K Ultra HD Export</span>
                 </div>
               </div>
             </div>
@@ -1727,7 +1727,7 @@ export function MilestoneFlexCardModal({
               ) : (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
-                  <span>Full 1080p export ready</span>
+                  <span>Real 4K Ultra HD export ready</span>
                 </>
               )}
             </div>
@@ -1760,7 +1760,7 @@ export function MilestoneFlexCardModal({
                 ) : (
                   <Download className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span>{isAnonymous ? 'Sign in to Download' : 'Download PNG'}</span>
+                <span>{isAnonymous ? 'Sign in to Download' : 'Download 4K PNG'}</span>
               </button>
             </div>
           </div>

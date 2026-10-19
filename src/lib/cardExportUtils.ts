@@ -130,13 +130,22 @@ export const FLEX_CARD_THEMES: Record<FlexCardTheme, ThemeColors> = {
   },
 };
 
+export const BASE_DIMENSIONS: Record<
+  FlexCardFormat,
+  { width: number; height: number }
+> = {
+  story: { width: 1080, height: 1920 },
+  square: { width: 1080, height: 1080 },
+  landscape: { width: 1200, height: 675 },
+};
+
 export const FORMAT_DIMENSIONS: Record<
   FlexCardFormat,
   { width: number; height: number; aspectRatioLabel: string; name: string }
 > = {
-  story: { width: 1080, height: 1920, aspectRatioLabel: '9:16', name: 'Story (IG / WhatsApp)' },
-  square: { width: 1080, height: 1080, aspectRatioLabel: '1:1', name: 'Square (Feed / Threads)' },
-  landscape: { width: 1200, height: 675, aspectRatioLabel: '16:9', name: 'Post (X / Twitter)' },
+  story: { width: 2160, height: 3840, aspectRatioLabel: '9:16', name: 'Story 4K (IG / WhatsApp)' },
+  square: { width: 2160, height: 2160, aspectRatioLabel: '1:1', name: 'Square 4K (Feed / Threads)' },
+  landscape: { width: 3840, height: 2160, aspectRatioLabel: '16:9', name: 'Post 4K (X / Twitter)' },
 };
 
 /**
@@ -216,6 +225,7 @@ const FONT_SERIF = "Georgia, Cambria, 'Times New Roman', serif";
 
 /**
  * Main Canvas Render Function
+ * Renders authentic 4K Ultra HD graphics onto an offscreen canvas
  */
 export function renderFlexCardToCanvas(
   canvas: HTMLCanvasElement,
@@ -223,9 +233,12 @@ export function renderFlexCardToCanvas(
   themeKey: FlexCardTheme = 'obsidian',
   format: FlexCardFormat = 'story'
 ) {
-  const { width, height } = FORMAT_DIMENSIONS[format];
-  canvas.width = width;
-  canvas.height = height;
+  const target = FORMAT_DIMENSIONS[format];
+  const base = BASE_DIMENSIONS[format];
+
+  // Set canvas backing store to real 4K Ultra HD dimensions
+  canvas.width = target.width;
+  canvas.height = target.height;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -233,7 +246,16 @@ export function renderFlexCardToCanvas(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
+  // Scale 2D context to rasterize all vectors, text, and geometries directly at 4K pixel density
+  const scaleX = target.width / base.width;
+  const scaleY = target.height / base.height;
+
+  ctx.save();
+  ctx.scale(scaleX, scaleY);
+
   const theme = FLEX_CARD_THEMES[themeKey] || FLEX_CARD_THEMES.obsidian;
+  const width = base.width;
+  const height = base.height;
 
   // 1. Background Gradient
   const bgGradient = ctx.createLinearGradient(0, 0, width, height);
@@ -285,11 +307,13 @@ export function renderFlexCardToCanvas(
   } else {
     renderLandscapeLayout(ctx, width, height, data, theme);
   }
+
+  ctx.restore();
 }
 
 /**
  * -------------------------------------------------------------
- * 1. STORY LAYOUT (9:16 - 1080 x 1920 px)
+ * 1. STORY LAYOUT (9:16 - 2160 x 3840 px 4K Ultra HD)
  * Balanced vertical flow that fills the canvas without empty voids
  * -------------------------------------------------------------
  */
@@ -524,7 +548,7 @@ function renderStoryLayout(
 
 /**
  * -------------------------------------------------------------
- * 2. SQUARE LAYOUT (1:1 - 1080 x 1080 px)
+ * 2. SQUARE LAYOUT (1:1 - 2160 x 2160 px 4K Ultra HD)
  * High density, balanced layout that guarantees ZERO footer collisions
  * -------------------------------------------------------------
  */
@@ -664,7 +688,7 @@ function renderSquareLayout(
 
 /**
  * -------------------------------------------------------------
- * 3. LANDSCAPE LAYOUT (16:9 - 1200 x 675 px)
+ * 3. LANDSCAPE LAYOUT (16:9 - 3840 x 2160 px 4K Ultra HD)
  * Clean, modern 2-column bento architecture
  * -------------------------------------------------------------
  */
