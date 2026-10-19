@@ -1227,11 +1227,18 @@ export function MilestoneFlexCardModal({
     getWeeklyDotsForChallenge,
   ]);
 
-  // Offscreen canvas export renderer
-  const ensureCanvasRendered = useCallback(() => {
+  // Offscreen canvas export renderer with asynchronous font hydration
+  const ensureCanvasRendered = useCallback(async () => {
     if (!canvasRef.current) return;
-    renderFlexCardToCanvas(canvasRef.current, cardData, theme, format);
+    await renderFlexCardToCanvas(canvasRef.current, cardData, theme, format);
   }, [cardData, theme, format]);
+
+  // Pre-render the 4K canvas in background so it's primed instantly for download
+  useEffect(() => {
+    if (isOpen) {
+      ensureCanvasRendered();
+    }
+  }, [isOpen, ensureCanvasRendered]);
 
   // Check if authenticated
   const isAnonymous = isGuestMode || !userEmail;
@@ -1248,7 +1255,7 @@ export function MilestoneFlexCardModal({
     if (!canvasRef.current) return;
     setIsExporting(true);
     try {
-      ensureCanvasRendered();
+      await ensureCanvasRendered();
       const filename = `habit-flex-${mode}-${format}-4k.png`;
       await downloadCanvasAsPng(canvasRef.current, filename);
       toast.success('Flex Card downloaded in real 4K Ultra HD!', {
@@ -1278,7 +1285,7 @@ export function MilestoneFlexCardModal({
     if (!canvasRef.current) return;
     setIsExporting(true);
     try {
-      ensureCanvasRendered();
+      await ensureCanvasRendered();
       const success = await shareCanvasImage(
         canvasRef.current,
         `${cardData.title} • Habit Tracker`,

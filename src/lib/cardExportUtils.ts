@@ -225,37 +225,40 @@ const FONT_SERIF = "Georgia, Cambria, 'Times New Roman', serif";
 
 /**
  * Main Canvas Render Function
- * Renders authentic 4K Ultra HD graphics onto an offscreen canvas
+ * Renders authentic, native 4K Ultra HD graphics directly into the canvas pixel buffer
+ * with zero font atlas downsampling and maximum vector clarity.
  */
-export function renderFlexCardToCanvas(
+export async function renderFlexCardToCanvas(
   canvas: HTMLCanvasElement,
   data: FlexCardData,
   themeKey: FlexCardTheme = 'obsidian',
   format: FlexCardFormat = 'story'
 ) {
-  const target = FORMAT_DIMENSIONS[format];
-  const base = BASE_DIMENSIONS[format];
+  // 1. Ensure all luxury web typography is fully resolved before rasterization
+  if (typeof document !== 'undefined' && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Font load fallback
+    }
+  }
 
-  // Set canvas backing store to real 4K Ultra HD dimensions
-  canvas.width = target.width;
-  canvas.height = target.height;
+  const { width, height } = FORMAT_DIMENSIONS[format];
+  canvas.width = width;
+  canvas.height = height;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
+  // Maximum subpixel antialiasing and rasterization clarity
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  // Scale 2D context to rasterize all vectors, text, and geometries directly at 4K pixel density
-  const scaleX = target.width / base.width;
-  const scaleY = target.height / base.height;
-
-  ctx.save();
-  ctx.scale(scaleX, scaleY);
+  const base = BASE_DIMENSIONS[format];
+  const scale = width / base.width;
+  const s = (n: number) => Math.round(n * scale);
 
   const theme = FLEX_CARD_THEMES[themeKey] || FLEX_CARD_THEMES.obsidian;
-  const width = base.width;
-  const height = base.height;
 
   // 1. Background Gradient
   const bgGradient = ctx.createLinearGradient(0, 0, width, height);
@@ -267,7 +270,7 @@ export function renderFlexCardToCanvas(
   // 2. Ambient Radial Glow Orbs
   const glow1X = format === 'landscape' ? width * 0.2 : width * 0.3;
   const glow1Y = format === 'landscape' ? height * 0.35 : height * 0.22;
-  const glowRad1 = ctx.createRadialGradient(glow1X, glow1Y, 10, glow1X, glow1Y, width * 0.55);
+  const glowRad1 = ctx.createRadialGradient(glow1X, glow1Y, s(10), glow1X, glow1Y, width * 0.55);
   glowRad1.addColorStop(0, theme.accentGlow);
   glowRad1.addColorStop(1, 'transparent');
   ctx.fillStyle = glowRad1;
@@ -275,7 +278,7 @@ export function renderFlexCardToCanvas(
 
   const glow2X = format === 'landscape' ? width * 0.82 : width * 0.75;
   const glow2Y = format === 'landscape' ? height * 0.7 : height * 0.78;
-  const glowRad2 = ctx.createRadialGradient(glow2X, glow2Y, 10, glow2X, glow2Y, width * 0.55);
+  const glowRad2 = ctx.createRadialGradient(glow2X, glow2Y, s(10), glow2X, glow2Y, width * 0.55);
   glowRad2.addColorStop(0, theme.accentGlow);
   glowRad2.addColorStop(1, 'transparent');
   ctx.fillStyle = glowRad2;
@@ -283,32 +286,31 @@ export function renderFlexCardToCanvas(
 
   // 3. Subtle Dot Matrix Texture
   ctx.fillStyle = themeKey === 'ivory' ? 'rgba(0,0,0,0.038)' : 'rgba(255,255,255,0.038)';
-  const dotSpacing = format === 'landscape' ? 34 : 44;
-  for (let x = 24; x < width; x += dotSpacing) {
-    for (let y = 24; y < height; y += dotSpacing) {
+  const dotSpacing = format === 'landscape' ? s(34) : s(44);
+  const dotRadius = 1.4 * scale;
+  for (let x = s(24); x < width; x += dotSpacing) {
+    for (let y = s(24); y < height; y += dotSpacing) {
       ctx.beginPath();
-      ctx.arc(x, y, 1.4, 0, Math.PI * 2);
+      ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
   // 4. Subtle Outer Precision Border
-  const outerMargin = format === 'landscape' ? 32 : 52;
+  const outerMargin = format === 'landscape' ? s(32) : s(52);
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5;
-  roundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, 36);
+  ctx.lineWidth = 1.5 * scale;
+  roundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, s(36));
   ctx.stroke();
 
-  // Route to format-specific layout renderers
+  // Route to format-specific layout renderers with true native 4K scaling
   if (format === 'story') {
-    renderStoryLayout(ctx, width, height, data, theme);
+    renderStoryLayout(ctx, width, height, data, theme, scale);
   } else if (format === 'square') {
-    renderSquareLayout(ctx, width, height, data, theme);
+    renderSquareLayout(ctx, width, height, data, theme, scale);
   } else {
-    renderLandscapeLayout(ctx, width, height, data, theme);
+    renderLandscapeLayout(ctx, width, height, data, theme, scale);
   }
-
-  ctx.restore();
 }
 
 /**
@@ -322,24 +324,26 @@ function renderStoryLayout(
   width: number,
   height: number,
   data: FlexCardData,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
-  const padX = 100;
+  const s = (n: number) => Math.round(n * scale);
+  const padX = s(100);
   const contentW = width - padX * 2;
 
   // 1. Header Bar
-  const headerY = 140;
-  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme);
+  const headerY = s(140);
+  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme, scale);
 
   // 2. Milestone Pill Badge
-  const badgeY = 250;
-  renderBadgePill(ctx, padX, badgeY, data.badgeText, theme);
+  const badgeY = s(250);
+  renderBadgePill(ctx, padX, badgeY, data.badgeText, theme, scale);
 
   // 3. Hero Big Number
-  const heroY = 350;
+  const heroY = s(350);
   const valStr = String(data.metricValue);
-  const numFontSize = 185;
-  ctx.font = `800 ${numFontSize}px ${FONT_HEAD}`;
+  const numFontSize = s(185);
+  ctx.font = `700 ${numFontSize}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   ctx.textBaseline = 'top';
   ctx.fillText(valStr, padX, heroY);
@@ -348,158 +352,158 @@ function renderStoryLayout(
 
   // Unit text beside number
   if (data.metricUnit) {
-    const unitLines = wrapText(ctx, data.metricUnit.toUpperCase(), 380);
-    ctx.font = `700 42px ${FONT_HEAD}`;
+    const unitLines = wrapText(ctx, data.metricUnit.toUpperCase(), s(380));
+    ctx.font = `700 ${s(42)}px ${FONT_HEAD}`;
     ctx.fillStyle = theme.accent;
-    let uY = heroY + 32;
+    let uY = heroY + s(32);
     for (const uL of unitLines) {
-      ctx.fillText(uL, padX + numWidth + 24, uY);
-      uY += 46;
+      ctx.fillText(uL, padX + numWidth + s(24), uY);
+      uY += s(46);
     }
   }
 
   // Title Label
-  const labelY = heroY + numFontSize + 12;
-  ctx.font = `700 42px ${FONT_HEAD}`;
+  const labelY = heroY + numFontSize + s(12);
+  ctx.font = `700 ${s(42)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   const titleLines = wrapText(ctx, data.title || 'Consistency Milestone', contentW);
   let curLabelY = labelY;
   for (const tL of titleLines.slice(0, 2)) {
     ctx.fillText(tL, padX, curLabelY);
-    curLabelY += 50;
+    curLabelY += s(50);
   }
 
   // Subtitle
   const subLines = wrapText(ctx, data.subtitle || data.metricLabel, contentW);
-  ctx.font = `500 24px ${FONT_BODY}`;
+  ctx.font = `500 ${s(24)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  let curSubY = curLabelY + 12;
+  let curSubY = curLabelY + s(12);
   for (const sL of subLines.slice(0, 2)) {
     ctx.fillText(sL, padX, curSubY);
-    curSubY += 34;
+    curSubY += s(34);
   }
 
   // 4. 7-Day Consistency Dot Matrix
-  const dotsY = Math.max(730, curSubY + 36);
-  renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, data.weeklyDots);
+  const dotsY = Math.max(s(730), curSubY + s(36));
+  renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, scale, data.weeklyDots);
 
   // 5. Dual Bento Stats Grid
-  const bentoY = dotsY + 120;
-  const bentoW = (contentW - 28) / 2;
-  const bentoH = 220;
+  const bentoY = dotsY + s(120);
+  const bentoW = (contentW - s(28)) / 2;
+  const bentoH = s(220);
 
   // Bento Box 1: Routine / Target
   ctx.fillStyle = theme.cardBg;
-  roundRect(ctx, padX, bentoY, bentoW, bentoH, 26);
+  roundRect(ctx, padX, bentoY, bentoW, bentoH, s(26));
   ctx.fill();
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * scale;
   ctx.stroke();
 
-  ctx.font = `600 16px ${FONT_BODY}`;
+  ctx.font = `600 ${s(16)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + 28, bentoY + 36);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + s(28), bentoY + s(36));
 
-  ctx.font = `700 28px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(28)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
-  const habitStr = truncateText(ctx, data.habitTitle || 'Core Habit Stack', bentoW - 56);
-  ctx.fillText(habitStr, padX + 28, bentoY + 84);
+  const habitStr = truncateText(ctx, data.habitTitle || 'Core Habit Stack', bentoW - s(56));
+  ctx.fillText(habitStr, padX + s(28), bentoY + s(84));
 
   // Routine badge chip inside bento 1
   const tagText = (data.routineTag || 'Daily Discipline').toUpperCase();
-  ctx.font = `700 15px ${FONT_BODY}`;
-  const measuredTagW = ctx.measureText(tagText).width + 36;
-  const chipW = Math.min(bentoW - 56, Math.max(140, measuredTagW));
+  ctx.font = `700 ${s(15)}px ${FONT_BODY}`;
+  const measuredTagW = ctx.measureText(tagText).width + s(36);
+  const chipW = Math.min(bentoW - s(56), Math.max(s(140), measuredTagW));
   ctx.fillStyle = theme.pillBg;
-  roundRect(ctx, padX + 28, bentoY + 135, chipW, 42, 14);
+  roundRect(ctx, padX + s(28), bentoY + s(135), chipW, s(42), s(14));
   ctx.fill();
   ctx.fillStyle = theme.pillText;
-  ctx.fillText(truncateText(ctx, tagText, chipW - 24), padX + 44, bentoY + 162);
+  ctx.fillText(truncateText(ctx, tagText, chipW - s(24)), padX + s(44), bentoY + s(162));
 
   // Bento Box 2: Adherence Index
-  const bento2X = padX + bentoW + 28;
+  const bento2X = padX + bentoW + s(28);
   ctx.fillStyle = theme.cardBg;
-  roundRect(ctx, bento2X, bentoY, bentoW, bentoH, 26);
+  roundRect(ctx, bento2X, bentoY, bentoW, bentoH, s(26));
   ctx.fill();
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * scale;
   ctx.stroke();
 
-  ctx.font = `600 16px ${FONT_BODY}`;
+  ctx.font = `600 ${s(16)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('ADHERENCE INDEX', bento2X + 28, bentoY + 36);
+  ctx.fillText('ADHERENCE INDEX', bento2X + s(28), bentoY + s(36));
 
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
-  ctx.font = `800 48px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(48)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
-  ctx.fillText(`${pct}%`, bento2X + 28, bentoY + 92);
+  ctx.fillText(`${pct}%`, bento2X + s(28), bentoY + s(92));
 
-  ctx.font = `500 16px ${FONT_BODY}`;
+  ctx.font = `500 ${s(16)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText(data.adherenceLabel || 'Monthly Logged', bento2X + 28, bentoY + 132);
+  ctx.fillText(data.adherenceLabel || 'Monthly Logged', bento2X + s(28), bentoY + s(132));
 
   // Mini progress track in bento 2
   ctx.fillStyle = theme.progressTrack;
-  roundRect(ctx, bento2X + 28, bentoY + 162, bentoW - 56, 12, 6);
+  roundRect(ctx, bento2X + s(28), bentoY + s(162), bentoW - s(56), s(12), s(6));
   ctx.fill();
   ctx.fillStyle = theme.accent;
-  roundRect(ctx, bento2X + 28, bentoY + 162, (bentoW - 56) * (pct / 100), 12, 6);
+  roundRect(ctx, bento2X + s(28), bentoY + s(162), (bentoW - s(56)) * (pct / 100), s(12), s(6));
   ctx.fill();
 
   // 6. Wisdom Quote Capsule or Dynamic Performance Breakdown Box
-  const quoteY = bentoY + bentoH + 45;
-  const quoteH = 340;
+  const quoteY = bentoY + bentoH + s(45);
+  const quoteH = s(340);
 
   if (data.showQuote !== false) {
     ctx.fillStyle = theme.quoteBoxBg;
-    roundRect(ctx, padX, quoteY, contentW, quoteH, 28);
+    roundRect(ctx, padX, quoteY, contentW, quoteH, s(28));
     ctx.fill();
     ctx.strokeStyle = theme.quoteBoxBorder;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * scale;
     ctx.stroke();
 
     // Large quotation icon mark
-    ctx.font = `700 64px ${FONT_SERIF}`;
+    ctx.font = `700 ${s(64)}px ${FONT_SERIF}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText('“', padX + 36, quoteY + 32);
+    ctx.fillText('“', padX + s(36), quoteY + s(32));
 
     const qText = data.quote || 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.';
     const qAuthor = data.quoteAuthor || 'Aristotle';
 
-    ctx.font = `italic 500 29px ${FONT_SERIF}`;
+    ctx.font = `italic 500 ${s(29)}px ${FONT_SERIF}`;
     ctx.fillStyle = theme.primaryText;
-    const qLines = wrapText(ctx, qText, contentW - 80);
+    const qLines = wrapText(ctx, qText, contentW - s(80));
 
-    let qTextY = quoteY + 95;
+    let qTextY = quoteY + s(95);
     for (const line of qLines.slice(0, 3)) {
-      ctx.fillText(line, padX + 40, qTextY);
-      qTextY += 44;
+      ctx.fillText(line, padX + s(40), qTextY);
+      qTextY += s(44);
     }
 
-    ctx.font = `700 20px ${FONT_BODY}`;
+    ctx.font = `700 ${s(20)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(`— ${qAuthor}`, padX + 40, quoteY + quoteH - 40);
+    ctx.fillText(`— ${qAuthor}`, padX + s(40), quoteY + quoteH - s(40));
   } else {
     // Dynamic Performance Metrics Card (100% data-driven, zero static filler)
     ctx.fillStyle = theme.cardBg;
-    roundRect(ctx, padX, quoteY, contentW, quoteH, 28);
+    roundRect(ctx, padX, quoteY, contentW, quoteH, s(28));
     ctx.fill();
     ctx.strokeStyle = theme.cardBorder;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 * scale;
     ctx.stroke();
 
-    ctx.font = `700 24px ${FONT_HEAD}`;
+    ctx.font = `700 ${s(24)}px ${FONT_HEAD}`;
     ctx.fillStyle = theme.primaryText;
-    ctx.fillText('HABIT PERFORMANCE METRICS', padX + 36, quoteY + 45);
+    ctx.fillText('HABIT PERFORMANCE METRICS', padX + s(36), quoteY + s(45));
 
-    ctx.font = `500 18px ${FONT_BODY}`;
+    ctx.font = `500 ${s(18)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
     const subHeader = `${data.habitTitle || 'Habit Stack'} • Authenticated tracker activity`;
-    ctx.fillText(truncateText(ctx, subHeader, contentW - 72), padX + 36, quoteY + 85);
+    ctx.fillText(truncateText(ctx, subHeader, contentW - s(72)), padX + s(36), quoteY + s(85));
 
     // 3 Dynamic Metric Pills
-    const col3W = (contentW - 72 - 32) / 3;
-    const pY = quoteY + 130;
+    const col3W = (contentW - s(72) - s(32)) / 3;
+    const pY = quoteY + s(130);
     const weeklyCount = data.weeklyDots?.filter((d) => d.completed).length || 0;
     const statsCols = data.metricDetails && data.metricDetails.length === 3
       ? data.metricDetails
@@ -510,40 +514,40 @@ function renderStoryLayout(
         ];
 
     statsCols.forEach((col, idx) => {
-      const cX = padX + 36 + idx * (col3W + 16);
+      const cX = padX + s(36) + idx * (col3W + s(16));
       ctx.fillStyle = theme.pillBg;
-      roundRect(ctx, cX, pY, col3W, 110, 18);
+      roundRect(ctx, cX, pY, col3W, s(110), s(18));
       ctx.fill();
 
-      ctx.font = `700 13px ${FONT_BODY}`;
+      ctx.font = `700 ${s(13)}px ${FONT_BODY}`;
       ctx.fillStyle = theme.secondaryText;
-      ctx.fillText(col.label, cX + 16, pY + 28);
+      ctx.fillText(col.label, cX + s(16), pY + s(28));
 
-      ctx.font = `800 24px ${FONT_HEAD}`;
+      ctx.font = `700 ${s(24)}px ${FONT_HEAD}`;
       ctx.fillStyle = theme.accent;
-      ctx.fillText(col.value, cX + 16, pY + 62);
+      ctx.fillText(col.value, cX + s(16), pY + s(62));
 
-      ctx.font = `500 13px ${FONT_BODY}`;
+      ctx.font = `500 ${s(13)}px ${FONT_BODY}`;
       ctx.fillStyle = theme.secondaryText;
-      ctx.fillText(truncateText(ctx, col.subtext, col3W - 32), cX + 16, pY + 88);
+      ctx.fillText(truncateText(ctx, col.subtext, col3W - s(32)), cX + s(16), pY + s(88));
     });
 
-    ctx.font = `600 15px ${FONT_BODY}`;
+    ctx.font = `600 ${s(15)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(`• ${data.adherenceLabel || 'VERIFIED TRACKER LOGS'}`, padX + 36, quoteY + quoteH - 35);
+    ctx.fillText(`• ${data.adherenceLabel || 'VERIFIED TRACKER LOGS'}`, padX + s(36), quoteY + quoteH - s(35));
   }
 
   // 7. Divider Line
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * scale;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 140);
-  ctx.lineTo(width - padX, height - 140);
+  ctx.moveTo(padX, height - s(140));
+  ctx.lineTo(width - padX, height - s(140));
   ctx.stroke();
 
   // 8. Footer Signature
-  const footerY = height - 95;
-  renderFooterSignature(ctx, padX, footerY, width, data, theme);
+  const footerY = height - s(95);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme, scale);
 }
 
 /**
@@ -557,24 +561,26 @@ function renderSquareLayout(
   width: number,
   height: number,
   data: FlexCardData,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
-  const padX = 85;
+  const s = (n: number) => Math.round(n * scale);
+  const padX = s(85);
   const contentW = width - padX * 2;
 
   // Header Bar
-  const headerY = 85;
-  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme);
+  const headerY = s(85);
+  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme, scale);
 
   // Milestone Pill Badge
-  const badgeY = 175;
-  renderBadgePill(ctx, padX, badgeY, data.badgeText, theme);
+  const badgeY = s(175);
+  renderBadgePill(ctx, padX, badgeY, data.badgeText, theme, scale);
 
   // Hero Big Number & Unit
-  const heroY = 255;
+  const heroY = s(255);
   const valStr = String(data.metricValue);
-  const numFontSize = 135;
-  ctx.font = `800 ${numFontSize}px ${FONT_HEAD}`;
+  const numFontSize = s(135);
+  ctx.font = `700 ${numFontSize}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   ctx.textBaseline = 'top';
   ctx.fillText(valStr, padX, heroY);
@@ -582,108 +588,108 @@ function renderSquareLayout(
   const numWidth = ctx.measureText(valStr).width;
 
   if (data.metricUnit) {
-    ctx.font = `700 36px ${FONT_HEAD}`;
+    ctx.font = `700 ${s(36)}px ${FONT_HEAD}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(data.metricUnit.toUpperCase(), padX + numWidth + 20, heroY + 24);
+    ctx.fillText(data.metricUnit.toUpperCase(), padX + numWidth + s(20), heroY + s(24));
   }
 
   // Title
-  const labelY = heroY + numFontSize + 8;
-  ctx.font = `700 34px ${FONT_HEAD}`;
+  const labelY = heroY + numFontSize + s(8);
+  ctx.font = `700 ${s(34)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   const titleStr = truncateText(ctx, data.title || 'Consistency Milestone', contentW);
   ctx.fillText(titleStr, padX, labelY);
 
   // Subtitle
-  const subY = labelY + 42;
-  ctx.font = `500 20px ${FONT_BODY}`;
+  const subY = labelY + s(42);
+  ctx.font = `500 ${s(20)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
   const subStr = truncateText(ctx, data.subtitle || data.metricLabel, contentW);
   ctx.fillText(subStr, padX, subY);
 
   // Bento Stats Row
-  const statsY = subY + 46;
-  const statsH = 130;
+  const statsY = subY + s(46);
+  const statsH = s(130);
   ctx.fillStyle = theme.cardBg;
-  roundRect(ctx, padX, statsY, contentW, statsH, 22);
+  roundRect(ctx, padX, statsY, contentW, statsH, s(22));
   ctx.fill();
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * scale;
   ctx.stroke();
 
   // Inside Stats Row: Routine on Left, Adherence on Right
-  ctx.font = `600 15px ${FONT_BODY}`;
+  ctx.font = `600 ${s(15)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + 26, statsY + 36);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', padX + s(26), statsY + s(36));
 
-  ctx.font = `700 26px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(26)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   const habitStr = truncateText(ctx, data.habitTitle || 'Core Daily Stack', contentW * 0.55);
-  ctx.fillText(habitStr, padX + 26, statsY + 76);
+  ctx.fillText(habitStr, padX + s(26), statsY + s(76));
 
   // Right Stat
-  const rightX = padX + contentW - 26;
+  const rightX = padX + contentW - s(26);
   ctx.textAlign = 'right';
-  ctx.font = `600 15px ${FONT_BODY}`;
+  ctx.font = `600 ${s(15)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('ADHERENCE', rightX, statsY + 36);
+  ctx.fillText('ADHERENCE', rightX, statsY + s(36));
 
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
-  ctx.font = `800 36px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(36)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
-  ctx.fillText(`${pct}%`, rightX, statsY + 74);
+  ctx.fillText(`${pct}%`, rightX, statsY + s(74));
 
   if (data.adherenceLabel) {
-    ctx.font = `500 13px ${FONT_BODY}`;
+    ctx.font = `500 ${s(13)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
-    ctx.fillText(truncateText(ctx, data.adherenceLabel, contentW * 0.45), rightX, statsY + 98);
+    ctx.fillText(truncateText(ctx, data.adherenceLabel, contentW * 0.45), rightX, statsY + s(98));
   }
   ctx.textAlign = 'left';
 
   // Wisdom Quote or Mini Capsule (Fits cleanly without collision)
   if (data.showQuote !== false) {
-    const quoteY = statsY + statsH + 28;
-    const quoteH = 160;
+    const quoteY = statsY + statsH + s(28);
+    const quoteH = s(160);
 
     ctx.fillStyle = theme.quoteBoxBg;
-    roundRect(ctx, padX, quoteY, contentW, quoteH, 22);
+    roundRect(ctx, padX, quoteY, contentW, quoteH, s(22));
     ctx.fill();
     ctx.strokeStyle = theme.quoteBoxBorder;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * scale;
     ctx.stroke();
 
     const qText = data.quote || 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.';
     const qAuthor = data.quoteAuthor || 'Aristotle';
 
-    ctx.font = `italic 500 22px ${FONT_SERIF}`;
+    ctx.font = `italic 500 ${s(22)}px ${FONT_SERIF}`;
     ctx.fillStyle = theme.primaryText;
-    const qLines = wrapText(ctx, `“${qText}”`, contentW - 52);
+    const qLines = wrapText(ctx, `“${qText}”`, contentW - s(52));
 
-    let qY = quoteY + 36;
+    let qY = quoteY + s(36);
     for (const qL of qLines.slice(0, 2)) {
-      ctx.fillText(qL, padX + 26, qY);
-      qY += 32;
+      ctx.fillText(qL, padX + s(26), qY);
+      qY += s(32);
     }
 
-    ctx.font = `600 16px ${FONT_BODY}`;
+    ctx.font = `600 ${s(16)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(`— ${qAuthor}`, padX + 26, quoteY + quoteH - 26);
+    ctx.fillText(`— ${qAuthor}`, padX + s(26), quoteY + quoteH - s(26));
   } else {
-    const dotsY = statsY + statsH + 40;
-    renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, data.weeklyDots);
+    const dotsY = statsY + statsH + s(40);
+    renderWeeklyConsistencyDots(ctx, padX, dotsY, contentW, theme, scale, data.weeklyDots);
   }
 
   // Divider Line
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * scale;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 90);
-  ctx.lineTo(width - padX, height - 90);
+  ctx.moveTo(padX, height - s(90));
+  ctx.lineTo(width - padX, height - s(90));
   ctx.stroke();
 
   // Footer Signature
-  const footerY = height - 60;
-  renderFooterSignature(ctx, padX, footerY, width, data, theme);
+  const footerY = height - s(60);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme, scale);
 }
 
 /**
@@ -697,25 +703,27 @@ function renderLandscapeLayout(
   width: number,
   height: number,
   data: FlexCardData,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
-  const padX = 70;
-  const colW = (width - padX * 2 - 40) / 2;
+  const s = (n: number) => Math.round(n * scale);
+  const padX = s(70);
+  const colW = (width - padX * 2 - s(40)) / 2;
 
   // Header Bar across top
-  const headerY = 65;
-  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme);
+  const headerY = s(65);
+  renderHeaderBrand(ctx, padX, headerY, width, data.dateStr, theme, scale);
 
   // Left Column: Milestone Badge & Hero Metric
   const leftX = padX;
-  const leftY = 145;
+  const leftY = s(145);
 
-  renderBadgePill(ctx, leftX, leftY, data.badgeText, theme);
+  renderBadgePill(ctx, leftX, leftY, data.badgeText, theme, scale);
 
-  const heroY = leftY + 55;
+  const heroY = leftY + s(55);
   const valStr = String(data.metricValue);
-  const numFontSize = 100;
-  ctx.font = `800 ${numFontSize}px ${FONT_HEAD}`;
+  const numFontSize = s(100);
+  ctx.font = `700 ${numFontSize}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   ctx.textBaseline = 'top';
   ctx.fillText(valStr, leftX, heroY);
@@ -723,99 +731,99 @@ function renderLandscapeLayout(
   const numWidth = ctx.measureText(valStr).width;
 
   if (data.metricUnit) {
-    ctx.font = `700 28px ${FONT_HEAD}`;
+    ctx.font = `700 ${s(28)}px ${FONT_HEAD}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(data.metricUnit.toUpperCase(), leftX + numWidth + 14, heroY + 18);
+    ctx.fillText(data.metricUnit.toUpperCase(), leftX + numWidth + s(14), heroY + s(18));
   }
 
-  const labelY = heroY + numFontSize + 6;
-  ctx.font = `700 26px ${FONT_HEAD}`;
+  const labelY = heroY + numFontSize + s(6);
+  ctx.font = `700 ${s(26)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   const titleStr = truncateText(ctx, data.title || 'Consistency Milestone', colW);
   ctx.fillText(titleStr, leftX, labelY);
 
-  const subY = labelY + 34;
-  ctx.font = `500 17px ${FONT_BODY}`;
+  const subY = labelY + s(34);
+  ctx.font = `500 ${s(17)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
   const subStr = truncateText(ctx, data.subtitle || data.metricLabel, colW);
   ctx.fillText(subStr, leftX, subY);
 
   // Right Column: Stats Card + Wisdom Quote Bento
-  const rightX = padX + colW + 40;
+  const rightX = padX + colW + s(40);
   const cardY = leftY;
-  const cardH = 140;
+  const cardH = s(140);
 
   ctx.fillStyle = theme.cardBg;
-  roundRect(ctx, rightX, cardY, colW, cardH, 20);
+  roundRect(ctx, rightX, cardY, colW, cardH, s(20));
   ctx.fill();
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.5 * scale;
   ctx.stroke();
 
   // Inside Right Card
-  ctx.font = `600 13px ${FONT_BODY}`;
+  ctx.font = `600 ${s(13)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', rightX + 22, cardY + 28);
+  ctx.fillText(data.bentoLabel || 'TARGET ROUTINE', rightX + s(22), cardY + s(28));
 
-  ctx.font = `700 22px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(22)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
-  const habitStr = truncateText(ctx, data.habitTitle || 'Core Daily Stack', colW - 44);
-  ctx.fillText(habitStr, rightX + 22, cardY + 60);
+  const habitStr = truncateText(ctx, data.habitTitle || 'Core Daily Stack', colW - s(44));
+  ctx.fillText(habitStr, rightX + s(22), cardY + s(60));
 
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
-  ctx.font = `600 13px ${FONT_BODY}`;
+  ctx.font = `600 ${s(13)}px ${FONT_BODY}`;
   ctx.fillStyle = theme.secondaryText;
-  ctx.fillText('ADHERENCE SCORE', rightX + 22, cardY + 95);
+  ctx.fillText('ADHERENCE SCORE', rightX + s(22), cardY + s(95));
 
-  ctx.font = `800 20px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(20)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.accent;
   const adhText = data.adherenceLabel ? `${pct}% (${data.adherenceLabel})` : `${pct}% Logged`;
-  ctx.fillText(truncateText(ctx, adhText, colW - 160), rightX + 150, cardY + 96);
+  ctx.fillText(truncateText(ctx, adhText, colW - s(160)), rightX + s(150), cardY + s(96));
 
   // Right Quote Box
   if (data.showQuote !== false) {
-    const qBoxY = cardY + cardH + 18;
-    const qBoxH = 145;
+    const qBoxY = cardY + cardH + s(18);
+    const qBoxH = s(145);
 
     ctx.fillStyle = theme.quoteBoxBg;
-    roundRect(ctx, rightX, qBoxY, colW, qBoxH, 20);
+    roundRect(ctx, rightX, qBoxY, colW, qBoxH, s(20));
     ctx.fill();
     ctx.strokeStyle = theme.quoteBoxBorder;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * scale;
     ctx.stroke();
 
     const qText = data.quote || 'We are what we repeatedly do. Excellence, then, is not an act, but a habit.';
     const qAuthor = data.quoteAuthor || 'Aristotle';
 
-    ctx.font = `italic 500 17px ${FONT_SERIF}`;
+    ctx.font = `italic 500 ${s(17)}px ${FONT_SERIF}`;
     ctx.fillStyle = theme.primaryText;
-    const qLines = wrapText(ctx, `“${qText}”`, colW - 40);
+    const qLines = wrapText(ctx, `“${qText}”`, colW - s(40));
 
-    let qY = qBoxY + 28;
+    let qY = qBoxY + s(28);
     for (const qL of qLines.slice(0, 2)) {
-      ctx.fillText(qL, rightX + 20, qY);
-      qY += 26;
+      ctx.fillText(qL, rightX + s(20), qY);
+      qY += s(26);
     }
 
-    ctx.font = `600 14px ${FONT_BODY}`;
+    ctx.font = `600 ${s(14)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.accent;
-    ctx.fillText(`— ${qAuthor}`, rightX + 20, qBoxY + qBoxH - 20);
+    ctx.fillText(`— ${qAuthor}`, rightX + s(20), qBoxY + qBoxH - s(20));
   } else {
-    const dotsY = cardY + cardH + 25;
-    renderWeeklyConsistencyDots(ctx, rightX, dotsY, colW, theme, data.weeklyDots);
+    const dotsY = cardY + cardH + s(25);
+    renderWeeklyConsistencyDots(ctx, rightX, dotsY, colW, theme, scale, data.weeklyDots);
   }
 
   // Divider Line
   ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 * scale;
   ctx.beginPath();
-  ctx.moveTo(padX, height - 65);
-  ctx.lineTo(width - padX, height - 65);
+  ctx.moveTo(padX, height - s(65));
+  ctx.lineTo(width - padX, height - s(65));
   ctx.stroke();
 
   // Footer Signature across bottom
-  const footerY = height - 42;
-  renderFooterSignature(ctx, padX, footerY, width, data, theme);
+  const footerY = height - s(42);
+  renderFooterSignature(ctx, padX, footerY, width, data, theme, scale);
 }
 
 /**
@@ -830,41 +838,42 @@ function renderHeaderBrand(
   y: number,
   canvasWidth: number,
   dateStr: string | undefined,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
-  // Official Brand Logo mark: "H."
-  const chipSize = 42;
-  const chipRadius = 12;
+  const s = (n: number) => Math.round(n * scale);
+  const chipSize = s(42);
+  const chipRadius = s(12);
 
   // Squircle base
   ctx.fillStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.08)' : 'rgba(255, 255, 255, 0.08)';
   roundRect(ctx, x, y, chipSize, chipSize, chipRadius);
   ctx.fill();
   ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.2;
+  ctx.lineWidth = 1.2 * scale;
   ctx.stroke();
 
   // Draw bold "H"
-  ctx.font = `800 24px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(24)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
-  ctx.fillText('H', x + 9, y + chipSize / 2 + 1);
+  ctx.fillText('H', x + s(9), y + chipSize / 2 + s(1));
 
   // Draw signature accent period dot "."
   ctx.fillStyle = theme.accent;
   ctx.beginPath();
-  ctx.arc(x + 31, y + chipSize / 2 + 8, 3.5, 0, Math.PI * 2);
+  ctx.arc(x + s(31), y + chipSize / 2 + s(8), 3.5 * scale, 0, Math.PI * 2);
   ctx.fill();
 
   // Brand Name text: HABIT TRACKER
-  ctx.font = `700 26px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(26)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.primaryText;
-  ctx.fillText('HABIT TRACKER', x + chipSize + 16, y + chipSize / 2);
+  ctx.fillText('HABIT TRACKER', x + chipSize + s(16), y + chipSize / 2);
 
   if (dateStr) {
     ctx.textAlign = 'right';
-    ctx.font = `600 22px ${FONT_BODY}`;
+    ctx.font = `600 ${s(22)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
     ctx.fillText(dateStr.toUpperCase(), canvasWidth - x, y + chipSize / 2);
     ctx.textAlign = 'left';
@@ -876,23 +885,25 @@ function renderBadgePill(
   x: number,
   y: number,
   text: string,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
+  const s = (n: number) => Math.round(n * scale);
   const badgeLabel = (text || 'MILESTONE UNLOCKED').toUpperCase();
-  ctx.font = `700 22px ${FONT_HEAD}`;
-  const badgeW = ctx.measureText(badgeLabel).width + 48;
-  const badgeH = 48;
+  ctx.font = `700 ${s(22)}px ${FONT_HEAD}`;
+  const badgeW = ctx.measureText(badgeLabel).width + s(48);
+  const badgeH = s(48);
 
   ctx.fillStyle = theme.pillBg;
-  roundRect(ctx, x, y, badgeW, badgeH, 24);
+  roundRect(ctx, x, y, badgeW, badgeH, s(24));
   ctx.fill();
   ctx.strokeStyle = theme.accent;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2 * scale;
   ctx.stroke();
 
   ctx.fillStyle = theme.pillText;
   ctx.textBaseline = 'middle';
-  ctx.fillText(badgeLabel, x + 24, y + badgeH / 2);
+  ctx.fillText(badgeLabel, x + s(24), y + badgeH / 2);
 }
 
 function renderWeeklyConsistencyDots(
@@ -901,8 +912,10 @@ function renderWeeklyConsistencyDots(
   y: number,
   width: number,
   theme: ThemeColors,
+  scale: number,
   weeklyDots?: { label: string; completed: boolean; isFuture?: boolean }[]
 ) {
+  const s = (n: number) => Math.round(n * scale);
   const defaultLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   const dotCount = 7;
   const colW = width / dotCount;
@@ -918,39 +931,39 @@ function renderWeeklyConsistencyDots(
       // Glowing Completed Dot
       ctx.fillStyle = theme.accent;
       ctx.beginPath();
-      ctx.arc(dotX, y + 16, 20, 0, Math.PI * 2);
+      ctx.arc(dotX, y + s(16), 20 * scale, 0, Math.PI * 2);
       ctx.fill();
 
       // Inner checkmark dot
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(dotX, y + 16, 7, 0, Math.PI * 2);
+      ctx.arc(dotX, y + s(16), 7 * scale, 0, Math.PI * 2);
       ctx.fill();
     } else if (dot.isFuture) {
       // Future day: Faint outline
       ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.15)' : 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.5 * scale;
       ctx.beginPath();
-      ctx.arc(dotX, y + 16, 17, 0, Math.PI * 2);
+      ctx.arc(dotX, y + s(16), 17 * scale, 0, Math.PI * 2);
       ctx.stroke();
     } else {
       // Missed / Uncompleted Day: Dim hollow circle
       ctx.strokeStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.28)' : 'rgba(255, 255, 255, 0.28)';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * scale;
       ctx.beginPath();
-      ctx.arc(dotX, y + 16, 17, 0, Math.PI * 2);
+      ctx.arc(dotX, y + s(16), 17 * scale, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.fillStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.25)' : 'rgba(255, 255, 255, 0.25)';
       ctx.beginPath();
-      ctx.arc(dotX, y + 16, 4, 0, Math.PI * 2);
+      ctx.arc(dotX, y + s(16), 4 * scale, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // Day Label
-    ctx.font = `700 18px ${FONT_BODY}`;
+    ctx.font = `700 ${s(18)}px ${FONT_BODY}`;
     ctx.fillStyle = theme.secondaryText;
-    ctx.fillText(dot.label, dotX, y + 54);
+    ctx.fillText(dot.label, dotX, y + s(54));
   }
 
   ctx.textAlign = 'left';
@@ -962,20 +975,22 @@ function renderFooterSignature(
   y: number,
   canvasWidth: number,
   data: FlexCardData,
-  theme: ThemeColors
+  theme: ThemeColors,
+  scale: number
 ) {
+  const s = (n: number) => Math.round(n * scale);
   const userLabel =
     data.showUser !== false && data.userName && data.userName.trim()
       ? `DISCIPLINE BY ${data.userName.trim().toUpperCase()}`
       : (data.footerLabel || 'HABIT TRACKER ARCHIVE');
 
   ctx.textBaseline = 'top';
-  ctx.font = `700 15px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(15)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText(userLabel, x, y);
 
   ctx.textAlign = 'right';
-  ctx.font = `700 14px ${FONT_HEAD}`;
+  ctx.font = `700 ${s(14)}px ${FONT_HEAD}`;
   ctx.fillStyle = theme.secondaryText;
   ctx.fillText('HABIT TRACKER', canvasWidth - x, y);
   ctx.textAlign = 'left';
