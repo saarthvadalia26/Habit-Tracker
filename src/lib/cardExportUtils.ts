@@ -4,7 +4,6 @@
  */
 
 export type FlexCardFormat = 'story' | 'square' | 'landscape';
-export type FlexCardTheme = 'obsidian' | 'ivory' | 'ember' | 'cyber' | 'mono';
 
 export interface FlexCardData {
   title: string;
@@ -30,6 +29,189 @@ export interface FlexCardData {
   showBranding?: boolean;
 }
 
+export type FlexCardCategoryTab = 'featured' | 'styles' | 'moods' | 'lighting' | 'colours';
+
+export type FlexCardStyle =
+  | 'sphere'
+  | 'pixel'
+  | 'nebula'
+  | 'aurora'
+  | 'cyber'
+  | 'topo'
+  | 'prism'
+  | 'orbit'
+  | 'liquid'
+  | 'hex'
+  | 'minimal';
+
+export type FlexCardMood =
+  | 'clean'
+  | 'grain'
+  | 'scanlines'
+  | 'starlight'
+  | 'mist'
+  | 'vignette';
+
+export type FlexCardLighting =
+  | 'rim'
+  | 'spotlight'
+  | 'eclipse'
+  | 'sunburst'
+  | 'diffuse'
+  | 'stealth';
+
+export type FlexCardColour =
+  | 'ember'
+  | 'cyber'
+  | 'ivory'
+  | 'violet'
+  | 'cobalt'
+  | 'gold'
+  | 'rose'
+  | 'mono';
+
+// Backward compatibility alias
+export type FlexCardTheme = FlexCardColour | 'obsidian';
+
+export interface FlexCardCustomization {
+  style: FlexCardStyle;
+  mood: FlexCardMood;
+  lighting: FlexCardLighting;
+  colour: FlexCardColour;
+}
+
+export const DEFAULT_CUSTOMIZATION: FlexCardCustomization = {
+  style: 'sphere',
+  mood: 'clean',
+  lighting: 'rim',
+  colour: 'ember',
+};
+
+export interface CustomizationOptionItem {
+  id: string;
+  name: string;
+  subtitle: string;
+  badge: string;
+}
+
+export interface FeaturedPresetItem extends CustomizationOptionItem {
+  id: string;
+  name: string;
+  subtitle: string;
+  badge: string;
+  customization: FlexCardCustomization;
+}
+
+export const CATEGORY_TABS: { id: FlexCardCategoryTab; label: string; countLabel: string }[] = [
+  { id: 'featured', label: 'Featured', countLabel: '8 Presets' },
+  { id: 'styles', label: 'Styles', countLabel: '11 Looks' },
+  { id: 'moods', label: 'Moods', countLabel: '6 Textures' },
+  { id: 'lighting', label: 'Lighting', countLabel: '6 Setups' },
+  { id: 'colours', label: 'Colours', countLabel: '8 Palettes' },
+];
+
+export const FEATURED_PRESETS: FeaturedPresetItem[] = [
+  {
+    id: 'titanium',
+    name: 'Titanium Ember',
+    subtitle: 'Minimal 3D Orb in volcanic dark',
+    badge: 'Popular',
+    customization: { style: 'sphere', mood: 'clean', lighting: 'rim', colour: 'ember' },
+  },
+  {
+    id: 'cyberpunk',
+    name: 'Cyber Horizon',
+    subtitle: 'Retro perspective grid & nodes',
+    badge: 'Neon',
+    customization: { style: 'cyber', mood: 'scanlines', lighting: 'spotlight', colour: 'cyber' },
+  },
+  {
+    id: 'ivory_luxury',
+    name: 'Warm Ceramic',
+    subtitle: 'Topographic contour elevation',
+    badge: 'Editorial',
+    customization: { style: 'topo', mood: 'grain', lighting: 'diffuse', colour: 'ivory' },
+  },
+  {
+    id: 'deep_nebula',
+    name: 'Cosmic Astral',
+    subtitle: 'Deep star dust clouds & clusters',
+    badge: 'Sci-Fi',
+    customization: { style: 'nebula', mood: 'starlight', lighting: 'eclipse', colour: 'violet' },
+  },
+  {
+    id: 'solar_eclipse',
+    name: 'Solar Corona',
+    subtitle: 'Kepler orbital rings & flare',
+    badge: 'Dramatic',
+    customization: { style: 'orbit', mood: 'vignette', lighting: 'sunburst', colour: 'gold' },
+  },
+  {
+    id: 'boreal',
+    name: 'Northern Aurora',
+    subtitle: 'Harmonic flowing wave ribbons',
+    badge: 'Ambient',
+    customization: { style: 'aurora', mood: 'mist', lighting: 'diffuse', colour: 'cobalt' },
+  },
+  {
+    id: 'hologram',
+    name: 'Prism Nova',
+    subtitle: 'Glass refraction & stardust',
+    badge: 'Glass',
+    customization: { style: 'prism', mood: 'starlight', lighting: 'rim', colour: 'rose' },
+  },
+  {
+    id: 'monolith',
+    name: 'Carbon Stealth',
+    subtitle: 'Hexagonal honeycomb lattice',
+    badge: 'Minimal',
+    customization: { style: 'hex', mood: 'grain', lighting: 'stealth', colour: 'mono' },
+  },
+];
+
+export const STYLE_OPTIONS: CustomizationOptionItem[] = [
+  { id: 'sphere', name: '3D Orb', subtitle: 'Smooth celestial vector sphere', badge: 'Vector 3D' },
+  { id: 'pixel', name: '8-Bit Retro', subtitle: 'Arcade pixel gaming matrix', badge: 'Retro' },
+  { id: 'nebula', name: 'Deep Nebula', subtitle: 'Cosmic star clusters & dust', badge: 'Cosmic' },
+  { id: 'aurora', name: 'Boreal Waves', subtitle: 'Flowing harmonic light ribbons', badge: 'Harmonic' },
+  { id: 'cyber', name: 'Cyber Matrix', subtitle: 'Perspective vanishing grid', badge: 'Sci-Fi' },
+  { id: 'topo', name: 'Topographic', subtitle: 'Elevation terrain contours', badge: 'Editorial' },
+  { id: 'prism', name: 'Prism Glass', subtitle: 'Geometric refraction beams', badge: 'Refraction' },
+  { id: 'orbit', name: 'Kepler Orbit', subtitle: 'Nested planetary trajectories', badge: 'Astronomy' },
+  { id: 'liquid', name: 'Liquid Mercury', subtitle: 'Organic fluid metallic blobs', badge: 'Fluid' },
+  { id: 'hex', name: 'Hex Lattice', subtitle: 'Isometric honeycomb mesh', badge: 'Tech' },
+  { id: 'minimal', name: 'Pure Studio', subtitle: 'Clean architectural gradient', badge: 'Clean' },
+];
+
+export const MOOD_OPTIONS: CustomizationOptionItem[] = [
+  { id: 'clean', name: 'Crystal Clear', subtitle: 'Ultra-crisp 4K vector dots', badge: 'Default' },
+  { id: 'grain', name: '35mm Film Grain', subtitle: 'Analogue photographic texture', badge: 'Texture' },
+  { id: 'scanlines', name: 'CRT Scanlines', subtitle: 'Phosphor cathode terminal', badge: 'Retro' },
+  { id: 'starlight', name: 'Stardust Spark', subtitle: 'Glittering cosmic micro-specks', badge: 'Glimmer' },
+  { id: 'mist', name: 'Vapor Mist', subtitle: 'Atmospheric depth glow', badge: 'Soft' },
+  { id: 'vignette', name: 'Dark Vignette', subtitle: 'Cinematic perimeter shadow', badge: 'Cinema' },
+];
+
+export const LIGHTING_OPTIONS: CustomizationOptionItem[] = [
+  { id: 'rim', name: 'Rim Backlight', subtitle: 'Illuminated border glow', badge: 'Studio' },
+  { id: 'spotlight', name: 'Key Spotlight', subtitle: 'Focused top-down cone', badge: 'Stage' },
+  { id: 'eclipse', name: 'Corona Flare', subtitle: 'Deep central dark disc', badge: 'Dramatic' },
+  { id: 'sunburst', name: 'Sunburst Angle', subtitle: 'Radiant corner flare', badge: 'Warm' },
+  { id: 'diffuse', name: 'Soft Diffusion', subtitle: 'Uniform balanced softbox', badge: 'Balanced' },
+  { id: 'stealth', name: 'Stealth Shadow', subtitle: 'Low-key brooding dark', badge: 'Dark' },
+];
+
+export const COLOUR_OPTIONS: (CustomizationOptionItem & { hex: string })[] = [
+  { id: 'ember', name: 'Obsidian Ember', subtitle: 'Volcanic orange & carbon black', badge: 'Brand', hex: '#ff5a1f' },
+  { id: 'cyber', name: 'Cyber Mint', subtitle: 'Vibrant emerald on dark teal', badge: 'Neon', hex: '#10b981' },
+  { id: 'ivory', name: 'Warm Ivory', subtitle: 'Ceramic eggshell & obsidian', badge: 'Light', hex: '#ff5a1f' },
+  { id: 'violet', name: 'Astral Violet', subtitle: 'Electric purple on midnight', badge: 'Deep', hex: '#a855f7' },
+  { id: 'cobalt', name: 'Deep Cobalt', subtitle: 'Ocean cyan on navy abyssal', badge: 'Vibrant', hex: '#06b6d4' },
+  { id: 'gold', name: 'Royal Gold', subtitle: 'Gilded yellow on onyx gold', badge: 'Luxury', hex: '#eab308' },
+  { id: 'rose', name: 'Neon Rose', subtitle: 'Vivid magenta on plum noir', badge: 'Vivid', hex: '#f43f5e' },
+  { id: 'mono', name: 'Monolith B&W', subtitle: 'Pure monochrome contrast', badge: 'Minimal', hex: '#ffffff' },
+];
+
 export interface ThemeColors {
   name: string;
   backgroundStart: string;
@@ -45,24 +227,43 @@ export interface ThemeColors {
   progressTrack: string;
   quoteBoxBg: string;
   quoteBoxBorder: string;
+  colour?: FlexCardColour;
 }
 
-export const FLEX_CARD_THEMES: Record<FlexCardTheme, ThemeColors> = {
-  obsidian: {
-    name: 'Obsidian Midnight',
+export const COLOUR_PALETTES: Record<FlexCardColour, ThemeColors> = {
+  ember: {
+    name: 'Obsidian Ember',
     backgroundStart: '#11100d',
     backgroundEnd: '#1a1814',
     accent: '#ff5a1f',
-    accentGlow: 'rgba(255, 90, 31, 0.32)',
+    accentGlow: 'rgba(255, 90, 31, 0.35)',
     primaryText: '#fbf8f1',
-    secondaryText: 'rgba(251, 248, 241, 0.62)',
+    secondaryText: 'rgba(251, 248, 241, 0.65)',
     cardBg: 'rgba(28, 26, 22, 0.88)',
-    cardBorder: 'rgba(255, 90, 31, 0.28)',
+    cardBorder: 'rgba(255, 90, 31, 0.3)',
     pillBg: 'rgba(255, 90, 31, 0.16)',
     pillText: '#ff5a1f',
     progressTrack: 'rgba(251, 248, 241, 0.1)',
     quoteBoxBg: 'rgba(21, 19, 15, 0.75)',
     quoteBoxBorder: 'rgba(251, 248, 241, 0.12)',
+    colour: 'ember',
+  },
+  cyber: {
+    name: 'Cyber Mint',
+    backgroundStart: '#041510',
+    backgroundEnd: '#09251d',
+    accent: '#10b981',
+    accentGlow: 'rgba(16, 185, 129, 0.38)',
+    primaryText: '#f0fdf4',
+    secondaryText: 'rgba(240, 253, 244, 0.65)',
+    cardBg: 'rgba(10, 38, 30, 0.88)',
+    cardBorder: 'rgba(16, 185, 129, 0.32)',
+    pillBg: 'rgba(16, 185, 129, 0.18)',
+    pillText: '#34d399',
+    progressTrack: 'rgba(240, 253, 244, 0.1)',
+    quoteBoxBg: 'rgba(6, 26, 21, 0.75)',
+    quoteBoxBorder: 'rgba(16, 185, 129, 0.2)',
+    colour: 'cyber',
   },
   ivory: {
     name: 'Warm Ivory',
@@ -79,38 +280,75 @@ export const FLEX_CARD_THEMES: Record<FlexCardTheme, ThemeColors> = {
     progressTrack: 'rgba(21, 19, 15, 0.08)',
     quoteBoxBg: 'rgba(255, 255, 255, 0.8)',
     quoteBoxBorder: 'rgba(21, 19, 15, 0.1)',
+    colour: 'ivory',
   },
-  ember: {
-    name: 'Ember Radiant',
-    backgroundStart: '#1b0903',
-    backgroundEnd: '#341206',
-    accent: '#ff5a1f',
-    accentGlow: 'rgba(255, 90, 31, 0.48)',
-    primaryText: '#fff7f2',
-    secondaryText: 'rgba(255, 225, 210, 0.75)',
-    cardBg: 'rgba(52, 18, 6, 0.85)',
-    cardBorder: 'rgba(255, 90, 31, 0.38)',
-    pillBg: 'rgba(255, 90, 31, 0.26)',
-    pillText: '#ff7e47',
-    progressTrack: 'rgba(255, 255, 255, 0.12)',
-    quoteBoxBg: 'rgba(40, 14, 5, 0.75)',
-    quoteBoxBorder: 'rgba(255, 90, 31, 0.25)',
+  violet: {
+    name: 'Astral Violet',
+    backgroundStart: '#0e091b',
+    backgroundEnd: '#1a1033',
+    accent: '#a855f7',
+    accentGlow: 'rgba(168, 85, 247, 0.4)',
+    primaryText: '#faf5ff',
+    secondaryText: 'rgba(250, 245, 255, 0.68)',
+    cardBg: 'rgba(29, 19, 56, 0.88)',
+    cardBorder: 'rgba(168, 85, 247, 0.32)',
+    pillBg: 'rgba(168, 85, 247, 0.18)',
+    pillText: '#c084fc',
+    progressTrack: 'rgba(250, 245, 255, 0.1)',
+    quoteBoxBg: 'rgba(20, 13, 40, 0.75)',
+    quoteBoxBorder: 'rgba(168, 85, 247, 0.22)',
+    colour: 'violet',
   },
-  cyber: {
-    name: 'Cyber Mint',
-    backgroundStart: '#051612',
-    backgroundEnd: '#09251e',
-    accent: '#10b981',
-    accentGlow: 'rgba(16, 185, 129, 0.38)',
-    primaryText: '#f0fdf4',
-    secondaryText: 'rgba(240, 253, 244, 0.65)',
-    cardBg: 'rgba(10, 38, 30, 0.88)',
-    cardBorder: 'rgba(16, 185, 129, 0.32)',
-    pillBg: 'rgba(16, 185, 129, 0.18)',
-    pillText: '#34d399',
-    progressTrack: 'rgba(240, 253, 244, 0.1)',
-    quoteBoxBg: 'rgba(6, 26, 21, 0.75)',
-    quoteBoxBorder: 'rgba(16, 185, 129, 0.2)',
+  cobalt: {
+    name: 'Deep Cobalt',
+    backgroundStart: '#061325',
+    backgroundEnd: '#0a213e',
+    accent: '#06b6d4',
+    accentGlow: 'rgba(6, 182, 212, 0.38)',
+    primaryText: '#f0fdfa',
+    secondaryText: 'rgba(240, 253, 250, 0.65)',
+    cardBg: 'rgba(12, 37, 68, 0.88)',
+    cardBorder: 'rgba(6, 182, 212, 0.3)',
+    pillBg: 'rgba(6, 182, 212, 0.18)',
+    pillText: '#22d3ee',
+    progressTrack: 'rgba(240, 253, 250, 0.1)',
+    quoteBoxBg: 'rgba(8, 25, 48, 0.75)',
+    quoteBoxBorder: 'rgba(6, 182, 212, 0.2)',
+    colour: 'cobalt',
+  },
+  gold: {
+    name: 'Royal Gold',
+    backgroundStart: '#14120a',
+    backgroundEnd: '#231e0f',
+    accent: '#eab308',
+    accentGlow: 'rgba(234, 179, 8, 0.38)',
+    primaryText: '#fefce8',
+    secondaryText: 'rgba(254, 252, 232, 0.68)',
+    cardBg: 'rgba(38, 33, 17, 0.88)',
+    cardBorder: 'rgba(234, 179, 8, 0.3)',
+    pillBg: 'rgba(234, 179, 8, 0.18)',
+    pillText: '#facc15',
+    progressTrack: 'rgba(254, 252, 232, 0.1)',
+    quoteBoxBg: 'rgba(28, 24, 12, 0.75)',
+    quoteBoxBorder: 'rgba(234, 179, 8, 0.22)',
+    colour: 'gold',
+  },
+  rose: {
+    name: 'Neon Rose',
+    backgroundStart: '#18070d',
+    backgroundEnd: '#2d0f1b',
+    accent: '#f43f5e',
+    accentGlow: 'rgba(244, 63, 94, 0.38)',
+    primaryText: '#fff1f2',
+    secondaryText: 'rgba(255, 241, 242, 0.68)',
+    cardBg: 'rgba(49, 16, 29, 0.88)',
+    cardBorder: 'rgba(244, 63, 94, 0.32)',
+    pillBg: 'rgba(244, 63, 94, 0.18)',
+    pillText: '#fb7185',
+    progressTrack: 'rgba(255, 241, 242, 0.1)',
+    quoteBoxBg: 'rgba(36, 12, 21, 0.75)',
+    quoteBoxBorder: 'rgba(244, 63, 94, 0.22)',
+    colour: 'rose',
   },
   mono: {
     name: 'Monolith B&W',
@@ -127,7 +365,14 @@ export const FLEX_CARD_THEMES: Record<FlexCardTheme, ThemeColors> = {
     progressTrack: 'rgba(255, 255, 255, 0.1)',
     quoteBoxBg: 'rgba(18, 18, 20, 0.75)',
     quoteBoxBorder: 'rgba(255, 255, 255, 0.14)',
+    colour: 'mono',
   },
+};
+
+// Backward-compatibility record: supports old theme keys and all new colors
+export const FLEX_CARD_THEMES: Record<string, ThemeColors> = {
+  ...COLOUR_PALETTES,
+  obsidian: COLOUR_PALETTES.ember,
 };
 
 export const BASE_DIMENSIONS: Record<
@@ -224,6 +469,500 @@ const FONT_BODY = "'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Rob
 const FONT_SERIF = "Georgia, Cambria, 'Times New Roman', serif";
 
 /**
+ * Renders the full procedural custom background onto the 4K canvas:
+ * 1. Base gradient
+ * 2. Dynamic Lighting profile (rim, spotlight, eclipse, sunburst, diffuse, stealth)
+ * 3. Procedural Style artwork (11 unique styles: sphere, pixel, nebula, aurora, cyber, topo, prism, orbit, liquid, hex, minimal)
+ * 4. Atmospheric Mood overlay (clean, grain, scanlines, starlight, mist, vignette)
+ * 5. High-precision outer border
+ */
+export function renderCustomizationBackground(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  customization: FlexCardCustomization,
+  theme: ThemeColors,
+  scale: number,
+  format: FlexCardFormat
+) {
+  const s = (n: number) => Math.round(n * scale);
+
+  // 1. Base Gradient
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, theme.backgroundStart);
+  bgGradient.addColorStop(1, theme.backgroundEnd);
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.save();
+
+  // 2. Lighting Profile
+  switch (customization.lighting) {
+    case 'spotlight': {
+      const spotX = width * 0.5;
+      const spotY = 0;
+      const spotRad = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, height * 0.85);
+      spotRad.addColorStop(0, theme.accentGlow);
+      spotRad.addColorStop(0.45, theme.accentGlow.replace(/[\d.]+\)$/, '0.12)'));
+      spotRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = spotRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'eclipse': {
+      const ecX = width * 0.5;
+      const ecY = format === 'landscape' ? height * 0.45 : height * 0.38;
+      const ecR = Math.min(width, height) * 0.28;
+      const flare = ctx.createRadialGradient(ecX, ecY, ecR * 0.85, ecX, ecY, ecR * 1.8);
+      flare.addColorStop(0, theme.accent);
+      flare.addColorStop(0.35, theme.accentGlow);
+      flare.addColorStop(1, 'transparent');
+      ctx.fillStyle = flare;
+      ctx.fillRect(0, 0, width, height);
+      // Dark central occlusion disk
+      ctx.fillStyle = theme.backgroundStart;
+      ctx.beginPath();
+      ctx.arc(ecX, ecY, ecR * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'sunburst': {
+      const sunX = width * 0.92;
+      const sunY = height * 0.08;
+      const sunRad = ctx.createRadialGradient(sunX, sunY, s(20), sunX, sunY, width * 0.9);
+      sunRad.addColorStop(0, theme.accent);
+      sunRad.addColorStop(0.28, theme.accentGlow);
+      sunRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'diffuse': {
+      const d1X = width * 0.25;
+      const d1Y = height * 0.3;
+      const g1 = ctx.createRadialGradient(d1X, d1Y, 0, d1X, d1Y, width * 0.65);
+      g1.addColorStop(0, theme.accentGlow);
+      g1.addColorStop(1, 'transparent');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, width, height);
+
+      const d2X = width * 0.75;
+      const d2Y = height * 0.72;
+      const g2 = ctx.createRadialGradient(d2X, d2Y, 0, d2X, d2Y, width * 0.65);
+      g2.addColorStop(0, theme.accentGlow);
+      g2.addColorStop(1, 'transparent');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'stealth': {
+      const stX = width * 0.5;
+      const stY = height * 0.5;
+      const stRad = ctx.createRadialGradient(stX, stY, s(20), stX, stY, width * 0.5);
+      stRad.addColorStop(0, theme.accentGlow.replace(/[\d.]+\)$/, '0.15)'));
+      stRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = stRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'rim':
+    default: {
+      const rX1 = format === 'landscape' ? width * 0.2 : width * 0.3;
+      const rY1 = format === 'landscape' ? height * 0.35 : height * 0.22;
+      const rad1 = ctx.createRadialGradient(rX1, rY1, s(10), rX1, rY1, width * 0.55);
+      rad1.addColorStop(0, theme.accentGlow);
+      rad1.addColorStop(1, 'transparent');
+      ctx.fillStyle = rad1;
+      ctx.fillRect(0, 0, width, height);
+
+      const rX2 = format === 'landscape' ? width * 0.82 : width * 0.75;
+      const rY2 = format === 'landscape' ? height * 0.7 : height * 0.78;
+      const rad2 = ctx.createRadialGradient(rX2, rY2, s(10), rX2, rY2, width * 0.55);
+      rad2.addColorStop(0, theme.accentGlow);
+      rad2.addColorStop(1, 'transparent');
+      ctx.fillStyle = rad2;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+  }
+
+  // 3. Procedural Style Vector Graphics
+  ctx.save();
+  switch (customization.style) {
+    case 'sphere': {
+      const orbX = width * 0.5;
+      const orbY = format === 'landscape' ? height * 0.5 : height * 0.38;
+      const orbR = Math.min(width, height) * (format === 'landscape' ? 0.32 : 0.28);
+
+      const sphereGrad = ctx.createRadialGradient(
+        orbX - orbR * 0.35,
+        orbY - orbR * 0.35,
+        orbR * 0.05,
+        orbX,
+        orbY,
+        orbR
+      );
+      sphereGrad.addColorStop(0, theme.accent);
+      sphereGrad.addColorStop(0.45, theme.accentGlow);
+      sphereGrad.addColorStop(0.85, theme.backgroundStart);
+      sphereGrad.addColorStop(1, 'rgba(0,0,0,0.85)');
+
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fillStyle = sphereGrad;
+      ctx.fill();
+
+      // Specular Highlight Crescent
+      ctx.beginPath();
+      ctx.arc(orbX - orbR * 0.32, orbY - orbR * 0.32, orbR * 0.22, 0, Math.PI * 2);
+      const specGrad = ctx.createRadialGradient(
+        orbX - orbR * 0.32,
+        orbY - orbR * 0.32,
+        0,
+        orbX - orbR * 0.32,
+        orbY - orbR * 0.32,
+        orbR * 0.22
+      );
+      specGrad.addColorStop(0, 'rgba(255,255,255,0.7)');
+      specGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = specGrad;
+      ctx.fill();
+
+      // Ambient outer halo
+      ctx.strokeStyle = theme.accentGlow;
+      ctx.lineWidth = 2 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR + s(14), 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'pixel': {
+      const pxSize = s(36);
+      const startX = s(24);
+      const startY = s(24);
+      for (let x = startX; x < width - s(24); x += pxSize) {
+        for (let y = startY; y < height - s(24); y += pxSize) {
+          const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+          const val = hash - Math.floor(hash);
+          if (val > 0.82) {
+            ctx.fillStyle = val > 0.94 ? theme.accent : theme.accentGlow;
+            ctx.fillRect(x + s(2), y + s(2), pxSize - s(4), pxSize - s(4));
+          } else if (val > 0.65) {
+            ctx.fillStyle = 'rgba(255,255,255,0.025)';
+            ctx.fillRect(x + s(2), y + s(2), pxSize - s(4), pxSize - s(4));
+          }
+        }
+      }
+      break;
+    }
+
+    case 'nebula': {
+      const puffs = [
+        { x: width * 0.3, y: height * 0.25, r: width * 0.45, alpha: 0.35 },
+        { x: width * 0.7, y: height * 0.5, r: width * 0.5, alpha: 0.3 },
+        { x: width * 0.4, y: height * 0.75, r: width * 0.4, alpha: 0.25 },
+      ];
+      for (const puff of puffs) {
+        const pGrad = ctx.createRadialGradient(puff.x, puff.y, s(20), puff.x, puff.y, puff.r);
+        pGrad.addColorStop(0, theme.accentGlow);
+        pGrad.addColorStop(0.5, theme.accentGlow.replace(/[\d.]+\)$/, `${puff.alpha * 0.4})`));
+        pGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = pGrad;
+        ctx.beginPath();
+        ctx.arc(puff.x, puff.y, puff.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = theme.primaryText;
+      for (let i = 0; i < 90; i++) {
+        const sx = (i * 137.5) % width;
+        const sy = (i * 243.7) % height;
+        const sr = (i % 3 === 0 ? 2 : 1) * scale;
+        ctx.globalAlpha = 0.2 + (i % 5) * 0.15;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+
+    case 'aurora': {
+      const waveCount = 5;
+      for (let w = 0; w < waveCount; w++) {
+        const baseY = height * (0.2 + w * 0.14);
+        ctx.beginPath();
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= width; x += s(30)) {
+          const angle = (x / width) * Math.PI * 2.5 + w * 1.2;
+          const yOffset = Math.sin(angle) * s(110) + Math.cos(angle * 1.5) * s(40);
+          ctx.lineTo(x, baseY + yOffset);
+        }
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+
+        const aGrad = ctx.createLinearGradient(0, baseY - s(120), 0, baseY + s(300));
+        aGrad.addColorStop(0, 'transparent');
+        aGrad.addColorStop(0.3, theme.accentGlow);
+        aGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = aGrad;
+        ctx.globalAlpha = 0.45;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+
+    case 'cyber': {
+      const horizonY = height * 0.45;
+      const vanishX = width * 0.5;
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 1.2 * scale;
+      const rayCount = 14;
+      for (let i = 0; i <= rayCount; i++) {
+        const bottomX = (width / rayCount) * i;
+        ctx.beginPath();
+        ctx.moveTo(vanishX, horizonY);
+        ctx.lineTo(bottomX, height);
+        ctx.stroke();
+      }
+      for (let step = 0; step < 10; step++) {
+        const ratio = Math.pow(step / 10, 2);
+        const y = horizonY + (height - horizonY) * ratio;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 16; i++) {
+        const nx = (i * 179) % width;
+        const ny = (i * 83) % horizonY;
+        ctx.fillStyle = theme.accent;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 2.5 * scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case 'topo': {
+      ctx.strokeStyle = theme.accentGlow;
+      ctx.lineWidth = 1.6 * scale;
+      const numLines = 14;
+      for (let i = 0; i < numLines; i++) {
+        const yCenter = height * (0.1 + (i / numLines) * 0.85);
+        ctx.beginPath();
+        ctx.moveTo(0, yCenter);
+        for (let x = 0; x <= width; x += s(40)) {
+          const cy = yCenter + Math.sin((x / width) * 5 + i * 0.6) * s(45) + Math.cos((x / width) * 2.8 + i) * s(25);
+          ctx.lineTo(x, cy);
+        }
+        ctx.globalAlpha = 0.35 + (i % 3) * 0.15;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+
+    case 'prism': {
+      const bands = 5;
+      ctx.save();
+      ctx.rotate(-0.25);
+      for (let b = 0; b < bands; b++) {
+        const bx = -width * 0.2 + (width * 1.4 / bands) * b;
+        const bGrad = ctx.createLinearGradient(bx, 0, bx + s(140), 0);
+        bGrad.addColorStop(0, 'transparent');
+        bGrad.addColorStop(0.5, b % 2 === 0 ? theme.accentGlow : 'rgba(255,255,255,0.08)');
+        bGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = bGrad;
+        ctx.fillRect(bx, -height * 0.5, s(160), height * 2);
+      }
+      ctx.restore();
+      break;
+    }
+
+    case 'orbit': {
+      const cx = width * 0.5;
+      const cy = format === 'landscape' ? height * 0.5 : height * 0.42;
+      const rings = [s(140), s(240), s(360), s(520)];
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 1.4 * scale;
+
+      rings.forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r, r * 0.55, -0.3, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const angle = idx * 1.6 + 0.8;
+        const satX = cx + Math.cos(angle) * r;
+        const satY = cy + Math.sin(angle) * (r * 0.55);
+        ctx.fillStyle = theme.accent;
+        ctx.beginPath();
+        ctx.arc(satX, satY, (idx === 1 ? 5 : 3.5) * scale, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const starGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, s(50));
+      starGrad.addColorStop(0, theme.accent);
+      starGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = starGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, s(50), 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case 'liquid': {
+      const blobs = [
+        { x: width * 0.25, y: height * 0.32, r: s(180) },
+        { x: width * 0.72, y: height * 0.38, r: s(220) },
+        { x: width * 0.5, y: height * 0.7, r: s(240) },
+      ];
+      blobs.forEach((b) => {
+        const lGrad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, s(10), b.x, b.y, b.r);
+        lGrad.addColorStop(0, theme.accentGlow);
+        lGrad.addColorStop(0.7, theme.accentGlow.replace(/[\d.]+\)$/, '0.08)'));
+        lGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = lGrad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = theme.cardBorder;
+        ctx.lineWidth = 1.5 * scale;
+        ctx.stroke();
+      });
+      break;
+    }
+
+    case 'hex': {
+      const hexR = s(38);
+      const hexW = hexR * Math.sqrt(3);
+      const hexH = hexR * 1.5;
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 1 * scale;
+      for (let y = s(20); y < height; y += hexH) {
+        const row = Math.floor(y / hexH);
+        const offsetX = (row % 2) * (hexW / 2);
+        for (let x = -hexW; x < width + hexW; x += hexW) {
+          const hx = x + offsetX;
+          const hy = y;
+          ctx.beginPath();
+          for (let a = 0; a < 6; a++) {
+            const rad = (Math.PI / 3) * a + Math.PI / 6;
+            const px = hx + hexR * Math.cos(rad);
+            const py = hy + hexR * Math.sin(rad);
+            if (a === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+      break;
+    }
+
+    case 'minimal':
+    default: {
+      break;
+    }
+  }
+  ctx.restore();
+
+  // 4. Mood Texture Overlay
+  switch (customization.mood) {
+    case 'grain': {
+      ctx.fillStyle = theme.colour === 'ivory' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+      const grainStep = s(16);
+      for (let x = 0; x < width; x += grainStep) {
+        for (let y = 0; y < height; y += grainStep) {
+          const hash = Math.sin(x * 19.123 + y * 97.456) * 43758.5453;
+          if (hash - Math.floor(hash) > 0.55) {
+            ctx.fillRect(x, y, 1.8 * scale, 1.8 * scale);
+          }
+        }
+      }
+      break;
+    }
+    case 'scanlines': {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      const lineH = Math.max(1, Math.round(2 * scale));
+      const lineGap = Math.max(2, Math.round(5 * scale));
+      for (let y = 0; y < height; y += lineH + lineGap) {
+        ctx.fillRect(0, y, width, lineH);
+      }
+      break;
+    }
+    case 'starlight': {
+      const starCount = 36;
+      for (let i = 0; i < starCount; i++) {
+        const sx = ((i * 193.3) % (width - s(120))) + s(60);
+        const sy = ((i * 311.7) % (height - s(120))) + s(60);
+        const slen = i % 2 === 0 ? s(12) : s(8);
+        ctx.strokeStyle = theme.accent;
+        ctx.lineWidth = 1.2 * scale;
+        ctx.globalAlpha = 0.45 + (i % 4) * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(sx - slen, sy);
+        ctx.lineTo(sx + slen, sy);
+        ctx.moveTo(sx, sy - slen);
+        ctx.lineTo(sx, sy + slen);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'mist': {
+      const mGrad = ctx.createLinearGradient(0, height * 0.4, 0, height);
+      mGrad.addColorStop(0, 'transparent');
+      mGrad.addColorStop(0.5, theme.accentGlow.replace(/[\d.]+\)$/, '0.12)'));
+      mGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = mGrad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'vignette': {
+      const vGrad = ctx.createRadialGradient(
+        width * 0.5,
+        height * 0.5,
+        Math.min(width, height) * 0.4,
+        width * 0.5,
+        height * 0.5,
+        Math.max(width, height) * 0.75
+      );
+      vGrad.addColorStop(0, 'transparent');
+      vGrad.addColorStop(1, 'rgba(0,0,0,0.72)');
+      ctx.fillStyle = vGrad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+    case 'clean':
+    default: {
+      ctx.fillStyle = theme.colour === 'ivory' ? 'rgba(0,0,0,0.038)' : 'rgba(255,255,255,0.038)';
+      const dotSpacing = format === 'landscape' ? s(34) : s(44);
+      const dotRadius = 1.4 * scale;
+      for (let x = s(24); x < width; x += dotSpacing) {
+        for (let y = s(24); y < height; y += dotSpacing) {
+          ctx.beginPath();
+          ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      break;
+    }
+  }
+
+  // 5. Outer Precision Border
+  const outerMargin = format === 'landscape' ? s(32) : s(52);
+  ctx.strokeStyle = theme.cardBorder;
+  ctx.lineWidth = 1.5 * scale;
+  roundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, s(36));
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
  * Main Canvas Render Function
  * Renders authentic, native 4K Ultra HD graphics directly into the canvas pixel buffer
  * with zero font atlas downsampling and maximum vector clarity.
@@ -231,7 +970,7 @@ const FONT_SERIF = "Georgia, Cambria, 'Times New Roman', serif";
 export async function renderFlexCardToCanvas(
   canvas: HTMLCanvasElement,
   data: FlexCardData,
-  themeKey: FlexCardTheme = 'obsidian',
+  customizationOrTheme: FlexCardCustomization | FlexCardTheme = DEFAULT_CUSTOMIZATION,
   format: FlexCardFormat = 'story'
 ) {
   // 1. Ensure all luxury web typography is fully resolved before rasterization
@@ -256,52 +995,23 @@ export async function renderFlexCardToCanvas(
 
   const base = BASE_DIMENSIONS[format];
   const scale = width / base.width;
-  const s = (n: number) => Math.round(n * scale);
 
-  const theme = FLEX_CARD_THEMES[themeKey] || FLEX_CARD_THEMES.obsidian;
+  // Resolve customization and theme palette
+  const customization: FlexCardCustomization =
+    typeof customizationOrTheme === 'string'
+      ? {
+          ...DEFAULT_CUSTOMIZATION,
+          colour: (customizationOrTheme === 'obsidian' ? 'ember' : customizationOrTheme) as FlexCardColour,
+        }
+      : customizationOrTheme;
 
-  // 1. Background Gradient
-  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, theme.backgroundStart);
-  bgGradient.addColorStop(1, theme.backgroundEnd);
-  ctx.fillStyle = bgGradient;
-  ctx.fillRect(0, 0, width, height);
+  const theme: ThemeColors =
+    COLOUR_PALETTES[customization.colour] ||
+    FLEX_CARD_THEMES[customization.colour] ||
+    COLOUR_PALETTES.ember;
 
-  // 2. Ambient Radial Glow Orbs
-  const glow1X = format === 'landscape' ? width * 0.2 : width * 0.3;
-  const glow1Y = format === 'landscape' ? height * 0.35 : height * 0.22;
-  const glowRad1 = ctx.createRadialGradient(glow1X, glow1Y, s(10), glow1X, glow1Y, width * 0.55);
-  glowRad1.addColorStop(0, theme.accentGlow);
-  glowRad1.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowRad1;
-  ctx.fillRect(0, 0, width, height);
-
-  const glow2X = format === 'landscape' ? width * 0.82 : width * 0.75;
-  const glow2Y = format === 'landscape' ? height * 0.7 : height * 0.78;
-  const glowRad2 = ctx.createRadialGradient(glow2X, glow2Y, s(10), glow2X, glow2Y, width * 0.55);
-  glowRad2.addColorStop(0, theme.accentGlow);
-  glowRad2.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowRad2;
-  ctx.fillRect(0, 0, width, height);
-
-  // 3. Subtle Dot Matrix Texture
-  ctx.fillStyle = themeKey === 'ivory' ? 'rgba(0,0,0,0.038)' : 'rgba(255,255,255,0.038)';
-  const dotSpacing = format === 'landscape' ? s(34) : s(44);
-  const dotRadius = 1.4 * scale;
-  for (let x = s(24); x < width; x += dotSpacing) {
-    for (let y = s(24); y < height; y += dotSpacing) {
-      ctx.beginPath();
-      ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // 4. Subtle Outer Precision Border
-  const outerMargin = format === 'landscape' ? s(32) : s(52);
-  ctx.strokeStyle = theme.cardBorder;
-  ctx.lineWidth = 1.5 * scale;
-  roundRect(ctx, outerMargin, outerMargin, width - outerMargin * 2, height - outerMargin * 2, s(36));
-  ctx.stroke();
+  // Render authentic procedural 4K background (lighting, style artwork, mood texture, border)
+  renderCustomizationBackground(ctx, width, height, customization, theme, scale, format);
 
   // Route to format-specific layout renderers with true native 4K scaling
   if (format === 'story') {
@@ -504,7 +1214,7 @@ function renderStoryLayout(
     // 3 Dynamic Metric Pills
     const col3W = (contentW - s(72) - s(32)) / 3;
     const pY = quoteY + s(130);
-    const weeklyCount = data.weeklyDots?.filter((d) => d.completed).length || 0;
+    const weeklyCount = data.weeklyDots?.filter((d: { completed: boolean }) => d.completed).length || 0;
     const statsCols = data.metricDetails && data.metricDetails.length === 3
       ? data.metricDetails
       : [
@@ -513,7 +1223,7 @@ function renderStoryLayout(
           { label: '7-DAY PACE', value: `${weeklyCount}/7`, subtext: 'Days Completed' },
         ];
 
-    statsCols.forEach((col, idx) => {
+    statsCols.forEach((col: { label: string; value: string; subtext: string }, idx: number) => {
       const cX = padX + s(36) + idx * (col3W + s(16));
       ctx.fillStyle = theme.pillBg;
       roundRect(ctx, cX, pY, col3W, s(110), s(18));

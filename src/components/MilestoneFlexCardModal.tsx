@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Lock,
   HelpCircle,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -37,6 +38,22 @@ import {
   FlexCardTheme,
   FlexCardData,
   ThemeColors,
+  FlexCardCategoryTab,
+  FlexCardStyle,
+  FlexCardMood,
+  FlexCardLighting,
+  FlexCardColour,
+  FlexCardCustomization,
+  CustomizationOptionItem,
+  FeaturedPresetItem,
+  DEFAULT_CUSTOMIZATION,
+  CATEGORY_TABS,
+  FEATURED_PRESETS,
+  STYLE_OPTIONS,
+  MOOD_OPTIONS,
+  LIGHTING_OPTIONS,
+  COLOUR_OPTIONS,
+  COLOUR_PALETTES,
   FLEX_CARD_THEMES,
   FORMAT_DIMENSIONS,
   renderFlexCardToCanvas,
@@ -92,19 +109,562 @@ function BrandLogoIcon({ size = 18, theme }: { size?: number; theme: ThemeColors
 }
 
 /**
+ * Procedural Vector Art Layer for live DOM card preview
+ * Mirrors the exact procedural lighting, 11 vector art styles, and mood textures.
+ */
+function CardVectorArtLayer({
+  customization,
+  theme,
+  format,
+}: {
+  customization: FlexCardCustomization;
+  theme: ThemeColors;
+  format: FlexCardFormat;
+}) {
+  const isIvory = customization.colour === 'ivory';
+  const dotGridBg = isIvory
+    ? 'radial-gradient(rgba(0,0,0,0.06) 1.2px, transparent 1.2px)'
+    : 'radial-gradient(rgba(255,255,255,0.06) 1.2px, transparent 1.2px)';
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+      {/* 1. Base Gradient */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(145deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
+        }}
+      />
+
+      {/* 2. Lighting Profile */}
+      {customization.lighting === 'spotlight' && (
+        <div
+          className="absolute inset-x-0 top-0 h-4/5 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, ${theme.accentGlow} 0%, rgba(0,0,0,0) 72%)`,
+          }}
+        />
+      )}
+      {customization.lighting === 'eclipse' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="w-48 sm:w-56 h-48 sm:h-56 rounded-full blur-xl"
+            style={{
+              background: `radial-gradient(circle, ${theme.accent} 20%, ${theme.accentGlow} 60%, transparent 80%)`,
+            }}
+          />
+          <div
+            className="absolute w-24 sm:w-28 h-24 sm:h-28 rounded-full"
+            style={{ background: theme.backgroundStart }}
+          />
+        </div>
+      )}
+      {customization.lighting === 'sunburst' && (
+        <div
+          className="absolute -top-12 -right-12 w-72 sm:w-80 h-72 sm:h-80 rounded-full blur-2xl pointer-events-none"
+          style={{
+            background: `radial-gradient(circle, ${theme.accent} 0%, ${theme.accentGlow} 45%, transparent 75%)`,
+            opacity: 0.85,
+          }}
+        />
+      )}
+      {customization.lighting === 'diffuse' && (
+        <>
+          <div
+            className="absolute top-1/4 -left-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+          <div
+            className="absolute bottom-1/4 -right-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+        </>
+      )}
+      {customization.lighting === 'stealth' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at 50% 50%, ${theme.accentGlow.replace(/[\d.]+\)$/, '0.14)')} 0%, rgba(0,0,0,0.6) 80%)`,
+          }}
+        />
+      )}
+      {(customization.lighting === 'rim' || !customization.lighting) && (
+        <>
+          <div
+            className="absolute -top-10 -left-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+          <div
+            className="absolute -bottom-10 -right-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+        </>
+      )}
+
+      {/* 3. Procedural Style Vector Graphics Artwork */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {customization.style === 'sphere' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+            <circle cx="200" cy="190" r="115" fill="none" stroke={theme.accentGlow} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.6" />
+            <circle
+              cx="200"
+              cy="190"
+              r="95"
+              fill={theme.accent}
+              style={{
+                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
+              }}
+            />
+            {/* Shading overlay */}
+            <circle cx="200" cy="190" r="95" fill="url(#orbDarkCrescent)" opacity="0.8" />
+            {/* Specular Highlight Crescent */}
+            <ellipse cx="168" cy="158" rx="28" ry="18" fill="#ffffff" opacity="0.75" transform="rotate(-30 168 158)" />
+          </svg>
+        )}
+
+        {customization.style === 'pixel' && (
+          <svg className="w-full h-full opacity-80" viewBox="0 0 400 400" preserveAspectRatio="none">
+            {Array.from({ length: 48 }).map((_, i) => {
+              const x = (i % 8) * 50 + 6;
+              const y = Math.floor(i / 8) * 66 + 6;
+              const isAccent = (i * 7 + 3) % 9 === 0;
+              const isGlow = (i * 5 + 2) % 4 === 0;
+              return (
+                <rect
+                  key={i}
+                  x={x}
+                  y={y}
+                  width="38"
+                  height="54"
+                  rx="4"
+                  fill={isAccent ? theme.accent : isGlow ? theme.accentGlow : 'rgba(255,255,255,0.025)'}
+                  opacity={isAccent ? 0.9 : isGlow ? 0.35 : 0.2}
+                />
+              );
+            })}
+          </svg>
+        )}
+
+        {customization.style === 'nebula' && (
+          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+            <circle cx="130" cy="140" r="90" fill={theme.accent} opacity="0.28" />
+            <circle cx="270" cy="220" r="110" fill={theme.accentGlow} opacity="0.32" />
+            <circle cx="190" cy="300" r="85" fill={theme.accent} opacity="0.2" />
+            {[
+              [80, 90, 2], [150, 60, 1.5], [220, 110, 2.5], [310, 80, 1.8], [330, 190, 2.2],
+              [90, 240, 2], [140, 310, 1.6], [260, 330, 2.4], [310, 280, 1.8], [190, 190, 3],
+              [110, 160, 2], [280, 150, 2], [50, 190, 1.5], [350, 120, 2], [210, 250, 2.2]
+            ].map(([cx, cy, r], idx) => (
+              <circle key={idx} cx={cx} cy={cy} r={r} fill={theme.primaryText} opacity={0.65} />
+            ))}
+          </svg>
+        )}
+
+        {customization.style === 'aurora' && (
+          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400" preserveAspectRatio="none">
+            <path
+              d="M0,120 Q100,50 200,140 T400,100 L400,280 Q300,320 200,230 T0,260 Z"
+              fill={theme.accentGlow}
+              opacity="0.7"
+            />
+            <path
+              d="M0,190 Q120,270 240,180 T400,220 L400,360 Q280,290 160,370 T0,320 Z"
+              fill={theme.accent}
+              opacity="0.35"
+            />
+          </svg>
+        )}
+
+        {customization.style === 'cyber' && (
+          <svg className="w-full h-full opacity-70" viewBox="0 0 400 400" preserveAspectRatio="none">
+            {[20, 60, 100, 140, 180, 220, 260, 300, 340, 380].map((bx, idx) => (
+              <line key={idx} x1="200" y1="170" x2={bx} y2="400" stroke={theme.cardBorder} strokeWidth="1.2" />
+            ))}
+            {[180, 195, 215, 240, 275, 320, 375].map((y, idx) => (
+              <line key={idx} x1="0" y1={y} x2="400" y2={y} stroke={theme.cardBorder} strokeWidth="1.2" opacity="0.6" />
+            ))}
+            {[
+              [80, 60], [160, 90], [240, 50], [320, 80], [120, 130], [280, 120]
+            ].map(([cx, cy], idx) => (
+              <circle key={idx} cx={cx} cy={cy} r="3" fill={theme.accent} />
+            ))}
+          </svg>
+        )}
+
+        {customization.style === 'topo' && (
+          <svg className="w-full h-full opacity-60" viewBox="0 0 400 400" fill="none" stroke={theme.accent} strokeWidth="1.4">
+            <path d="M-20,70 Q90,30 200,90 T420,50" opacity="0.3" />
+            <path d="M-20,120 Q120,60 220,140 T420,100" opacity="0.4" />
+            <path d="M-20,170 Q70,220 190,160 T420,170" opacity="0.5" />
+            <path d="M-20,220 Q140,160 260,240 T420,210" opacity="0.6" />
+            <path d="M-20,270 Q80,320 200,260 T420,280" opacity="0.5" />
+            <path d="M-20,320 Q160,270 280,340 T420,320" opacity="0.4" />
+          </svg>
+        )}
+
+        {customization.style === 'prism' && (
+          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
+            <polygon points="-50,150 180,-50 240,-50 10,150" fill={theme.accentGlow} opacity="0.6" />
+            <polygon points="50,420 320,150 370,150 100,420" fill={theme.accentGlow} opacity="0.4" />
+            <line x1="-20" y1="200" x2="420" y2="200" stroke={theme.accent} strokeWidth="1.2" strokeDasharray="6 8" opacity="0.5" />
+          </svg>
+        )}
+
+        {customization.style === 'orbit' && (
+          <svg className="w-full h-full opacity-75" viewBox="0 0 400 400" fill="none">
+            <ellipse cx="200" cy="180" rx="90" ry="45" transform="rotate(-20 200 180)" stroke={theme.cardBorder} strokeWidth="1.5" />
+            <ellipse cx="200" cy="180" rx="145" ry="75" transform="rotate(-20 200 180)" stroke={theme.cardBorder} strokeWidth="1.4" opacity="0.7" />
+            <circle cx="200" cy="180" r="14" fill={theme.accent} />
+            <circle cx="265" cy="145" r="4.5" fill={theme.accent} />
+            <circle cx="105" cy="225" r="3.5" fill={theme.primaryText} />
+          </svg>
+        )}
+
+        {customization.style === 'liquid' && (
+          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
+            <circle cx="160" cy="170" r="65" fill={theme.accentGlow} opacity="0.7" />
+            <circle cx="230" cy="190" r="75" fill={theme.accent} opacity="0.35" />
+            <circle cx="200" cy="250" r="70" fill={theme.accentGlow} opacity="0.5" />
+          </svg>
+        )}
+
+        {customization.style === 'hex' && (
+          <svg className="w-full h-full opacity-55" viewBox="0 0 400 400" stroke={theme.cardBorder} strokeWidth="1.2" fill="none">
+            {[
+              [80, 80], [160, 80], [240, 80], [320, 80],
+              [120, 140], [200, 140], [280, 140],
+              [80, 200], [200, 200], [320, 200],
+              [120, 260], [280, 260],
+              [80, 320], [160, 320], [240, 320], [320, 320],
+            ].map(([hx, hy], idx) => {
+              const r = 26;
+              const points = Array.from({ length: 6 }).map((_, a) => {
+                const angle = (Math.PI / 3) * a + Math.PI / 6;
+                return `${hx + r * Math.cos(angle)},${hy + r * Math.sin(angle)}`;
+              }).join(' ');
+              const isHighlight = idx === 5;
+              return (
+                <polygon
+                  key={idx}
+                  points={points}
+                  fill={isHighlight ? theme.accentGlow : 'none'}
+                  stroke={isHighlight ? theme.accent : theme.cardBorder}
+                  opacity={isHighlight ? 0.9 : 0.6}
+                />
+              );
+            })}
+          </svg>
+        )}
+
+        {customization.style === 'minimal' && <div className="w-full h-full" />}
+      </div>
+
+      {/* 4. Mood Texture Overlay */}
+      {customization.mood === 'grain' && (
+        <div
+          className="absolute inset-0 opacity-45 pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(${isIvory ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)'} 1px, transparent 1px)`,
+            backgroundSize: '4px 4px',
+          }}
+        />
+      )}
+      {customization.mood === 'scanlines' && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-45"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(to bottom, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 1.5px, transparent 1.5px, transparent 4px)',
+          }}
+        />
+      )}
+      {customization.mood === 'starlight' && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75">
+          {[
+            [70, 70, 8], [320, 60, 10], [90, 280, 9], [340, 260, 11],
+            [160, 340, 7], [280, 130, 8], [50, 170, 6], [220, 70, 9]
+          ].map(([sx, sy, sz], idx) => (
+            <g key={idx} stroke={theme.accent} strokeWidth="1.2">
+              <line x1={sx - sz} y1={sy} x2={sx + sz} y2={sy} />
+              <line x1={sx} y1={sy - sz} x2={sx} y2={sy + sz} />
+              <circle cx={sx} cy={sy} r="1.5" fill="#ffffff" />
+            </g>
+          ))}
+        </svg>
+      )}
+      {customization.mood === 'mist' && (
+        <div
+          className="absolute inset-x-0 bottom-0 h-3/5 pointer-events-none opacity-50"
+          style={{
+            background: `linear-gradient(to top, ${theme.accentGlow} 0%, transparent 100%)`,
+          }}
+        />
+      )}
+      {customization.mood === 'vignette' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.7) 100%)',
+          }}
+        />
+      )}
+      {customization.mood === 'clean' && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-80"
+          style={{ backgroundImage: dotGridBg, backgroundSize: '16px 16px' }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Miniature preview tile for category option cards
+ */
+function ThumbnailPreviewTile({
+  category,
+  item,
+  activeCustomization,
+}: {
+  category: FlexCardCategoryTab;
+  item: CustomizationOptionItem | FeaturedPresetItem;
+  activeCustomization: FlexCardCustomization;
+}) {
+  const currentTheme = COLOUR_PALETTES[activeCustomization.colour] || COLOUR_PALETTES.ember;
+
+  if (category === 'featured') {
+    const preset = item as FeaturedPresetItem;
+    const pTheme = COLOUR_PALETTES[preset.customization.colour] || COLOUR_PALETTES.ember;
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, ${pTheme.backgroundStart}, ${pTheme.backgroundEnd})`,
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-40 blur-xs"
+          style={{ background: pTheme.accentGlow }}
+        />
+        <div
+          className="w-6 h-6 rounded-full border flex items-center justify-center shadow-sm"
+          style={{
+            borderColor: pTheme.cardBorder,
+            background: `radial-gradient(circle, ${pTheme.accent} 25%, ${pTheme.backgroundStart} 100%)`,
+          }}
+        >
+          <Sparkles className="w-3 h-3 text-white" />
+        </div>
+      </div>
+    );
+  }
+
+  if (category === 'styles') {
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, ${currentTheme.backgroundStart}, ${currentTheme.backgroundEnd})`,
+        }}
+      >
+        <div className="absolute inset-0 opacity-30" style={{ background: currentTheme.accentGlow }} />
+        <div className="relative z-10 w-8 h-8 flex items-center justify-center">
+          {item.id === 'sphere' && (
+            <div
+              className="w-6 h-6 rounded-full shadow-md"
+              style={{
+                background: `radial-gradient(circle at 35% 35%, ${currentTheme.accent}, #000)`,
+                boxShadow: `0 0 8px ${currentTheme.accentGlow}`,
+              }}
+            />
+          )}
+          {item.id === 'pixel' && (
+            <div className="grid grid-cols-3 gap-0.5 w-6 h-6">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-[1px]"
+                  style={{
+                    background: i % 2 === 0 ? currentTheme.accent : 'rgba(255,255,255,0.1)',
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {item.id === 'nebula' && (
+            <div className="relative w-6 h-6 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full blur-[2px]" style={{ background: currentTheme.accent }} />
+              <div className="absolute w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
+            </div>
+          )}
+          {item.id === 'aurora' && (
+            <div className="w-7 h-5 flex flex-col justify-between opacity-80">
+              <div className="h-1 rounded-full w-full" style={{ background: currentTheme.accent }} />
+              <div className="h-1 rounded-full w-4/5 ml-auto" style={{ background: currentTheme.accentGlow }} />
+              <div className="h-1 rounded-full w-3/5" style={{ background: currentTheme.accent }} />
+            </div>
+          )}
+          {item.id === 'cyber' && (
+            <div className="w-6 h-6 border rounded-[3px] flex items-center justify-center" style={{ borderColor: currentTheme.accent }}>
+              <div className="w-2.5 h-2.5" style={{ background: currentTheme.accent }} />
+            </div>
+          )}
+          {item.id === 'topo' && (
+            <div className="w-6 h-6 flex flex-col justify-around py-0.5">
+              <div className="w-full h-0.5 rounded-full" style={{ background: currentTheme.accent }} />
+              <div className="w-4/5 h-0.5 rounded-full mx-auto" style={{ background: currentTheme.accent, opacity: 0.7 }} />
+              <div className="w-full h-0.5 rounded-full" style={{ background: currentTheme.accent, opacity: 0.4 }} />
+            </div>
+          )}
+          {item.id === 'prism' && (
+            <div className="w-5 h-5 rotate-45 border" style={{ borderColor: currentTheme.accent, background: currentTheme.accentGlow }} />
+          )}
+          {item.id === 'orbit' && (
+            <div className="w-6 h-4 rounded-full border border-dashed flex items-center justify-center" style={{ borderColor: currentTheme.accent }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: currentTheme.accent }} />
+            </div>
+          )}
+          {item.id === 'liquid' && (
+            <div className="w-6 h-6 rounded-full flex items-center justify-center blur-[1px]" style={{ background: currentTheme.accentGlow }}>
+              <div className="w-3 h-3 rounded-full" style={{ background: currentTheme.accent }} />
+            </div>
+          )}
+          {item.id === 'hex' && (
+            <div className="w-5 h-5 flex items-center justify-center text-[11px] font-bold" style={{ color: currentTheme.accent }}>
+              ⬡
+            </div>
+          )}
+          {item.id === 'minimal' && (
+            <div className="w-5 h-5 rounded border border-dashed opacity-50" style={{ borderColor: currentTheme.accent }} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (category === 'moods') {
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, ${currentTheme.backgroundStart}, ${currentTheme.backgroundEnd})`,
+        }}
+      >
+        {item.id === 'grain' && (
+          <div
+            className="absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: `radial-gradient(${currentTheme.accent} 1px, transparent 1px)`,
+              backgroundSize: '4px 4px',
+            }}
+          />
+        )}
+        {item.id === 'scanlines' && (
+          <div
+            className="absolute inset-0 opacity-60"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(to bottom, rgba(0,0,0,0.5) 0px, rgba(0,0,0,0.5) 1.5px, transparent 1.5px, transparent 3px)',
+            }}
+          />
+        )}
+        {item.id === 'starlight' && (
+          <Sparkles className="w-4 h-4 text-amber-300 drop-shadow-md" />
+        )}
+        {item.id === 'mist' && (
+          <div className="w-full h-full bg-linear-to-t from-white/20 to-transparent" />
+        )}
+        {item.id === 'vignette' && (
+          <div className="w-full h-full" style={{ background: 'radial-gradient(circle, transparent 30%, black 90%)' }} />
+        )}
+        {item.id === 'clean' && (
+          <div
+            className="absolute inset-0 opacity-40"
+            style={{
+              backgroundImage: `radial-gradient(${currentTheme.accent} 1px, transparent 1px)`,
+              backgroundSize: '8px 8px',
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (category === 'lighting') {
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+        style={{
+          background: currentTheme.backgroundStart,
+        }}
+      >
+        {item.id === 'spotlight' && (
+          <div className="w-full h-full" style={{ background: `radial-gradient(ellipse at 50% 0%, ${currentTheme.accent} 0%, transparent 80%)`, opacity: 0.7 }} />
+        )}
+        {item.id === 'eclipse' && (
+          <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: currentTheme.accent, boxShadow: `0 0 10px ${currentTheme.accent}` }}>
+            <div className="w-2.5 h-2.5 rounded-full bg-black" />
+          </div>
+        )}
+        {item.id === 'sunburst' && (
+          <div className="w-full h-full" style={{ background: `radial-gradient(circle at 100% 0%, ${currentTheme.accent} 0%, transparent 70%)` }} />
+        )}
+        {item.id === 'diffuse' && (
+          <div className="w-5 h-5 rounded-full blur-xs" style={{ background: currentTheme.accent, opacity: 0.7 }} />
+        )}
+        {item.id === 'stealth' && (
+          <div className="w-2 h-2 rounded-full" style={{ background: currentTheme.accent, opacity: 0.5 }} />
+        )}
+        {item.id === 'rim' && (
+          <div className="w-6 h-6 rounded-md border" style={{ borderColor: currentTheme.accent, boxShadow: `inset 0 0 6px ${currentTheme.accentGlow}` }} />
+        )}
+      </div>
+    );
+  }
+
+  if (category === 'colours') {
+    const cItem = item as CustomizationOptionItem & { hex: string };
+    const pCol = COLOUR_PALETTES[cItem.id as FlexCardColour] || COLOUR_PALETTES.ember;
+    return (
+      <div
+        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+        style={{
+          background: `linear-gradient(135deg, ${pCol.backgroundStart}, ${pCol.backgroundEnd})`,
+        }}
+      >
+        <div
+          className="w-4 h-4 rounded-full border border-white/20 shadow-sm"
+          style={{
+            background: pCol.accent,
+            boxShadow: `0 0 6px ${pCol.accentGlow}`,
+          }}
+        />
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/**
  * Razor-Sharp Vector DOM Preview Card Component
  * Eliminates all downsampling blur by rendering native CSS vectors & typography.
  */
 function FlexCardVectorPreview({
   data,
   themeKey,
+  customization,
   format,
 }: {
   data: FlexCardData;
-  themeKey: FlexCardTheme;
+  themeKey?: FlexCardTheme;
+  customization?: FlexCardCustomization;
   format: FlexCardFormat;
 }) {
-  const theme = FLEX_CARD_THEMES[themeKey] || FLEX_CARD_THEMES.obsidian;
+  const activeCustomization: FlexCardCustomization = customization || (
+    themeKey ? { ...DEFAULT_CUSTOMIZATION, colour: (themeKey === 'obsidian' ? 'ember' : themeKey) as FlexCardColour } : DEFAULT_CUSTOMIZATION
+  );
+  const theme = COLOUR_PALETTES[activeCustomization.colour] || COLOUR_PALETTES.ember;
   const fallbackDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((label) => ({
     label,
     completed: false,
@@ -113,13 +673,8 @@ function FlexCardVectorPreview({
   const weeklyDots = data.weeklyDots && data.weeklyDots.length === 7 ? data.weeklyDots : fallbackDays;
   const pct = Math.min(100, Math.max(0, Math.round(data.completionRate ?? 0)));
 
-  const dotGridBg =
-    themeKey === 'ivory'
-      ? 'radial-gradient(rgba(0,0,0,0.06) 1.2px, transparent 1.2px)'
-      : 'radial-gradient(rgba(255,255,255,0.06) 1.2px, transparent 1.2px)';
-
   const dividerColor =
-    themeKey === 'ivory'
+    activeCustomization.colour === 'ivory'
       ? 'rgba(21, 19, 15, 0.12)'
       : 'rgba(255, 255, 255, 0.12)';
 
@@ -133,23 +688,15 @@ function FlexCardVectorPreview({
       <div
         className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
         style={{
-          background: `linear-gradient(135deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
           border: `1.5px solid ${theme.cardBorder}`,
           color: theme.primaryText,
         }}
       >
-        {/* Glow orbs & Dot grid */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-80"
-          style={{ backgroundImage: dotGridBg, backgroundSize: '16px 16px' }}
-        />
-        <div
-          className="absolute -top-10 -left-10 w-44 h-44 rounded-full pointer-events-none blur-2xl opacity-60"
-          style={{ background: theme.accentGlow }}
-        />
-        <div
-          className="absolute -bottom-10 -right-10 w-44 h-44 rounded-full pointer-events-none blur-2xl opacity-60"
-          style={{ background: theme.accentGlow }}
+        {/* Procedural Vector Art Background Layer */}
+        <CardVectorArtLayer
+          customization={activeCustomization}
+          theme={theme}
+          format={format}
         />
 
         {/* Top Header */}
@@ -328,23 +875,15 @@ function FlexCardVectorPreview({
       <div
         className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
         style={{
-          background: `linear-gradient(135deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
           border: `1.5px solid ${theme.cardBorder}`,
           color: theme.primaryText,
         }}
       >
-        {/* Glow orbs & Dot grid */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-80"
-          style={{ backgroundImage: dotGridBg, backgroundSize: '16px 16px' }}
-        />
-        <div
-          className="absolute -top-12 -left-12 w-48 h-48 rounded-full pointer-events-none blur-2xl opacity-60"
-          style={{ background: theme.accentGlow }}
-        />
-        <div
-          className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full pointer-events-none blur-2xl opacity-60"
-          style={{ background: theme.accentGlow }}
+        {/* Procedural Vector Art Background Layer */}
+        <CardVectorArtLayer
+          customization={activeCustomization}
+          theme={theme}
+          format={format}
         />
 
         {/* Header */}
@@ -509,23 +1048,15 @@ function FlexCardVectorPreview({
     <div
       className="w-full h-full relative rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden select-none"
       style={{
-        background: `linear-gradient(145deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
         border: `1.5px solid ${theme.cardBorder}`,
         color: theme.primaryText,
       }}
     >
-      {/* Glow orbs & Dot grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-80"
-        style={{ backgroundImage: dotGridBg, backgroundSize: '16px 16px' }}
-      />
-      <div
-        className="absolute -top-12 -left-12 w-48 h-48 rounded-full pointer-events-none blur-2xl opacity-60"
-        style={{ background: theme.accentGlow }}
-      />
-      <div
-        className="absolute -bottom-12 -right-12 w-48 h-48 rounded-full pointer-events-none blur-2xl opacity-60"
-        style={{ background: theme.accentGlow }}
+      {/* Procedural Vector Art Background Layer */}
+      <CardVectorArtLayer
+        customization={activeCustomization}
+        theme={theme}
+        format={format}
       />
 
       {/* 1. Top Header */}
@@ -747,7 +1278,14 @@ export function MilestoneFlexCardModal({
   // Studio configuration state
   const [mode, setMode] = useState<CardMode>(initialMode);
   const [format, setFormat] = useState<FlexCardFormat>('story');
-  const [theme, setTheme] = useState<FlexCardTheme>('obsidian');
+  const [activeCategoryTab, setActiveCategoryTab] = useState<FlexCardCategoryTab>('featured');
+  const [customization, setCustomization] = useState<FlexCardCustomization>(DEFAULT_CUSTOMIZATION);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('titanium');
+  const theme = customization.colour;
+  const setTheme = (newCol: FlexCardColour) => {
+    setCustomization((prev) => ({ ...prev, colour: newCol }));
+    setSelectedPresetId('');
+  };
   const [selectedHabitId, setSelectedHabitId] = useState<string>(
     initialHabitId || habits[0]?.id || ''
   );
@@ -1230,8 +1768,8 @@ export function MilestoneFlexCardModal({
   // Offscreen canvas export renderer with asynchronous font hydration
   const ensureCanvasRendered = useCallback(async () => {
     if (!canvasRef.current) return;
-    await renderFlexCardToCanvas(canvasRef.current, cardData, theme, format);
-  }, [cardData, theme, format]);
+    await renderFlexCardToCanvas(canvasRef.current, cardData, customization, format);
+  }, [cardData, customization, format]);
 
   // Pre-render the 4K canvas in background so it's primed instantly for download
   useEffect(() => {
@@ -1585,38 +2123,234 @@ export function MilestoneFlexCardModal({
                 </div>
               </div>
 
-              {/* 3. Theme Preset Selector */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
-                  Card Aesthetic Theme
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(Object.keys(FLEX_CARD_THEMES) as FlexCardTheme[]).map((thmKey) => {
-                    const t = FLEX_CARD_THEMES[thmKey];
-                    const isSel = theme === thmKey;
+              {/* 3. Aesthetic Customization Studio */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    Visual Aesthetics & Artwork
+                  </label>
+                  <span className="text-[10px] font-bold text-[#ff5a1f] px-2 py-0.5 rounded-full bg-[#ff5a1f]/10">
+                    {CATEGORY_TABS.find((t) => t.id === activeCategoryTab)?.countLabel}
+                  </span>
+                </div>
+
+                {/* Category Pill Bar: Exact match to reference screenshot ([Featured] [Styles] [Moods] [Lighting] [Colours]) */}
+                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-0.5 px-0.5">
+                  {CATEGORY_TABS.map((tab) => {
+                    const isTabActive = activeCategoryTab === tab.id;
                     return (
                       <button
-                        key={thmKey}
+                        key={tab.id}
                         type="button"
-                        onClick={() => setTheme(thmKey)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          isSel
-                            ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/30 bg-[#ff5a1f]/8'
-                            : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:border-[#ff5a1f]/30'
+                        onClick={() => setActiveCategoryTab(tab.id)}
+                        className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                          isTabActive
+                            ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-md ring-2 ring-[#ff5a1f]/40'
+                            : 'border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:border-[#ff5a1f]/50 hover:text-[#ff5a1f] bg-[#f2ecdf]/30 dark:bg-[#11100d]/30'
                         }`}
                       >
-                        <span
-                          className="w-4 h-4 rounded-full shrink-0 border border-black/10 flex items-center justify-center"
-                          style={{
-                            background: `linear-gradient(135deg, ${t.backgroundStart}, ${t.accent})`,
-                          }}
-                        >
-                          {isSel && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
-                        </span>
-                        <span className="text-xs font-semibold truncate">{t.name}</span>
+                        {tab.label}
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Horizontal Scrollable Thumbnail Cards Carousel */}
+                <div className="flex items-stretch gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-0.5 px-0.5 touch-pan-x">
+                  {activeCategoryTab === 'featured' &&
+                    FEATURED_PRESETS.map((preset) => {
+                      const isSel = selectedPresetId === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomization(preset.customization);
+                            setSelectedPresetId(preset.id);
+                          }}
+                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
+                          }`}
+                        >
+                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                            <ThumbnailPreviewTile
+                              category="featured"
+                              item={preset}
+                              activeCustomization={customization}
+                            />
+                            {isSel && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                            {preset.name}
+                          </span>
+                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
+                            {preset.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                  {activeCategoryTab === 'styles' &&
+                    STYLE_OPTIONS.map((styleOpt) => {
+                      const isSel = customization.style === styleOpt.id;
+                      return (
+                        <button
+                          key={styleOpt.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomization((prev) => ({ ...prev, style: styleOpt.id as FlexCardStyle }));
+                            setSelectedPresetId('');
+                          }}
+                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
+                          }`}
+                        >
+                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                            <ThumbnailPreviewTile
+                              category="styles"
+                              item={styleOpt}
+                              activeCustomization={customization}
+                            />
+                            {isSel && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                            {styleOpt.name}
+                          </span>
+                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
+                            {styleOpt.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                  {activeCategoryTab === 'moods' &&
+                    MOOD_OPTIONS.map((moodOpt) => {
+                      const isSel = customization.mood === moodOpt.id;
+                      return (
+                        <button
+                          key={moodOpt.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomization((prev) => ({ ...prev, mood: moodOpt.id as FlexCardMood }));
+                            setSelectedPresetId('');
+                          }}
+                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
+                          }`}
+                        >
+                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                            <ThumbnailPreviewTile
+                              category="moods"
+                              item={moodOpt}
+                              activeCustomization={customization}
+                            />
+                            {isSel && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                            {moodOpt.name}
+                          </span>
+                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
+                            {moodOpt.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                  {activeCategoryTab === 'lighting' &&
+                    LIGHTING_OPTIONS.map((lightOpt) => {
+                      const isSel = customization.lighting === lightOpt.id;
+                      return (
+                        <button
+                          key={lightOpt.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomization((prev) => ({ ...prev, lighting: lightOpt.id as FlexCardLighting }));
+                            setSelectedPresetId('');
+                          }}
+                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
+                          }`}
+                        >
+                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                            <ThumbnailPreviewTile
+                              category="lighting"
+                              item={lightOpt}
+                              activeCustomization={customization}
+                            />
+                            {isSel && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                            {lightOpt.name}
+                          </span>
+                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
+                            {lightOpt.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                  {activeCategoryTab === 'colours' &&
+                    COLOUR_OPTIONS.map((colOpt) => {
+                      const isSel = customization.colour === colOpt.id;
+                      return (
+                        <button
+                          key={colOpt.id}
+                          type="button"
+                          onClick={() => {
+                            setCustomization((prev) => ({ ...prev, colour: colOpt.id as FlexCardColour }));
+                            setSelectedPresetId('');
+                          }}
+                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
+                            isSel
+                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
+                          }`}
+                        >
+                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                            <ThumbnailPreviewTile
+                              category="colours"
+                              item={colOpt}
+                              activeCustomization={customization}
+                            />
+                            {isSel && (
+                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
+                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                            {colOpt.name}
+                          </span>
+                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
+                            {colOpt.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -1703,7 +2437,7 @@ export function MilestoneFlexCardModal({
                 >
                   <FlexCardVectorPreview
                     data={cardData}
-                    themeKey={theme}
+                    customization={customization}
                     format={format}
                   />
                 </div>
