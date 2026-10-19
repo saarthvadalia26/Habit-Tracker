@@ -1436,10 +1436,10 @@ export function MilestoneFlexCardModal({
                     <div className="p-3 rounded-xl bg-[#fbf8f1]/90 dark:bg-[#15130f]/90 border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
                       <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
                         <Share2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>3. 1-Tap Share & 4K PNG</span>
+                        <span>3. 1-Tap Share & 1080p PNG</span>
                       </div>
                       <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
-                        Share directly to Instagram Stories or WhatsApp via native mobile share sheet, or download a crystal-clear high-res PNG for your records.
+                        Share directly to Instagram Stories or WhatsApp via native mobile share sheet, or download a crystal-clear 1080p high-res PNG for your records.
                       </p>
                     </div>
                   </div>
