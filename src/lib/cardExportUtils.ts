@@ -32,6 +32,18 @@ export interface FlexCardData {
 export type FlexCardCategoryTab = 'featured' | 'styles' | 'moods' | 'lighting' | 'colours';
 
 export type FlexCardStyle =
+  | '3d'
+  | 'collage'
+  | 'anime'
+  | 'paper'
+  | 'illustrated'
+  | 'lowpoly'
+  | 'cartoon'
+  | 'goth'
+  | 'artdeco'
+  | 'cinema'
+  | 'watercolor'
+  // Backward compatibility aliases
   | 'sphere'
   | 'pixel'
   | 'nebula'
@@ -45,14 +57,22 @@ export type FlexCardStyle =
   | 'minimal';
 
 export type FlexCardMood =
+  | 'glowy'
+  | 'sweets'
+  | 'dreamy'
+  // Backward compatibility aliases
   | 'clean'
   | 'grain'
   | 'scanlines'
-  | 'starlight'
   | 'mist'
   | 'vignette';
 
 export type FlexCardLighting =
+  | 'dark'
+  | 'sunset'
+  | 'bright'
+  | 'ethereal'
+  // Backward compatibility aliases
   | 'rim'
   | 'spotlight'
   | 'eclipse'
@@ -81,135 +101,102 @@ export interface FlexCardCustomization {
 }
 
 export const DEFAULT_CUSTOMIZATION: FlexCardCustomization = {
-  style: 'sphere',
-  mood: 'clean',
-  lighting: 'rim',
+  style: 'paper',
+  mood: 'glowy',
+  lighting: 'sunset',
   colour: 'ember',
 };
 
 export interface CustomizationOptionItem {
   id: string;
   name: string;
-  subtitle: string;
-  badge: string;
+  subtitle?: string;
+  badge?: string;
 }
 
 export interface FeaturedPresetItem extends CustomizationOptionItem {
   id: string;
   name: string;
-  subtitle: string;
-  badge: string;
   customization: FlexCardCustomization;
 }
 
-export const CATEGORY_TABS: { id: FlexCardCategoryTab; label: string; countLabel: string }[] = [
-  { id: 'featured', label: 'Featured', countLabel: '8 Presets' },
-  { id: 'styles', label: 'Styles', countLabel: '11 Looks' },
-  { id: 'moods', label: 'Moods', countLabel: '6 Textures' },
-  { id: 'lighting', label: 'Lighting', countLabel: '6 Setups' },
-  { id: 'colours', label: 'Colours', countLabel: '8 Palettes' },
+export const CATEGORY_TABS: { id: FlexCardCategoryTab; label: string }[] = [
+  { id: 'featured', label: 'Featured' },
+  { id: 'styles', label: 'Styles' },
+  { id: 'moods', label: 'Moods' },
+  { id: 'lighting', label: 'Lighting' },
+  { id: 'colours', label: 'Colours' },
 ];
 
 export const FEATURED_PRESETS: FeaturedPresetItem[] = [
   {
-    id: 'titanium',
-    name: 'Titanium Ember',
-    subtitle: 'Minimal 3D Orb in volcanic dark',
-    badge: 'Popular',
-    customization: { style: 'sphere', mood: 'clean', lighting: 'rim', colour: 'ember' },
+    id: 'paper',
+    name: 'Paper',
+    customization: { style: 'paper', mood: 'glowy', lighting: 'sunset', colour: 'ember' },
   },
   {
-    id: 'cyberpunk',
-    name: 'Cyber Horizon',
-    subtitle: 'Retro perspective grid & nodes',
-    badge: 'Neon',
-    customization: { style: 'cyber', mood: 'scanlines', lighting: 'spotlight', colour: 'cyber' },
+    id: 'lowpoly',
+    name: 'Low-poly',
+    customization: { style: 'lowpoly', mood: 'glowy', lighting: 'dark', colour: 'violet' },
   },
   {
-    id: 'ivory_luxury',
-    name: 'Warm Ceramic',
-    subtitle: 'Topographic contour elevation',
-    badge: 'Editorial',
-    customization: { style: 'topo', mood: 'grain', lighting: 'diffuse', colour: 'ivory' },
+    id: 'watercolor',
+    name: 'Watercolor',
+    customization: { style: 'watercolor', mood: 'dreamy', lighting: 'bright', colour: 'cobalt' },
   },
   {
-    id: 'deep_nebula',
-    name: 'Cosmic Astral',
-    subtitle: 'Deep star dust clouds & clusters',
-    badge: 'Sci-Fi',
-    customization: { style: 'nebula', mood: 'starlight', lighting: 'eclipse', colour: 'violet' },
+    id: '3d',
+    name: '3D',
+    customization: { style: '3d', mood: 'dreamy', lighting: 'dark', colour: 'ivory' },
   },
   {
-    id: 'solar_eclipse',
-    name: 'Solar Corona',
-    subtitle: 'Kepler orbital rings & flare',
-    badge: 'Dramatic',
-    customization: { style: 'orbit', mood: 'vignette', lighting: 'sunburst', colour: 'gold' },
+    id: 'illustrated',
+    name: 'Illustrated',
+    customization: { style: 'illustrated', mood: 'glowy', lighting: 'sunset', colour: 'ember' },
   },
   {
-    id: 'boreal',
-    name: 'Northern Aurora',
-    subtitle: 'Harmonic flowing wave ribbons',
-    badge: 'Ambient',
-    customization: { style: 'aurora', mood: 'mist', lighting: 'diffuse', colour: 'cobalt' },
-  },
-  {
-    id: 'hologram',
-    name: 'Prism Nova',
-    subtitle: 'Glass refraction & stardust',
-    badge: 'Glass',
-    customization: { style: 'prism', mood: 'starlight', lighting: 'rim', colour: 'rose' },
-  },
-  {
-    id: 'monolith',
-    name: 'Carbon Stealth',
-    subtitle: 'Hexagonal honeycomb lattice',
-    badge: 'Minimal',
-    customization: { style: 'hex', mood: 'grain', lighting: 'stealth', colour: 'mono' },
+    id: 'anime',
+    name: 'Anime',
+    customization: { style: 'anime', mood: 'sweets', lighting: 'bright', colour: 'rose' },
   },
 ];
 
-export const STYLE_OPTIONS: CustomizationOptionItem[] = [
-  { id: 'sphere', name: '3D Orb', subtitle: 'Smooth celestial vector sphere', badge: 'Vector 3D' },
-  { id: 'pixel', name: '8-Bit Retro', subtitle: 'Arcade pixel gaming matrix', badge: 'Retro' },
-  { id: 'nebula', name: 'Deep Nebula', subtitle: 'Cosmic star clusters & dust', badge: 'Cosmic' },
-  { id: 'aurora', name: 'Boreal Waves', subtitle: 'Flowing harmonic light ribbons', badge: 'Harmonic' },
-  { id: 'cyber', name: 'Cyber Matrix', subtitle: 'Perspective vanishing grid', badge: 'Sci-Fi' },
-  { id: 'topo', name: 'Topographic', subtitle: 'Elevation terrain contours', badge: 'Editorial' },
-  { id: 'prism', name: 'Prism Glass', subtitle: 'Geometric refraction beams', badge: 'Refraction' },
-  { id: 'orbit', name: 'Kepler Orbit', subtitle: 'Nested planetary trajectories', badge: 'Astronomy' },
-  { id: 'liquid', name: 'Liquid Mercury', subtitle: 'Organic fluid metallic blobs', badge: 'Fluid' },
-  { id: 'hex', name: 'Hex Lattice', subtitle: 'Isometric honeycomb mesh', badge: 'Tech' },
-  { id: 'minimal', name: 'Pure Studio', subtitle: 'Clean architectural gradient', badge: 'Clean' },
+export const STYLE_OPTIONS: { id: FlexCardStyle; name: string }[] = [
+  { id: '3d', name: '3D' },
+  { id: 'collage', name: 'Collage' },
+  { id: 'anime', name: 'Anime' },
+  { id: 'paper', name: 'Paper' },
+  { id: 'illustrated', name: 'Illustrated' },
+  { id: 'lowpoly', name: 'Low-poly' },
+  { id: 'cartoon', name: 'Cartoon' },
+  { id: 'goth', name: 'Goth' },
+  { id: 'artdeco', name: 'Art deco' },
+  { id: 'cinema', name: 'Cinema' },
+  { id: 'watercolor', name: 'Watercolor' },
 ];
 
-export const MOOD_OPTIONS: CustomizationOptionItem[] = [
-  { id: 'clean', name: 'Crystal Clear', subtitle: 'Ultra-crisp 4K vector dots', badge: 'Default' },
-  { id: 'grain', name: '35mm Film Grain', subtitle: 'Analogue photographic texture', badge: 'Texture' },
-  { id: 'scanlines', name: 'CRT Scanlines', subtitle: 'Phosphor cathode terminal', badge: 'Retro' },
-  { id: 'starlight', name: 'Stardust Spark', subtitle: 'Glittering cosmic micro-specks', badge: 'Glimmer' },
-  { id: 'mist', name: 'Vapor Mist', subtitle: 'Atmospheric depth glow', badge: 'Soft' },
-  { id: 'vignette', name: 'Dark Vignette', subtitle: 'Cinematic perimeter shadow', badge: 'Cinema' },
+export const MOOD_OPTIONS: { id: FlexCardMood; name: string }[] = [
+  { id: 'glowy', name: 'Glowy' },
+  { id: 'sweets', name: 'Sweets' },
+  { id: 'dreamy', name: 'Dreamy' },
 ];
 
-export const LIGHTING_OPTIONS: CustomizationOptionItem[] = [
-  { id: 'rim', name: 'Rim Backlight', subtitle: 'Illuminated border glow', badge: 'Studio' },
-  { id: 'spotlight', name: 'Key Spotlight', subtitle: 'Focused top-down cone', badge: 'Stage' },
-  { id: 'eclipse', name: 'Corona Flare', subtitle: 'Deep central dark disc', badge: 'Dramatic' },
-  { id: 'sunburst', name: 'Sunburst Angle', subtitle: 'Radiant corner flare', badge: 'Warm' },
-  { id: 'diffuse', name: 'Soft Diffusion', subtitle: 'Uniform balanced softbox', badge: 'Balanced' },
-  { id: 'stealth', name: 'Stealth Shadow', subtitle: 'Low-key brooding dark', badge: 'Dark' },
+export const LIGHTING_OPTIONS: { id: FlexCardLighting; name: string }[] = [
+  { id: 'dark', name: 'Dark' },
+  { id: 'sunset', name: 'Sunset' },
+  { id: 'bright', name: 'Bright' },
+  { id: 'ethereal', name: 'Ethereal' },
 ];
 
-export const COLOUR_OPTIONS: (CustomizationOptionItem & { hex: string })[] = [
-  { id: 'ember', name: 'Obsidian Ember', subtitle: 'Volcanic orange & carbon black', badge: 'Brand', hex: '#ff5a1f' },
-  { id: 'cyber', name: 'Cyber Mint', subtitle: 'Vibrant emerald on dark teal', badge: 'Neon', hex: '#10b981' },
-  { id: 'ivory', name: 'Warm Ivory', subtitle: 'Ceramic eggshell & obsidian', badge: 'Light', hex: '#ff5a1f' },
-  { id: 'violet', name: 'Astral Violet', subtitle: 'Electric purple on midnight', badge: 'Deep', hex: '#a855f7' },
-  { id: 'cobalt', name: 'Deep Cobalt', subtitle: 'Ocean cyan on navy abyssal', badge: 'Vibrant', hex: '#06b6d4' },
-  { id: 'gold', name: 'Royal Gold', subtitle: 'Gilded yellow on onyx gold', badge: 'Luxury', hex: '#eab308' },
-  { id: 'rose', name: 'Neon Rose', subtitle: 'Vivid magenta on plum noir', badge: 'Vivid', hex: '#f43f5e' },
-  { id: 'mono', name: 'Monolith B&W', subtitle: 'Pure monochrome contrast', badge: 'Minimal', hex: '#ffffff' },
+export const COLOUR_OPTIONS: { id: FlexCardColour; name: string; hex: string }[] = [
+  { id: 'ember', name: 'Obsidian', hex: '#ff5a1f' },
+  { id: 'cyber', name: 'Cyber Mint', hex: '#10b981' },
+  { id: 'ivory', name: 'Warm Ivory', hex: '#ff5a1f' },
+  { id: 'violet', name: 'Astral Violet', hex: '#a855f7' },
+  { id: 'cobalt', name: 'Deep Cobalt', hex: '#06b6d4' },
+  { id: 'gold', name: 'Royal Gold', hex: '#eab308' },
+  { id: 'rose', name: 'Neon Rose', hex: '#f43f5e' },
+  { id: 'mono', name: 'Monolith', hex: '#ffffff' },
 ];
 
 export interface ThemeColors {
@@ -493,84 +480,16 @@ export function renderCustomizationBackground(
   bgGradient.addColorStop(1, theme.backgroundEnd);
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, width, height);
-
   ctx.save();
 
   // 2. Lighting Profile
   switch (customization.lighting) {
-    case 'spotlight': {
-      const spotX = width * 0.5;
-      const spotY = 0;
-      const spotRad = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, height * 0.85);
-      spotRad.addColorStop(0, theme.accentGlow);
-      spotRad.addColorStop(0.45, theme.accentGlow.replace(/[\d.]+\)$/, '0.12)'));
-      spotRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = spotRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-    case 'eclipse': {
-      const ecX = width * 0.5;
-      const ecY = format === 'landscape' ? height * 0.45 : height * 0.38;
-      const ecR = Math.min(width, height) * 0.28;
-      const flare = ctx.createRadialGradient(ecX, ecY, ecR * 0.85, ecX, ecY, ecR * 1.8);
-      flare.addColorStop(0, theme.accent);
-      flare.addColorStop(0.35, theme.accentGlow);
-      flare.addColorStop(1, 'transparent');
-      ctx.fillStyle = flare;
-      ctx.fillRect(0, 0, width, height);
-      // Dark central occlusion disk
-      ctx.fillStyle = theme.backgroundStart;
-      ctx.beginPath();
-      ctx.arc(ecX, ecY, ecR * 0.9, 0, Math.PI * 2);
-      ctx.fill();
-      break;
-    }
-    case 'sunburst': {
-      const sunX = width * 0.92;
-      const sunY = height * 0.08;
-      const sunRad = ctx.createRadialGradient(sunX, sunY, s(20), sunX, sunY, width * 0.9);
-      sunRad.addColorStop(0, theme.accent);
-      sunRad.addColorStop(0.28, theme.accentGlow);
-      sunRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = sunRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-    case 'diffuse': {
-      const d1X = width * 0.25;
-      const d1Y = height * 0.3;
-      const g1 = ctx.createRadialGradient(d1X, d1Y, 0, d1X, d1Y, width * 0.65);
-      g1.addColorStop(0, theme.accentGlow);
-      g1.addColorStop(1, 'transparent');
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, 0, width, height);
-
-      const d2X = width * 0.75;
-      const d2Y = height * 0.72;
-      const g2 = ctx.createRadialGradient(d2X, d2Y, 0, d2X, d2Y, width * 0.65);
-      g2.addColorStop(0, theme.accentGlow);
-      g2.addColorStop(1, 'transparent');
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-    case 'stealth': {
-      const stX = width * 0.5;
-      const stY = height * 0.5;
-      const stRad = ctx.createRadialGradient(stX, stY, s(20), stX, stY, width * 0.5);
-      stRad.addColorStop(0, theme.accentGlow.replace(/[\d.]+\)$/, '0.15)'));
-      stRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = stRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-    case 'rim':
-    default: {
+    case 'dark':
+    case 'rim': {
       const rX1 = format === 'landscape' ? width * 0.2 : width * 0.3;
       const rY1 = format === 'landscape' ? height * 0.35 : height * 0.22;
       const rad1 = ctx.createRadialGradient(rX1, rY1, s(10), rX1, rY1, width * 0.55);
-      rad1.addColorStop(0, theme.accentGlow);
+      rad1.addColorStop(0, '#06b6d4');
       rad1.addColorStop(1, 'transparent');
       ctx.fillStyle = rad1;
       ctx.fillRect(0, 0, width, height);
@@ -578,9 +497,49 @@ export function renderCustomizationBackground(
       const rX2 = format === 'landscape' ? width * 0.82 : width * 0.75;
       const rY2 = format === 'landscape' ? height * 0.7 : height * 0.78;
       const rad2 = ctx.createRadialGradient(rX2, rY2, s(10), rX2, rY2, width * 0.55);
-      rad2.addColorStop(0, theme.accentGlow);
+      rad2.addColorStop(0, '#1e1b4b');
       rad2.addColorStop(1, 'transparent');
       ctx.fillStyle = rad2;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'sunset':
+    case 'sunburst': {
+      const sunX = width * 0.88;
+      const sunY = height * 0.12;
+      const sunRad = ctx.createRadialGradient(sunX, sunY, s(20), sunX, sunY, width * 0.95);
+      sunRad.addColorStop(0, '#ff7e47');
+      sunRad.addColorStop(0.35, 'rgba(255, 90, 31, 0.45)');
+      sunRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'bright':
+    case 'spotlight': {
+      const spotX = width * 0.5;
+      const spotY = 0;
+      const spotRad = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, height * 0.85);
+      spotRad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+      spotRad.addColorStop(0.4, theme.accentGlow);
+      spotRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = spotRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'ethereal':
+    case 'diffuse':
+    default: {
+      const eX = width * 0.5;
+      const eY = format === 'landscape' ? height * 0.5 : height * 0.4;
+      const eRad = ctx.createRadialGradient(eX, eY, s(20), eX, eY, width * 0.65);
+      eRad.addColorStop(0, '#fbbf24');
+      eRad.addColorStop(0.35, 'rgba(245, 158, 11, 0.35)');
+      eRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = eRad;
       ctx.fillRect(0, 0, width, height);
       break;
     }
@@ -588,12 +547,315 @@ export function renderCustomizationBackground(
 
   // 3. Procedural Style Vector Graphics
   ctx.save();
-  switch (customization.style) {
-    case 'sphere': {
-      const orbX = width * 0.5;
-      const orbY = format === 'landscape' ? height * 0.5 : height * 0.38;
-      const orbR = Math.min(width, height) * (format === 'landscape' ? 0.32 : 0.28);
+  const orbX = width * 0.5;
+  const orbY = format === 'landscape' ? height * 0.5 : height * 0.4;
+  const orbR = Math.min(width, height) * (format === 'landscape' ? 0.3 : 0.26);
 
+  switch (customization.style) {
+    case 'paper': {
+      // Layered papier-mâché newspaper and paper-patch globe
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.fillStyle = '#e5d7ba';
+      ctx.fillRect(orbX - orbR, orbY - orbR, orbR * 2, orbR * 2);
+
+      // Paper strips
+      const stripColors = ['#d8c6a5', '#bfae8f', '#cfbea0', '#f4ebd0', '#a8987b'];
+      for (let i = 0; i < 28; i++) {
+        const sx = orbX - orbR + ((i * 47) % (orbR * 2));
+        const sy = orbY - orbR + ((i * 31) % (orbR * 2));
+        const sw = s(55);
+        const sh = s(28);
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate((i * 0.35) - 0.7);
+        ctx.fillStyle = stripColors[i % stripColors.length];
+        ctx.fillRect(-sw / 2, -sh / 2, sw, sh);
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1 * scale;
+        ctx.strokeRect(-sw / 2, -sh / 2, sw, sh);
+        ctx.restore();
+      }
+
+      // Spherical 3D shading
+      const pShade = ctx.createRadialGradient(orbX - orbR * 0.3, orbY - orbR * 0.3, orbR * 0.1, orbX, orbY, orbR);
+      pShade.addColorStop(0, 'rgba(255,255,255,0.4)');
+      pShade.addColorStop(0.7, 'transparent');
+      pShade.addColorStop(1, 'rgba(0,0,0,0.65)');
+      ctx.fillStyle = pShade;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    case 'lowpoly': {
+      // Faceted geodesic purple icosahedron sphere
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.clip();
+
+      const polyColors = ['#9333ea', '#7e22ce', '#a855f7', '#6b21a8', '#c084fc', '#581c87', '#3b0764'];
+      const numRows = 7;
+      const numCols = 8;
+      for (let r = 0; r < numRows; r++) {
+        for (let c = 0; c < numCols; c++) {
+          const px = orbX - orbR + (c * (orbR * 2 / numCols));
+          const py = orbY - orbR + (r * (orbR * 2 / numRows));
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + orbR / 4, py + orbR / 4);
+          ctx.lineTo(px, py + orbR / 3);
+          ctx.closePath();
+          ctx.fillStyle = polyColors[(r * 3 + c) % polyColors.length];
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+          ctx.lineWidth = 1 * scale;
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+      break;
+    }
+
+    case 'watercolor': {
+      // Soft painterly watercolor orb
+      const wGrad = ctx.createRadialGradient(orbX - orbR * 0.3, orbY - orbR * 0.3, orbR * 0.1, orbX, orbY, orbR);
+      wGrad.addColorStop(0, '#fef08a');
+      wGrad.addColorStop(0.4, '#67e8f9');
+      wGrad.addColorStop(0.75, '#c084fc');
+      wGrad.addColorStop(1, '#1e1b4b');
+      ctx.fillStyle = wGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Soft bleeding wash rings
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 4 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR - s(8), 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'anime': {
+      // Cute kawaii pastel sphere with chibi face
+      const aGrad = ctx.createLinearGradient(orbX, orbY - orbR, orbX, orbY + orbR);
+      aGrad.addColorStop(0, '#fbcfe8'); // pastel pink
+      aGrad.addColorStop(1, '#a7f3d0'); // pastel mint
+      ctx.fillStyle = aGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Anime eyes
+      const eyeY = orbY + s(8);
+      const eyeR = s(8);
+      ctx.fillStyle = '#111827';
+      // Left eye
+      ctx.beginPath();
+      ctx.arc(orbX - s(30), eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+      // Right eye
+      ctx.beginPath();
+      ctx.arc(orbX + s(30), eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye glints
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(orbX - s(28), eyeY - s(2), eyeR * 0.45, 0, Math.PI * 2);
+      ctx.arc(orbX + s(32), eyeY - s(2), eyeR * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Rosy blush cheeks
+      ctx.fillStyle = '#f472b6';
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.arc(orbX - s(44), eyeY + s(14), s(9), 0, Math.PI * 2);
+      ctx.arc(orbX + s(44), eyeY + s(14), s(9), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Small smile
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 2 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, eyeY + s(8), s(7), 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'illustrated': {
+      // Psychedelic wavy topographic contour bands
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.clip();
+
+      const waveColors = ['#f43f5e', '#fb923c', '#facc15', '#4ade80', '#22d3ee', '#818cf8', '#c084fc'];
+      for (let i = -10; i < 16; i++) {
+        const yBase = orbY - orbR + (i * s(32));
+        ctx.beginPath();
+        ctx.moveTo(orbX - orbR, yBase);
+        for (let x = orbX - orbR; x <= orbX + orbR; x += s(20)) {
+          const cy = yBase + Math.sin((x / s(60)) + i) * s(18);
+          ctx.lineTo(x, cy);
+        }
+        ctx.lineTo(orbX + orbR, orbY + orbR * 1.5);
+        ctx.lineTo(orbX - orbR, orbY + orbR * 1.5);
+        ctx.closePath();
+        ctx.fillStyle = waveColors[Math.abs(i) % waveColors.length];
+        ctx.fill();
+      }
+      ctx.restore();
+      break;
+    }
+
+    case 'cartoon': {
+      // Graphic striped beach ball with cartoon action lines
+      // Background action rays
+      ctx.save();
+      ctx.strokeStyle = theme.accentGlow;
+      ctx.lineWidth = 2 * scale;
+      for (let a = 0; a < 14; a++) {
+        const ang = (Math.PI * 2 / 14) * a;
+        ctx.beginPath();
+        ctx.moveTo(orbX + Math.cos(ang) * (orbR + s(15)), orbY + Math.sin(ang) * (orbR + s(15)));
+        ctx.lineTo(orbX + Math.cos(ang) * (orbR + s(60)), orbY + Math.sin(ang) * (orbR + s(60)));
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.clip();
+
+      const cStripes = ['#ef4444', '#06b6d4', '#facc15', '#ffffff'];
+      for (let i = 0; i < 4; i++) {
+        const sx = orbX - orbR + (i * (orbR * 2 / 4));
+        ctx.fillStyle = cStripes[i % cStripes.length];
+        ctx.fillRect(sx, orbY - orbR, orbR * 2 / 4, orbR * 2);
+      }
+      ctx.restore();
+
+      // Bold comic outline
+      ctx.strokeStyle = '#09090b';
+      ctx.lineWidth = 4 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'collage': {
+      // Sphere ringed by radiating paper fan strips
+      const numFans = 20;
+      const fanColors = ['#fbcfe8', '#fed7aa', '#fef08a', '#bbf7d0', '#bae6fd', '#ddd6fe'];
+      for (let i = 0; i < numFans; i++) {
+        const ang = (Math.PI * 2 / numFans) * i;
+        ctx.save();
+        ctx.translate(orbX, orbY);
+        ctx.rotate(ang);
+        ctx.fillStyle = fanColors[i % fanColors.length];
+        ctx.fillRect(orbR * 0.75, -s(14), s(55), s(28));
+        ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+        ctx.lineWidth = 1 * scale;
+        ctx.strokeRect(orbR * 0.75, -s(14), s(55), s(28));
+        ctx.restore();
+      }
+      // Center sphere
+      const cGrad = ctx.createRadialGradient(orbX - orbR * 0.3, orbY - orbR * 0.3, orbR * 0.1, orbX, orbY, orbR * 0.8);
+      cGrad.addColorStop(0, '#ffffff');
+      cGrad.addColorStop(1, '#d1d5db');
+      ctx.fillStyle = cGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case 'goth': {
+      // Manga cross-hatched shaded goth sphere with heavy outline
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(orbX - orbR, orbY - orbR, orbR * 2, orbR * 2);
+
+      // Fine cross-hatching
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 1.2 * scale;
+      for (let d = -orbR; d < orbR * 2; d += s(8)) {
+        ctx.beginPath();
+        ctx.moveTo(orbX - orbR + d, orbY);
+        ctx.lineTo(orbX + orbR, orbY - orbR + d);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 3.5 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.stroke();
+      break;
+    }
+
+    case 'artdeco': {
+      // Emerald and onyx sphere wrapped in gilded gold bands
+      const adGrad = ctx.createRadialGradient(orbX - orbR * 0.3, orbY - orbR * 0.3, orbR * 0.1, orbX, orbY, orbR);
+      adGrad.addColorStop(0, '#047857');
+      adGrad.addColorStop(0.65, '#064e3b');
+      adGrad.addColorStop(1, '#022c22');
+      ctx.fillStyle = adGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Gold filigree rings
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 3 * scale;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR * 0.55, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center gold jewel
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2 * scale;
+      ctx.stroke();
+      break;
+    }
+
+    case 'cinema': {
+      // Matte clay sphere with dramatic warm key spotlight
+      const cGrad = ctx.createRadialGradient(orbX - orbR * 0.45, orbY - orbR * 0.45, orbR * 0.05, orbX, orbY, orbR);
+      cGrad.addColorStop(0, '#d6c7b2');
+      cGrad.addColorStop(0.4, '#8c7d6b');
+      cGrad.addColorStop(0.85, '#3e3428');
+      cGrad.addColorStop(1, '#1a1610');
+      ctx.fillStyle = cGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case '3d':
+    case 'sphere':
+    default: {
+      // Smooth clean 3D clay/matte sphere
       const sphereGrad = ctx.createRadialGradient(
         orbX - orbR * 0.35,
         orbY - orbR * 0.35,
@@ -612,7 +874,7 @@ export function renderCustomizationBackground(
       ctx.fillStyle = sphereGrad;
       ctx.fill();
 
-      // Specular Highlight Crescent
+      // Specular Highlight
       ctx.beginPath();
       ctx.arc(orbX - orbR * 0.32, orbY - orbR * 0.32, orbR * 0.22, 0, Math.PI * 2);
       const specGrad = ctx.createRadialGradient(
@@ -623,319 +885,67 @@ export function renderCustomizationBackground(
         orbY - orbR * 0.32,
         orbR * 0.22
       );
-      specGrad.addColorStop(0, 'rgba(255,255,255,0.7)');
+      specGrad.addColorStop(0, 'rgba(255,255,255,0.75)');
       specGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = specGrad;
       ctx.fill();
-
-      // Ambient outer halo
-      ctx.strokeStyle = theme.accentGlow;
-      ctx.lineWidth = 2 * scale;
-      ctx.beginPath();
-      ctx.arc(orbX, orbY, orbR + s(14), 0, Math.PI * 2);
-      ctx.stroke();
-      break;
-    }
-
-    case 'pixel': {
-      const pxSize = s(36);
-      const startX = s(24);
-      const startY = s(24);
-      for (let x = startX; x < width - s(24); x += pxSize) {
-        for (let y = startY; y < height - s(24); y += pxSize) {
-          const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-          const val = hash - Math.floor(hash);
-          if (val > 0.82) {
-            ctx.fillStyle = val > 0.94 ? theme.accent : theme.accentGlow;
-            ctx.fillRect(x + s(2), y + s(2), pxSize - s(4), pxSize - s(4));
-          } else if (val > 0.65) {
-            ctx.fillStyle = 'rgba(255,255,255,0.025)';
-            ctx.fillRect(x + s(2), y + s(2), pxSize - s(4), pxSize - s(4));
-          }
-        }
-      }
-      break;
-    }
-
-    case 'nebula': {
-      const puffs = [
-        { x: width * 0.3, y: height * 0.25, r: width * 0.45, alpha: 0.35 },
-        { x: width * 0.7, y: height * 0.5, r: width * 0.5, alpha: 0.3 },
-        { x: width * 0.4, y: height * 0.75, r: width * 0.4, alpha: 0.25 },
-      ];
-      for (const puff of puffs) {
-        const pGrad = ctx.createRadialGradient(puff.x, puff.y, s(20), puff.x, puff.y, puff.r);
-        pGrad.addColorStop(0, theme.accentGlow);
-        pGrad.addColorStop(0.5, theme.accentGlow.replace(/[\d.]+\)$/, `${puff.alpha * 0.4})`));
-        pGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = pGrad;
-        ctx.beginPath();
-        ctx.arc(puff.x, puff.y, puff.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.fillStyle = theme.primaryText;
-      for (let i = 0; i < 90; i++) {
-        const sx = (i * 137.5) % width;
-        const sy = (i * 243.7) % height;
-        const sr = (i % 3 === 0 ? 2 : 1) * scale;
-        ctx.globalAlpha = 0.2 + (i % 5) * 0.15;
-        ctx.beginPath();
-        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    case 'aurora': {
-      const waveCount = 5;
-      for (let w = 0; w < waveCount; w++) {
-        const baseY = height * (0.2 + w * 0.14);
-        ctx.beginPath();
-        ctx.moveTo(0, baseY);
-        for (let x = 0; x <= width; x += s(30)) {
-          const angle = (x / width) * Math.PI * 2.5 + w * 1.2;
-          const yOffset = Math.sin(angle) * s(110) + Math.cos(angle * 1.5) * s(40);
-          ctx.lineTo(x, baseY + yOffset);
-        }
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
-        ctx.closePath();
-
-        const aGrad = ctx.createLinearGradient(0, baseY - s(120), 0, baseY + s(300));
-        aGrad.addColorStop(0, 'transparent');
-        aGrad.addColorStop(0.3, theme.accentGlow);
-        aGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = aGrad;
-        ctx.globalAlpha = 0.45;
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    case 'cyber': {
-      const horizonY = height * 0.45;
-      const vanishX = width * 0.5;
-      ctx.strokeStyle = theme.cardBorder;
-      ctx.lineWidth = 1.2 * scale;
-      const rayCount = 14;
-      for (let i = 0; i <= rayCount; i++) {
-        const bottomX = (width / rayCount) * i;
-        ctx.beginPath();
-        ctx.moveTo(vanishX, horizonY);
-        ctx.lineTo(bottomX, height);
-        ctx.stroke();
-      }
-      for (let step = 0; step < 10; step++) {
-        const ratio = Math.pow(step / 10, 2);
-        const y = horizonY + (height - horizonY) * ratio;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
-      for (let i = 0; i < 16; i++) {
-        const nx = (i * 179) % width;
-        const ny = (i * 83) % horizonY;
-        ctx.fillStyle = theme.accent;
-        ctx.beginPath();
-        ctx.arc(nx, ny, 2.5 * scale, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      break;
-    }
-
-    case 'topo': {
-      ctx.strokeStyle = theme.accentGlow;
-      ctx.lineWidth = 1.6 * scale;
-      const numLines = 14;
-      for (let i = 0; i < numLines; i++) {
-        const yCenter = height * (0.1 + (i / numLines) * 0.85);
-        ctx.beginPath();
-        ctx.moveTo(0, yCenter);
-        for (let x = 0; x <= width; x += s(40)) {
-          const cy = yCenter + Math.sin((x / width) * 5 + i * 0.6) * s(45) + Math.cos((x / width) * 2.8 + i) * s(25);
-          ctx.lineTo(x, cy);
-        }
-        ctx.globalAlpha = 0.35 + (i % 3) * 0.15;
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      break;
-    }
-
-    case 'prism': {
-      const bands = 5;
-      ctx.save();
-      ctx.rotate(-0.25);
-      for (let b = 0; b < bands; b++) {
-        const bx = -width * 0.2 + (width * 1.4 / bands) * b;
-        const bGrad = ctx.createLinearGradient(bx, 0, bx + s(140), 0);
-        bGrad.addColorStop(0, 'transparent');
-        bGrad.addColorStop(0.5, b % 2 === 0 ? theme.accentGlow : 'rgba(255,255,255,0.08)');
-        bGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = bGrad;
-        ctx.fillRect(bx, -height * 0.5, s(160), height * 2);
-      }
-      ctx.restore();
-      break;
-    }
-
-    case 'orbit': {
-      const cx = width * 0.5;
-      const cy = format === 'landscape' ? height * 0.5 : height * 0.42;
-      const rings = [s(140), s(240), s(360), s(520)];
-      ctx.strokeStyle = theme.cardBorder;
-      ctx.lineWidth = 1.4 * scale;
-
-      rings.forEach((r, idx) => {
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, r, r * 0.55, -0.3, 0, Math.PI * 2);
-        ctx.stroke();
-
-        const angle = idx * 1.6 + 0.8;
-        const satX = cx + Math.cos(angle) * r;
-        const satY = cy + Math.sin(angle) * (r * 0.55);
-        ctx.fillStyle = theme.accent;
-        ctx.beginPath();
-        ctx.arc(satX, satY, (idx === 1 ? 5 : 3.5) * scale, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      const starGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, s(50));
-      starGrad.addColorStop(0, theme.accent);
-      starGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = starGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, s(50), 0, Math.PI * 2);
-      ctx.fill();
-      break;
-    }
-
-    case 'liquid': {
-      const blobs = [
-        { x: width * 0.25, y: height * 0.32, r: s(180) },
-        { x: width * 0.72, y: height * 0.38, r: s(220) },
-        { x: width * 0.5, y: height * 0.7, r: s(240) },
-      ];
-      blobs.forEach((b) => {
-        const lGrad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, s(10), b.x, b.y, b.r);
-        lGrad.addColorStop(0, theme.accentGlow);
-        lGrad.addColorStop(0.7, theme.accentGlow.replace(/[\d.]+\)$/, '0.08)'));
-        lGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = lGrad;
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = theme.cardBorder;
-        ctx.lineWidth = 1.5 * scale;
-        ctx.stroke();
-      });
-      break;
-    }
-
-    case 'hex': {
-      const hexR = s(38);
-      const hexW = hexR * Math.sqrt(3);
-      const hexH = hexR * 1.5;
-      ctx.strokeStyle = theme.cardBorder;
-      ctx.lineWidth = 1 * scale;
-      for (let y = s(20); y < height; y += hexH) {
-        const row = Math.floor(y / hexH);
-        const offsetX = (row % 2) * (hexW / 2);
-        for (let x = -hexW; x < width + hexW; x += hexW) {
-          const hx = x + offsetX;
-          const hy = y;
-          ctx.beginPath();
-          for (let a = 0; a < 6; a++) {
-            const rad = (Math.PI / 3) * a + Math.PI / 6;
-            const px = hx + hexR * Math.cos(rad);
-            const py = hy + hexR * Math.sin(rad);
-            if (a === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-          }
-          ctx.closePath();
-          ctx.stroke();
-        }
-      }
-      break;
-    }
-
-    case 'minimal':
-    default: {
       break;
     }
   }
   ctx.restore();
 
-  // 4. Mood Texture Overlay
+  // 4. Mood Texture Overlay (Zero sparkles)
   switch (customization.mood) {
-    case 'grain': {
-      ctx.fillStyle = theme.colour === 'ivory' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
-      const grainStep = s(16);
-      for (let x = 0; x < width; x += grainStep) {
-        for (let y = 0; y < height; y += grainStep) {
-          const hash = Math.sin(x * 19.123 + y * 97.456) * 43758.5453;
-          if (hash - Math.floor(hash) > 0.55) {
-            ctx.fillRect(x, y, 1.8 * scale, 1.8 * scale);
-          }
-        }
+    case 'glowy': {
+      // Bioluminescent electric glow with cyan/emerald ambient aura
+      const glowGrad = ctx.createRadialGradient(orbX, orbY, orbR * 0.5, orbX, orbY, orbR * 1.6);
+      glowGrad.addColorStop(0, 'rgba(16, 185, 129, 0.45)');
+      glowGrad.addColorStop(0.5, 'rgba(6, 182, 212, 0.25)');
+      glowGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(orbX, orbY, orbR * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case 'sweets': {
+      // Soft candy sprinkle dots and pastel warmth
+      ctx.fillStyle = 'rgba(244, 114, 182, 0.15)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Sprinkles (colored pill dashes)
+      const sColors = ['#f472b6', '#38bdf8', '#facc15', '#4ade80', '#ffffff'];
+      for (let i = 0; i < 40; i++) {
+        const sx = ((i * 179) % width);
+        const sy = ((i * 283) % height);
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate((i * 0.5) - 1);
+        ctx.fillStyle = sColors[i % sColors.length];
+        ctx.fillRect(-s(8), -s(2.5), s(16), s(5));
+        ctx.restore();
       }
       break;
     }
-    case 'scanlines': {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-      const lineH = Math.max(1, Math.round(2 * scale));
-      const lineGap = Math.max(2, Math.round(5 * scale));
-      for (let y = 0; y < height; y += lineH + lineGap) {
-        ctx.fillRect(0, y, width, lineH);
-      }
-      break;
-    }
-    case 'starlight': {
-      const starCount = 36;
-      for (let i = 0; i < starCount; i++) {
-        const sx = ((i * 193.3) % (width - s(120))) + s(60);
-        const sy = ((i * 311.7) % (height - s(120))) + s(60);
-        const slen = i % 2 === 0 ? s(12) : s(8);
-        ctx.strokeStyle = theme.accent;
-        ctx.lineWidth = 1.2 * scale;
-        ctx.globalAlpha = 0.45 + (i % 4) * 0.15;
+
+    case 'dreamy': {
+      // Warm golden bokeh circles (smooth diffused discs, absolutely no sparkles)
+      for (let i = 0; i < 16; i++) {
+        const bx = ((i * 211) % (width - s(120))) + s(60);
+        const by = ((i * 337) % (height - s(120))) + s(60);
+        const br = s(16) + (i % 4) * s(10);
+        const bGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        bGrad.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+        bGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = bGrad;
         ctx.beginPath();
-        ctx.moveTo(sx - slen, sy);
-        ctx.lineTo(sx + slen, sy);
-        ctx.moveTo(sx, sy - slen);
-        ctx.lineTo(sx, sy + slen);
-        ctx.stroke();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.globalAlpha = 1;
       break;
     }
-    case 'mist': {
-      const mGrad = ctx.createLinearGradient(0, height * 0.4, 0, height);
-      mGrad.addColorStop(0, 'transparent');
-      mGrad.addColorStop(0.5, theme.accentGlow.replace(/[\d.]+\)$/, '0.12)'));
-      mGrad.addColorStop(1, 'transparent');
-      ctx.fillStyle = mGrad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-    case 'vignette': {
-      const vGrad = ctx.createRadialGradient(
-        width * 0.5,
-        height * 0.5,
-        Math.min(width, height) * 0.4,
-        width * 0.5,
-        height * 0.5,
-        Math.max(width, height) * 0.75
-      );
-      vGrad.addColorStop(0, 'transparent');
-      vGrad.addColorStop(1, 'rgba(0,0,0,0.72)');
-      ctx.fillStyle = vGrad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
+
     case 'clean':
     default: {
       ctx.fillStyle = theme.colour === 'ivory' ? 'rgba(0,0,0,0.038)' : 'rgba(255,255,255,0.038)';

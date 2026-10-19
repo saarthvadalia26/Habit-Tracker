@@ -23,7 +23,6 @@ import {
   ShieldCheck,
   Lock,
   HelpCircle,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -137,6 +136,38 @@ function CardVectorArtLayer({
       />
 
       {/* 2. Lighting Profile */}
+      {customization.lighting === 'dark' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 12%, rgba(56, 189, 248, 0.3) 0%, rgba(0,0,0,0.72) 75%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'sunset' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.38) 0%, rgba(244, 63, 94, 0.22) 45%, transparent 75%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'bright' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.28) 0%, transparent 65%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'ethereal' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.28) 0%, rgba(245, 158, 11, 0.12) 50%, transparent 80%)',
+          }}
+        />
+      )}
       {customization.lighting === 'spotlight' && (
         <div
           className="absolute inset-x-0 top-0 h-4/5 pointer-events-none"
@@ -188,7 +219,7 @@ function CardVectorArtLayer({
           }}
         />
       )}
-      {(customization.lighting === 'rim' || !customization.lighting) && (
+      {customization.lighting === 'rim' && (
         <>
           <div
             className="absolute -top-10 -left-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
@@ -203,22 +234,227 @@ function CardVectorArtLayer({
 
       {/* 3. Procedural Style Vector Graphics Artwork */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {customization.style === 'sphere' && (
+        {customization.style === 'paper' && (
+          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+            <defs>
+              <radialGradient id="domPaperGrad" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#faf5ee" />
+                <stop offset="60%" stopColor="#e5d5be" />
+                <stop offset="100%" stopColor="#8c775d" />
+              </radialGradient>
+              <clipPath id="domPaperClip">
+                <circle cx="200" cy="190" r="95" />
+              </clipPath>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="url(#domPaperGrad)" />
+            <g clipPath="url(#domPaperClip)">
+              <polygon points="120,150 180,125 220,165 160,190" fill="#e2c8a0" opacity="0.7" />
+              <polygon points="175,125 260,120 270,180 215,165" fill="#f7f1e5" opacity="0.8" />
+              <polygon points="215,165 270,180 250,240 190,215" fill="#a38c6d" opacity="0.6" />
+              <polygon points="145,190 190,215 170,265 110,230" fill="#c4ad8d" opacity="0.75" />
+              <polygon points="190,215 250,240 215,290 170,265" fill="#8c7352" opacity="0.7" />
+            </g>
+          </svg>
+        )}
+
+        {customization.style === 'lowpoly' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <clipPath id="domLowpolyClip">
+                <circle cx="200" cy="190" r="95" />
+              </clipPath>
+            </defs>
+            <g clipPath="url(#domLowpolyClip)">
+              <polygon points="200,95 160,135 200,145" fill="#e9d5ff" />
+              <polygon points="200,95 200,145 240,135" fill="#d8b4fe" />
+              <polygon points="160,135 110,165 160,185" fill="#c084fc" />
+              <polygon points="160,135 200,145 160,185" fill="#d8b4fe" />
+              <polygon points="200,145 240,135 240,185" fill="#a855f7" />
+              <polygon points="240,135 290,165 240,185" fill="#9333ea" />
+              <polygon points="110,165 105,215 150,225" fill="#9333ea" />
+              <polygon points="110,165 160,185 150,225" fill="#a855f7" />
+              <polygon points="160,185 200,145 200,215" fill="#c084fc" />
+              <polygon points="200,145 240,185 200,215" fill="#9333ea" />
+              <polygon points="240,185 290,165 295,215" fill="#7e22ce" />
+              <polygon points="240,185 250,225 295,215" fill="#6b21a8" />
+              <polygon points="200,215 240,185 250,225" fill="#7e22ce" />
+              <polygon points="150,225 200,215 200,255" fill="#7e22ce" />
+              <polygon points="200,215 250,225 200,255" fill="#6b21a8" />
+              <polygon points="150,225 105,215 145,265" fill="#6b21a8" />
+              <polygon points="150,225 200,255 145,265" fill="#581c87" />
+              <polygon points="250,225 295,215 255,265" fill="#581c87" />
+              <polygon points="250,225 200,255 255,265" fill="#3b0764" />
+              <polygon points="145,265 200,255 200,285" fill="#3b0764" />
+              <polygon points="200,255 255,265 200,285" fill="#2e1065" />
+            </g>
+          </svg>
+        )}
+
+        {customization.style === 'watercolor' && (
+          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+            <defs>
+              <radialGradient id="domWcGrad" cx="38%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#fef08a" />
+                <stop offset="40%" stopColor="#67e8f9" />
+                <stop offset="75%" stopColor="#93c5fd" />
+                <stop offset="100%" stopColor="#6366f1" />
+              </radialGradient>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="url(#domWcGrad)" />
+            <circle cx="200" cy="190" r="88" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="4" />
+          </svg>
+        )}
+
+        {(customization.style === '3d' || customization.style === 'sphere') && (
           <svg className="w-full h-full opacity-90" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="dom3dSphereGrad" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stopColor={theme.accent} />
+                <stop offset="50%" stopColor={theme.accentGlow} />
+                <stop offset="85%" stopColor={theme.backgroundStart} />
+                <stop offset="100%" stopColor="#000000" />
+              </radialGradient>
+            </defs>
             <circle cx="200" cy="190" r="115" fill="none" stroke={theme.accentGlow} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.6" />
-            <circle
-              cx="200"
-              cy="190"
-              r="95"
-              fill={theme.accent}
-              style={{
-                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.6))',
-              }}
-            />
-            {/* Shading overlay */}
-            <circle cx="200" cy="190" r="95" fill="url(#orbDarkCrescent)" opacity="0.8" />
-            {/* Specular Highlight Crescent */}
+            <circle cx="200" cy="190" r="95" fill="url(#dom3dSphereGrad)" />
             <ellipse cx="168" cy="158" rx="28" ry="18" fill="#ffffff" opacity="0.75" transform="rotate(-30 168 158)" />
+          </svg>
+        )}
+
+        {customization.style === 'illustrated' && (
+          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+            <defs>
+              <clipPath id="domIllClip">
+                <circle cx="200" cy="190" r="95" />
+              </clipPath>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="#fb923c" />
+            <g clipPath="url(#domIllClip)">
+              <path d="M 80 120 Q 140 95 200 120 T 320 110 L 320 150 Q 260 125 200 150 T 80 140 Z" fill="#f43f5e" />
+              <path d="M 80 150 Q 140 125 200 150 T 320 140 L 320 180 Q 260 155 200 180 T 80 170 Z" fill="#fb923c" />
+              <path d="M 80 180 Q 140 155 200 180 T 320 170 L 320 210 Q 260 185 200 210 T 80 200 Z" fill="#facc15" />
+              <path d="M 80 210 Q 140 185 200 210 T 320 200 L 320 240 Q 260 215 200 240 T 80 230 Z" fill="#22d3ee" />
+              <path d="M 80 240 Q 140 215 200 240 T 320 230 L 320 285 L 80 285 Z" fill="#c084fc" />
+            </g>
+          </svg>
+        )}
+
+        {customization.style === 'anime' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <linearGradient id="domAnimeGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fbcfe8" />
+                <stop offset="50%" stopColor="#fed7aa" />
+                <stop offset="100%" stopColor="#a7f3d0" />
+              </linearGradient>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="url(#domAnimeGrad)" />
+            <circle cx="170" cy="190" r="10" fill="#1e1b4b" />
+            <circle cx="230" cy="190" r="10" fill="#1e1b4b" />
+            <circle cx="174" cy="186" r="3.5" fill="#ffffff" />
+            <circle cx="234" cy="186" r="3.5" fill="#ffffff" />
+            <ellipse cx="150" cy="210" rx="14" ry="8" fill="#f43f5e" opacity="0.55" />
+            <ellipse cx="250" cy="210" rx="14" ry="8" fill="#f43f5e" opacity="0.55" />
+            <path d="M 192 205 Q 200 218 208 205" stroke="#1e1b4b" strokeWidth="4" fill="none" strokeLinecap="round" />
+          </svg>
+        )}
+
+        {customization.style === 'collage' && (
+          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
+            <g transform="translate(200, 190)">
+              {[0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240, 264, 288, 312, 336].map((deg, i) => {
+                const colors = ['#fbcfe8', '#fed7aa', '#fef08a', '#bbf7d0', '#bae6fd', '#ddd6fe'];
+                return (
+                  <rect
+                    key={deg}
+                    x="50"
+                    y="-16"
+                    width="60"
+                    height="32"
+                    fill={colors[i % colors.length]}
+                    stroke="rgba(0,0,0,0.15)"
+                    strokeWidth="2"
+                    transform={`rotate(${deg})`}
+                  />
+                );
+              })}
+            </g>
+            <circle cx="200" cy="190" r="65" fill="#f8fafc" />
+            <circle cx="200" cy="190" r="65" fill="none" stroke={theme.accent} strokeWidth="2" />
+          </svg>
+        )}
+
+        {customization.style === 'cartoon' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <clipPath id="domCartoonClip">
+                <circle cx="200" cy="190" r="95" />
+              </clipPath>
+            </defs>
+            <g stroke={theme.accentGlow} strokeWidth="3" opacity="0.6">
+              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+                <line
+                  key={deg}
+                  x1="200"
+                  y1="190"
+                  x2={200 + Math.cos((deg * Math.PI) / 180) * 160}
+                  y2={190 + Math.sin((deg * Math.PI) / 180) * 160}
+                />
+              ))}
+            </g>
+            <g clipPath="url(#domCartoonClip)">
+              <rect x="105" y="95" width="48" height="190" fill="#ef4444" />
+              <rect x="153" y="95" width="47" height="190" fill="#06b6d4" />
+              <rect x="200" y="95" width="47" height="190" fill="#facc15" />
+              <rect x="247" y="95" width="48" height="190" fill="#ffffff" />
+            </g>
+            <circle cx="200" cy="190" r="95" fill="none" stroke="#18181b" strokeWidth="6" />
+          </svg>
+        )}
+
+        {customization.style === 'goth' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <clipPath id="domGothClip">
+                <circle cx="200" cy="190" r="95" />
+              </clipPath>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="#ffffff" />
+            <g clipPath="url(#domGothClip)">
+              <path d="M 125 150 Q 215 140 270 230 A 95 95 0 0 1 105 190 Q 110 165 125 150 Z" fill="#18181b" transform="rotate(20 200 190)" />
+            </g>
+            <circle cx="200" cy="190" r="95" fill="none" stroke="#18181b" strokeWidth="6" />
+          </svg>
+        )}
+
+        {customization.style === 'artdeco' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <radialGradient id="domArtDecoGrad" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#047857" />
+                <stop offset="65%" stopColor="#064e3b" />
+                <stop offset="100%" stopColor="#022c22" />
+              </radialGradient>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="url(#domArtDecoGrad)" />
+            <circle cx="200" cy="190" r="80" fill="none" stroke="#fbbf24" strokeWidth="4" />
+            <circle cx="200" cy="190" r="55" fill="none" stroke="#f59e0b" strokeWidth="3" />
+            <circle cx="200" cy="190" r="35" fill="none" stroke="#fbbf24" strokeWidth="4" />
+            <circle cx="200" cy="190" r="22" fill="#10b981" stroke="#fbbf24" strokeWidth="3" />
+          </svg>
+        )}
+
+        {customization.style === 'cinema' && (
+          <svg className="w-full h-full opacity-90" viewBox="0 0 400 400">
+            <defs>
+              <radialGradient id="domCinemaGrad" cx="30%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="#d6c7b2" />
+                <stop offset="40%" stopColor="#8c7d6b" />
+                <stop offset="85%" stopColor="#3e3428" />
+                <stop offset="100%" stopColor="#1a1610" />
+              </radialGradient>
+            </defs>
+            <circle cx="200" cy="190" r="95" fill="url(#domCinemaGrad)" />
           </svg>
         )}
 
@@ -250,13 +486,6 @@ function CardVectorArtLayer({
             <circle cx="130" cy="140" r="90" fill={theme.accent} opacity="0.28" />
             <circle cx="270" cy="220" r="110" fill={theme.accentGlow} opacity="0.32" />
             <circle cx="190" cy="300" r="85" fill={theme.accent} opacity="0.2" />
-            {[
-              [80, 90, 2], [150, 60, 1.5], [220, 110, 2.5], [310, 80, 1.8], [330, 190, 2.2],
-              [90, 240, 2], [140, 310, 1.6], [260, 330, 2.4], [310, 280, 1.8], [190, 190, 3],
-              [110, 160, 2], [280, 150, 2], [50, 190, 1.5], [350, 120, 2], [210, 250, 2.2]
-            ].map(([cx, cy, r], idx) => (
-              <circle key={idx} cx={cx} cy={cy} r={r} fill={theme.primaryText} opacity={0.65} />
-            ))}
           </svg>
         )}
 
@@ -283,11 +512,6 @@ function CardVectorArtLayer({
             {[180, 195, 215, 240, 275, 320, 375].map((y, idx) => (
               <line key={idx} x1="0" y1={y} x2="400" y2={y} stroke={theme.cardBorder} strokeWidth="1.2" opacity="0.6" />
             ))}
-            {[
-              [80, 60], [160, 90], [240, 50], [320, 80], [120, 130], [280, 120]
-            ].map(([cx, cy], idx) => (
-              <circle key={idx} cx={cx} cy={cy} r="3" fill={theme.accent} />
-            ))}
           </svg>
         )}
 
@@ -297,8 +521,6 @@ function CardVectorArtLayer({
             <path d="M-20,120 Q120,60 220,140 T420,100" opacity="0.4" />
             <path d="M-20,170 Q70,220 190,160 T420,170" opacity="0.5" />
             <path d="M-20,220 Q140,160 260,240 T420,210" opacity="0.6" />
-            <path d="M-20,270 Q80,320 200,260 T420,280" opacity="0.5" />
-            <path d="M-20,320 Q160,270 280,340 T420,320" opacity="0.4" />
           </svg>
         )}
 
@@ -306,17 +528,13 @@ function CardVectorArtLayer({
           <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
             <polygon points="-50,150 180,-50 240,-50 10,150" fill={theme.accentGlow} opacity="0.6" />
             <polygon points="50,420 320,150 370,150 100,420" fill={theme.accentGlow} opacity="0.4" />
-            <line x1="-20" y1="200" x2="420" y2="200" stroke={theme.accent} strokeWidth="1.2" strokeDasharray="6 8" opacity="0.5" />
           </svg>
         )}
 
         {customization.style === 'orbit' && (
           <svg className="w-full h-full opacity-75" viewBox="0 0 400 400" fill="none">
             <ellipse cx="200" cy="180" rx="90" ry="45" transform="rotate(-20 200 180)" stroke={theme.cardBorder} strokeWidth="1.5" />
-            <ellipse cx="200" cy="180" rx="145" ry="75" transform="rotate(-20 200 180)" stroke={theme.cardBorder} strokeWidth="1.4" opacity="0.7" />
             <circle cx="200" cy="180" r="14" fill={theme.accent} />
-            <circle cx="265" cy="145" r="4.5" fill={theme.accent} />
-            <circle cx="105" cy="225" r="3.5" fill={theme.primaryText} />
           </svg>
         )}
 
@@ -324,34 +542,21 @@ function CardVectorArtLayer({
           <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
             <circle cx="160" cy="170" r="65" fill={theme.accentGlow} opacity="0.7" />
             <circle cx="230" cy="190" r="75" fill={theme.accent} opacity="0.35" />
-            <circle cx="200" cy="250" r="70" fill={theme.accentGlow} opacity="0.5" />
           </svg>
         )}
 
         {customization.style === 'hex' && (
           <svg className="w-full h-full opacity-55" viewBox="0 0 400 400" stroke={theme.cardBorder} strokeWidth="1.2" fill="none">
             {[
-              [80, 80], [160, 80], [240, 80], [320, 80],
               [120, 140], [200, 140], [280, 140],
               [80, 200], [200, 200], [320, 200],
-              [120, 260], [280, 260],
-              [80, 320], [160, 320], [240, 320], [320, 320],
             ].map(([hx, hy], idx) => {
               const r = 26;
               const points = Array.from({ length: 6 }).map((_, a) => {
                 const angle = (Math.PI / 3) * a + Math.PI / 6;
                 return `${hx + r * Math.cos(angle)},${hy + r * Math.sin(angle)}`;
               }).join(' ');
-              const isHighlight = idx === 5;
-              return (
-                <polygon
-                  key={idx}
-                  points={points}
-                  fill={isHighlight ? theme.accentGlow : 'none'}
-                  stroke={isHighlight ? theme.accent : theme.cardBorder}
-                  opacity={isHighlight ? 0.9 : 0.6}
-                />
-              );
+              return <polygon key={idx} points={points} stroke={theme.cardBorder} />;
             })}
           </svg>
         )}
@@ -359,7 +564,27 @@ function CardVectorArtLayer({
         {customization.style === 'minimal' && <div className="w-full h-full" />}
       </div>
 
-      {/* 4. Mood Texture Overlay */}
+      {/* 4. Mood Texture Overlay (Strictly Zero Sparkles) */}
+      {customization.mood === 'glowy' && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-60"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.4) 0%, rgba(6, 182, 212, 0.2) 40%, transparent 70%)',
+          }}
+        />
+      )}
+      {customization.mood === 'sweets' && (
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          <div className="w-full h-full bg-pink-500/10" />
+        </div>
+      )}
+      {customization.mood === 'dreamy' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-amber-400/20 blur-xl" />
+          <div className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-yellow-500/15 blur-2xl" />
+          <div className="absolute top-1/2 right-1/3 w-20 h-20 rounded-full bg-amber-300/25 blur-lg" />
+        </div>
+      )}
       {customization.mood === 'grain' && (
         <div
           className="absolute inset-0 opacity-45 pointer-events-none"
@@ -377,20 +602,6 @@ function CardVectorArtLayer({
               'repeating-linear-gradient(to bottom, rgba(0,0,0,0.3) 0px, rgba(0,0,0,0.3) 1.5px, transparent 1.5px, transparent 4px)',
           }}
         />
-      )}
-      {customization.mood === 'starlight' && (
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-75">
-          {[
-            [70, 70, 8], [320, 60, 10], [90, 280, 9], [340, 260, 11],
-            [160, 340, 7], [280, 130, 8], [50, 170, 6], [220, 70, 9]
-          ].map(([sx, sy, sz], idx) => (
-            <g key={idx} stroke={theme.accent} strokeWidth="1.2">
-              <line x1={sx - sz} y1={sy} x2={sx + sz} y2={sy} />
-              <line x1={sx} y1={sy - sz} x2={sx} y2={sy + sz} />
-              <circle cx={sx} cy={sy} r="1.5" fill="#ffffff" />
-            </g>
-          ))}
-        </svg>
       )}
       {customization.mood === 'mist' && (
         <div
@@ -419,7 +630,308 @@ function CardVectorArtLayer({
 }
 
 /**
- * Miniature preview tile for category option cards
+ * Helper to render individual style spheres in preview tiles (zero sparkles)
+ */
+function RenderStylePreviewSphere({ styleId, theme }: { styleId: string; theme: ThemeColors }) {
+  if (styleId === '3d' || styleId === 'sphere') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#eae2d6" />
+        <ellipse cx="40" cy="65" rx="22" ry="5.5" fill="rgba(80,70,60,0.22)" />
+        <defs>
+          <radialGradient id="thumb3dGrad" cx="35%" cy="32%" r="65%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="55%" stopColor="#ded7cc" />
+            <stop offset="100%" stopColor="#8d8476" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="38" r="24" fill="url(#thumb3dGrad)" />
+        <ellipse cx="32" cy="30" rx="6" ry="4" fill="#ffffff" opacity="0.65" transform="rotate(-30 32 30)" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'collage') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#f6ece5" />
+        <circle cx="40" cy="40" r="23" fill="#f8fafc" />
+        <g transform="translate(40,40)">
+          {[0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240, 264, 288, 312, 336].map((deg, i) => {
+            const colors = ['#fbcfe8', '#fed7aa', '#fef08a', '#bbf7d0', '#bae6fd', '#ddd6fe'];
+            return (
+              <rect
+                key={deg}
+                x="12"
+                y="-4"
+                width="15"
+                height="8"
+                fill={colors[i % colors.length]}
+                stroke="#00000015"
+                strokeWidth="0.5"
+                transform={`rotate(${deg})`}
+              />
+            );
+          })}
+        </g>
+        <defs>
+          <radialGradient id="collageCenterGrad" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#d1d5db" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="16" fill="url(#collageCenterGrad)" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'anime') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <defs>
+          <linearGradient id="animeBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fce7f3" />
+            <stop offset="100%" stopColor="#fdf2f8" />
+          </linearGradient>
+          <linearGradient id="animeOrb" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fbcfe8" />
+            <stop offset="50%" stopColor="#fed7aa" />
+            <stop offset="100%" stopColor="#a7f3d0" />
+          </linearGradient>
+        </defs>
+        <rect width="80" height="80" fill="url(#animeBg)" />
+        <circle cx="40" cy="42" r="24" fill="url(#animeOrb)" />
+        <circle cx="33" cy="42" r="2.6" fill="#1e1b4b" />
+        <circle cx="47" cy="42" r="2.6" fill="#1e1b4b" />
+        <circle cx="34" cy="41" r="0.9" fill="#ffffff" />
+        <circle cx="48" cy="41" r="0.9" fill="#ffffff" />
+        <ellipse cx="28" cy="47" rx="3.5" ry="2" fill="#f43f5e" opacity="0.55" />
+        <ellipse cx="52" cy="47" rx="3.5" ry="2" fill="#f43f5e" opacity="0.55" />
+        <path d="M 38 45 Q 40 48 42 45" stroke="#1e1b4b" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'paper') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#d9c3ad" />
+        <ellipse cx="40" cy="65" rx="20" ry="5" fill="rgba(60,40,20,0.2)" />
+        <defs>
+          <radialGradient id="paperShade" cx="38%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#faf5ee" />
+            <stop offset="60%" stopColor="#e5d5be" />
+            <stop offset="100%" stopColor="#8c775d" />
+          </radialGradient>
+          <clipPath id="paperClip">
+            <circle cx="40" cy="38" r="24" />
+          </clipPath>
+        </defs>
+        <circle cx="40" cy="38" r="24" fill="url(#paperShade)" />
+        <g clipPath="url(#paperClip)">
+          <polygon points="20,28 36,22 45,32 30,38" fill="#e2c8a0" opacity="0.7" />
+          <polygon points="34,22 55,20 58,35 44,32" fill="#f7f1e5" opacity="0.8" />
+          <polygon points="44,32 58,35 52,50 38,44" fill="#a38c6d" opacity="0.6" />
+          <polygon points="26,38 38,44 32,56 18,48" fill="#c4ad8d" opacity="0.75" />
+          <polygon points="38,44 52,50 44,62 32,56" fill="#8c7352" opacity="0.7" />
+          <line x1="22" y1="29" x2="45" y2="33" stroke="#8c7352" strokeWidth="0.8" opacity="0.6" />
+          <line x1="33" y1="21" x2="52" y2="49" stroke="#8c7352" strokeWidth="0.8" opacity="0.6" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (styleId === 'illustrated') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <defs>
+          <linearGradient id="illBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fed7aa" />
+            <stop offset="100%" stopColor="#bae6fd" />
+          </linearGradient>
+          <clipPath id="illClip">
+            <circle cx="40" cy="40" r="24" />
+          </clipPath>
+        </defs>
+        <rect width="80" height="80" fill="url(#illBg)" />
+        <circle cx="40" cy="40" r="24" fill="#fb923c" />
+        <g clipPath="url(#illClip)">
+          <path d="M 10 22 Q 25 16 40 22 T 70 20 L 70 30 Q 55 24 40 30 T 10 28 Z" fill="#f43f5e" />
+          <path d="M 10 30 Q 25 24 40 30 T 70 28 L 70 38 Q 55 32 40 38 T 10 36 Z" fill="#fb923c" />
+          <path d="M 10 38 Q 25 32 40 38 T 70 36 L 70 46 Q 55 40 40 46 T 10 44 Z" fill="#facc15" />
+          <path d="M 10 46 Q 25 40 40 46 T 70 44 L 70 54 Q 55 48 40 54 T 10 52 Z" fill="#22d3ee" />
+          <path d="M 10 54 Q 25 48 40 54 T 70 52 L 70 64 Q 55 58 40 64 T 10 62 Z" fill="#818cf8" />
+          <path d="M 10 64 Q 25 58 40 64 T 70 62 L 70 75 L 10 75 Z" fill="#c084fc" />
+        </g>
+        <circle cx="40" cy="40" r="24" fill="none" stroke="#00000020" strokeWidth="1" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'lowpoly') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#581c87" />
+        <defs>
+          <clipPath id="lowpolyClip">
+            <circle cx="40" cy="40" r="24" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#lowpolyClip)">
+          <polygon points="40,16 30,26 40,28" fill="#e9d5ff" />
+          <polygon points="40,16 40,28 50,26" fill="#d8b4fe" />
+          <polygon points="30,26 18,34 30,38" fill="#c084fc" />
+          <polygon points="30,26 40,28 30,38" fill="#d8b4fe" />
+          <polygon points="40,28 50,26 50,38" fill="#a855f7" />
+          <polygon points="50,26 62,34 50,38" fill="#9333ea" />
+          <polygon points="18,34 16,46 28,48" fill="#9333ea" />
+          <polygon points="18,34 30,38 28,48" fill="#a855f7" />
+          <polygon points="30,38 40,28 40,46" fill="#c084fc" />
+          <polygon points="40,28 50,38 40,46" fill="#9333ea" />
+          <polygon points="50,38 62,34 64,46" fill="#7e22ce" />
+          <polygon points="50,38 52,48 64,46" fill="#6b21a8" />
+          <polygon points="40,46 50,38 52,48" fill="#7e22ce" />
+          <polygon points="28,48 40,46 40,56" fill="#7e22ce" />
+          <polygon points="40,46 52,48 40,56" fill="#6b21a8" />
+          <polygon points="28,48 16,46 26,58" fill="#6b21a8" />
+          <polygon points="28,48 40,56 26,58" fill="#581c87" />
+          <polygon points="52,48 64,46 54,58" fill="#581c87" />
+          <polygon points="52,48 40,56 54,58" fill="#3b0764" />
+          <polygon points="26,58 40,56 40,64" fill="#3b0764" />
+          <polygon points="40,56 54,58 40,64" fill="#2e1065" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (styleId === 'cartoon') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#fed7aa" />
+        <g stroke="#f97316" strokeWidth="1.2" opacity="0.6">
+          {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+            <line
+              key={deg}
+              x1="40"
+              y1="40"
+              x2={40 + Math.cos((deg * Math.PI) / 180) * 38}
+              y2={40 + Math.sin((deg * Math.PI) / 180) * 38}
+            />
+          ))}
+        </g>
+        <ellipse cx="40" cy="65" rx="20" ry="5" fill="rgba(0,0,0,0.3)" />
+        <defs>
+          <clipPath id="cartoonClip">
+            <circle cx="40" cy="38" r="23" />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#cartoonClip)">
+          <rect x="17" y="15" width="12" height="46" fill="#ef4444" />
+          <rect x="29" y="15" width="11" height="46" fill="#06b6d4" />
+          <rect x="40" y="15" width="11" height="46" fill="#facc15" />
+          <rect x="51" y="15" width="12" height="46" fill="#ffffff" />
+        </g>
+        <circle cx="40" cy="38" r="23" fill="none" stroke="#18181b" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'goth') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#3f3f46" />
+        <ellipse cx="40" cy="65" rx="22" ry="5.5" fill="#18181b" opacity="0.75" />
+        <defs>
+          <clipPath id="gothClip">
+            <circle cx="40" cy="38" r="23" />
+          </clipPath>
+        </defs>
+        <circle cx="40" cy="38" r="23" fill="#ffffff" />
+        <g clipPath="url(#gothClip)">
+          <path d="M 22 28 Q 44 26 58 48 A 23 23 0 0 1 17 38 Q 18 32 22 28 Z" fill="#18181b" transform="rotate(20 40 38)" />
+        </g>
+        <circle cx="40" cy="38" r="23" fill="none" stroke="#18181b" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'artdeco') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#fce7f3" />
+        <defs>
+          <radialGradient id="adCenter" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#1e293b" />
+            <stop offset="60%" stopColor="#0f172a" />
+            <stop offset="100%" stopColor="#020617" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="24" fill="url(#adCenter)" />
+        <circle cx="40" cy="40" r="20" fill="none" stroke="#fbbf24" strokeWidth="1.5" />
+        <circle cx="40" cy="40" r="14" fill="none" stroke="#f59e0b" strokeWidth="1" />
+        <circle cx="40" cy="40" r="9" fill="none" stroke="#fbbf24" strokeWidth="1.5" />
+        <circle cx="40" cy="40" r="6" fill="#10b981" stroke="#fbbf24" strokeWidth="1.2" />
+        <circle cx="38" cy="38" r="1.5" fill="#a7f3d0" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'cinema') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#292524" />
+        <defs>
+          <radialGradient id="cinemaSphere" cx="32%" cy="32%" r="68%">
+            <stop offset="0%" stopColor="#d6c7b2" />
+            <stop offset="35%" stopColor="#786855" />
+            <stop offset="75%" stopColor="#362d24" />
+            <stop offset="100%" stopColor="#15120e" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="24" fill="url(#cinemaSphere)" />
+      </svg>
+    );
+  }
+
+  if (styleId === 'watercolor') {
+    return (
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill="#fef9f3" />
+        <defs>
+          <radialGradient id="wcSphere" cx="40%" cy="38%" r="62%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="40%" stopColor="#67e8f9" />
+            <stop offset="75%" stopColor="#93c5fd" />
+            <stop offset="100%" stopColor="#6366f1" />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="24" fill="url(#wcSphere)" opacity="0.9" />
+        <circle cx="40" cy="40" r="22" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+
+  // Fallback generic 3D sphere
+  return (
+    <div
+      className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
+      style={{
+        background: `linear-gradient(135deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
+      }}
+    >
+      <div
+        className="w-6 h-6 rounded-full shadow-md"
+        style={{
+          background: `radial-gradient(circle at 35% 35%, ${theme.accent}, #000)`,
+          boxShadow: `0 0 8px ${theme.accentGlow}`,
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Miniature preview tile for category option cards (Zero sparkles)
  */
 function ThumbnailPreviewTile({
   category,
@@ -435,114 +947,81 @@ function ThumbnailPreviewTile({
   if (category === 'featured') {
     const preset = item as FeaturedPresetItem;
     const pTheme = COLOUR_PALETTES[preset.customization.colour] || COLOUR_PALETTES.ember;
-    return (
-      <div
-        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
-        style={{
-          background: `linear-gradient(135deg, ${pTheme.backgroundStart}, ${pTheme.backgroundEnd})`,
-        }}
-      >
-        <div
-          className="absolute inset-0 opacity-40 blur-xs"
-          style={{ background: pTheme.accentGlow }}
-        />
-        <div
-          className="w-6 h-6 rounded-full border flex items-center justify-center shadow-sm"
-          style={{
-            borderColor: pTheme.cardBorder,
-            background: `radial-gradient(circle, ${pTheme.accent} 25%, ${pTheme.backgroundStart} 100%)`,
-          }}
-        >
-          <Sparkles className="w-3 h-3 text-white" />
-        </div>
-      </div>
-    );
+    return <RenderStylePreviewSphere styleId={preset.id} theme={pTheme} />;
   }
 
   if (category === 'styles') {
-    return (
-      <div
-        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
-        style={{
-          background: `linear-gradient(135deg, ${currentTheme.backgroundStart}, ${currentTheme.backgroundEnd})`,
-        }}
-      >
-        <div className="absolute inset-0 opacity-30" style={{ background: currentTheme.accentGlow }} />
-        <div className="relative z-10 w-8 h-8 flex items-center justify-center">
-          {item.id === 'sphere' && (
-            <div
-              className="w-6 h-6 rounded-full shadow-md"
-              style={{
-                background: `radial-gradient(circle at 35% 35%, ${currentTheme.accent}, #000)`,
-                boxShadow: `0 0 8px ${currentTheme.accentGlow}`,
-              }}
-            />
-          )}
-          {item.id === 'pixel' && (
-            <div className="grid grid-cols-3 gap-0.5 w-6 h-6">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-[1px]"
-                  style={{
-                    background: i % 2 === 0 ? currentTheme.accent : 'rgba(255,255,255,0.1)',
-                  }}
-                />
-              ))}
-            </div>
-          )}
-          {item.id === 'nebula' && (
-            <div className="relative w-6 h-6 flex items-center justify-center">
-              <div className="w-5 h-5 rounded-full blur-[2px]" style={{ background: currentTheme.accent }} />
-              <div className="absolute w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
-            </div>
-          )}
-          {item.id === 'aurora' && (
-            <div className="w-7 h-5 flex flex-col justify-between opacity-80">
-              <div className="h-1 rounded-full w-full" style={{ background: currentTheme.accent }} />
-              <div className="h-1 rounded-full w-4/5 ml-auto" style={{ background: currentTheme.accentGlow }} />
-              <div className="h-1 rounded-full w-3/5" style={{ background: currentTheme.accent }} />
-            </div>
-          )}
-          {item.id === 'cyber' && (
-            <div className="w-6 h-6 border rounded-[3px] flex items-center justify-center" style={{ borderColor: currentTheme.accent }}>
-              <div className="w-2.5 h-2.5" style={{ background: currentTheme.accent }} />
-            </div>
-          )}
-          {item.id === 'topo' && (
-            <div className="w-6 h-6 flex flex-col justify-around py-0.5">
-              <div className="w-full h-0.5 rounded-full" style={{ background: currentTheme.accent }} />
-              <div className="w-4/5 h-0.5 rounded-full mx-auto" style={{ background: currentTheme.accent, opacity: 0.7 }} />
-              <div className="w-full h-0.5 rounded-full" style={{ background: currentTheme.accent, opacity: 0.4 }} />
-            </div>
-          )}
-          {item.id === 'prism' && (
-            <div className="w-5 h-5 rotate-45 border" style={{ borderColor: currentTheme.accent, background: currentTheme.accentGlow }} />
-          )}
-          {item.id === 'orbit' && (
-            <div className="w-6 h-4 rounded-full border border-dashed flex items-center justify-center" style={{ borderColor: currentTheme.accent }}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: currentTheme.accent }} />
-            </div>
-          )}
-          {item.id === 'liquid' && (
-            <div className="w-6 h-6 rounded-full flex items-center justify-center blur-[1px]" style={{ background: currentTheme.accentGlow }}>
-              <div className="w-3 h-3 rounded-full" style={{ background: currentTheme.accent }} />
-            </div>
-          )}
-          {item.id === 'hex' && (
-            <div className="w-5 h-5 flex items-center justify-center text-[11px] font-bold" style={{ color: currentTheme.accent }}>
-              ⬡
-            </div>
-          )}
-          {item.id === 'minimal' && (
-            <div className="w-5 h-5 rounded border border-dashed opacity-50" style={{ borderColor: currentTheme.accent }} />
-          )}
-        </div>
-      </div>
-    );
+    return <RenderStylePreviewSphere styleId={item.id} theme={currentTheme} />;
   }
 
   if (category === 'moods') {
+    if (item.id === 'glowy') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#021c22" />
+          <circle cx="40" cy="40" r="24" fill="#042f2e" />
+          <path d="M 28 48 Q 34 38 40 40 T 52 32" stroke="#22d3ee" strokeWidth="1.5" fill="none" />
+          <path d="M 40 40 Q 42 26 36 20" stroke="#34d399" strokeWidth="1.2" fill="none" />
+          <path d="M 40 40 Q 48 42 46 56" stroke="#f43f5e" strokeWidth="1.2" fill="none" />
+          <circle cx="40" cy="40" r="2" fill="#67e8f9" />
+          <circle cx="36" cy="20" r="1.5" fill="#a7f3d0" />
+          <circle cx="52" cy="32" r="1.5" fill="#67e8f9" />
+          <circle cx="28" cy="48" r="1.5" fill="#67e8f9" />
+        </svg>
+      );
+    }
+    if (item.id === 'sweets') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#fce7f3" />
+          <defs>
+            <radialGradient id="sweetsSphere" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#bae6fd" />
+              <stop offset="60%" stopColor="#c7d2fe" />
+              <stop offset="100%" stopColor="#f472b6" />
+            </radialGradient>
+          </defs>
+          <circle cx="40" cy="42" r="24" fill="url(#sweetsSphere)" />
+          {[
+            [28, 32, '#f43f5e', 20], [42, 26, '#facc15', -15], [52, 34, '#38bdf8', 35],
+            [34, 46, '#4ade80', -30], [48, 48, '#ffffff', 40], [38, 36, '#fb923c', 10]
+          ].map(([x, y, col, rot], idx) => (
+            <rect
+              key={idx}
+              x={(x as number) - 3}
+              y={(y as number) - 1.2}
+              width="6"
+              height="2.4"
+              rx="1.2"
+              fill={col as string}
+              transform={`rotate(${rot} ${x} ${y})`}
+            />
+          ))}
+        </svg>
+      );
+    }
+    if (item.id === 'dreamy') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#2d2012" />
+          <defs>
+            <radialGradient id="dreamySphere" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="45%" stopColor="#f59e0b" />
+              <stop offset="85%" stopColor="#92400e" />
+              <stop offset="100%" stopColor="#451a03" />
+            </radialGradient>
+          </defs>
+          <circle cx="22" cy="24" r="6" fill="#facc15" opacity="0.35" />
+          <circle cx="62" cy="30" r="8" fill="#f59e0b" opacity="0.3" />
+          <circle cx="26" cy="58" r="5" fill="#fde047" opacity="0.25" />
+          <circle cx="58" cy="60" r="7" fill="#f59e0b" opacity="0.3" />
+          <circle cx="40" cy="40" r="24" fill="url(#dreamySphere)" />
+          <circle cx="34" cy="32" r="5" fill="#ffffff" opacity="0.5" />
+        </svg>
+      );
+    }
+    // Fallback mood
     return (
       <div
         className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
@@ -550,74 +1029,91 @@ function ThumbnailPreviewTile({
           background: `linear-gradient(135deg, ${currentTheme.backgroundStart}, ${currentTheme.backgroundEnd})`,
         }}
       >
-        {item.id === 'grain' && (
-          <div
-            className="absolute inset-0 opacity-50"
-            style={{
-              backgroundImage: `radial-gradient(${currentTheme.accent} 1px, transparent 1px)`,
-              backgroundSize: '4px 4px',
-            }}
-          />
-        )}
-        {item.id === 'scanlines' && (
-          <div
-            className="absolute inset-0 opacity-60"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(to bottom, rgba(0,0,0,0.5) 0px, rgba(0,0,0,0.5) 1.5px, transparent 1.5px, transparent 3px)',
-            }}
-          />
-        )}
-        {item.id === 'starlight' && (
-          <Sparkles className="w-4 h-4 text-amber-300 drop-shadow-md" />
-        )}
-        {item.id === 'mist' && (
-          <div className="w-full h-full bg-linear-to-t from-white/20 to-transparent" />
-        )}
-        {item.id === 'vignette' && (
-          <div className="w-full h-full" style={{ background: 'radial-gradient(circle, transparent 30%, black 90%)' }} />
-        )}
-        {item.id === 'clean' && (
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage: `radial-gradient(${currentTheme.accent} 1px, transparent 1px)`,
-              backgroundSize: '8px 8px',
-            }}
-          />
-        )}
+        <div className="w-5 h-5 rounded-full" style={{ background: currentTheme.accent }} />
       </div>
     );
   }
 
   if (category === 'lighting') {
+    if (item.id === 'dark') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#091428" />
+          <defs>
+            <radialGradient id="darkSphere" cx="35%" cy="25%" r="75%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="35%" stopColor="#0284c7" />
+              <stop offset="75%" stopColor="#082f49" />
+              <stop offset="100%" stopColor="#020b14" />
+            </radialGradient>
+          </defs>
+          <circle cx="40" cy="40" r="24" fill="url(#darkSphere)" />
+          <ellipse cx="36" cy="28" rx="8" ry="4" fill="#e0f2fe" opacity="0.75" />
+        </svg>
+      );
+    }
+    if (item.id === 'sunset') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#2d161a" />
+          <defs>
+            <radialGradient id="sunsetSphere" cx="45%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#fed7aa" />
+              <stop offset="45%" stopColor="#fb7185" />
+              <stop offset="85%" stopColor="#be123c" />
+              <stop offset="100%" stopColor="#4c0519" />
+            </radialGradient>
+          </defs>
+          <polygon points="50,0 75,0 45,80 20,80" fill="#fb923c" opacity="0.25" />
+          <circle cx="40" cy="40" r="24" fill="url(#sunsetSphere)" />
+          <ellipse cx="38" cy="32" rx="7" ry="4" fill="#ffffff" opacity="0.7" transform="rotate(-20 38 32)" />
+        </svg>
+      );
+    }
+    if (item.id === 'bright') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#edf2f7" />
+          <defs>
+            <radialGradient id="brightSphere" cx="38%" cy="32%" r="68%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="55%" stopColor="#e2e8f0" />
+              <stop offset="90%" stopColor="#94a3b8" />
+              <stop offset="100%" stopColor="#475569" />
+            </radialGradient>
+          </defs>
+          <circle cx="40" cy="40" r="24" fill="url(#brightSphere)" />
+          <circle cx="35" cy="32" r="8" fill="#ffffff" opacity="0.9" />
+        </svg>
+      );
+    }
+    if (item.id === 'ethereal') {
+      return (
+        <svg viewBox="0 0 80 80" className="w-full h-full">
+          <rect width="80" height="80" fill="#2a1b0a" />
+          <defs>
+            <radialGradient id="etherealSphere" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="90%" stopColor="#b45309" />
+              <stop offset="100%" stopColor="#451a03" />
+            </radialGradient>
+          </defs>
+          <circle cx="40" cy="40" r="28" fill="#f59e0b" opacity="0.3" />
+          <circle cx="40" cy="40" r="24" fill="url(#etherealSphere)" />
+          <circle cx="35" cy="32" r="6" fill="#ffffff" opacity="0.6" />
+          <circle cx="58" cy="32" r="4" fill="#fbbf24" opacity="0.35" />
+          <circle cx="22" cy="50" r="3" fill="#fde047" opacity="0.3" />
+        </svg>
+      );
+    }
+    // Fallback lighting
     return (
       <div
         className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
-        style={{
-          background: currentTheme.backgroundStart,
-        }}
+        style={{ background: currentTheme.backgroundStart }}
       >
-        {item.id === 'spotlight' && (
-          <div className="w-full h-full" style={{ background: `radial-gradient(ellipse at 50% 0%, ${currentTheme.accent} 0%, transparent 80%)`, opacity: 0.7 }} />
-        )}
-        {item.id === 'eclipse' && (
-          <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: currentTheme.accent, boxShadow: `0 0 10px ${currentTheme.accent}` }}>
-            <div className="w-2.5 h-2.5 rounded-full bg-black" />
-          </div>
-        )}
-        {item.id === 'sunburst' && (
-          <div className="w-full h-full" style={{ background: `radial-gradient(circle at 100% 0%, ${currentTheme.accent} 0%, transparent 70%)` }} />
-        )}
-        {item.id === 'diffuse' && (
-          <div className="w-5 h-5 rounded-full blur-xs" style={{ background: currentTheme.accent, opacity: 0.7 }} />
-        )}
-        {item.id === 'stealth' && (
-          <div className="w-2 h-2 rounded-full" style={{ background: currentTheme.accent, opacity: 0.5 }} />
-        )}
-        {item.id === 'rim' && (
-          <div className="w-6 h-6 rounded-md border" style={{ borderColor: currentTheme.accent, boxShadow: `inset 0 0 6px ${currentTheme.accentGlow}` }} />
-        )}
+        <div className="w-5 h-5 rounded-full" style={{ background: currentTheme.accent }} />
       </div>
     );
   }
@@ -626,20 +1122,18 @@ function ThumbnailPreviewTile({
     const cItem = item as CustomizationOptionItem & { hex: string };
     const pCol = COLOUR_PALETTES[cItem.id as FlexCardColour] || COLOUR_PALETTES.ember;
     return (
-      <div
-        className="w-full h-full relative overflow-hidden flex items-center justify-center rounded-lg"
-        style={{
-          background: `linear-gradient(135deg, ${pCol.backgroundStart}, ${pCol.backgroundEnd})`,
-        }}
-      >
-        <div
-          className="w-4 h-4 rounded-full border border-white/20 shadow-sm"
-          style={{
-            background: pCol.accent,
-            boxShadow: `0 0 6px ${pCol.accentGlow}`,
-          }}
-        />
-      </div>
+      <svg viewBox="0 0 80 80" className="w-full h-full">
+        <rect width="80" height="80" fill={pCol.backgroundStart} />
+        <defs>
+          <radialGradient id={`pCol_${cItem.id}`} cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor={pCol.accent} />
+            <stop offset="70%" stopColor={pCol.cardBorder} />
+            <stop offset="100%" stopColor={pCol.backgroundEnd} />
+          </radialGradient>
+        </defs>
+        <circle cx="40" cy="40" r="24" fill={`url(#pCol_${cItem.id})`} />
+        <ellipse cx="34" cy="32" rx="7" ry="4" fill="#ffffff" opacity="0.5" transform="rotate(-25 34 32)" />
+      </svg>
     );
   }
 
@@ -1280,7 +1774,7 @@ export function MilestoneFlexCardModal({
   const [format, setFormat] = useState<FlexCardFormat>('story');
   const [activeCategoryTab, setActiveCategoryTab] = useState<FlexCardCategoryTab>('featured');
   const [customization, setCustomization] = useState<FlexCardCustomization>(DEFAULT_CUSTOMIZATION);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('titanium');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('paper');
   const theme = customization.colour;
   const setTheme = (newCol: FlexCardColour) => {
     setCustomization((prev) => ({ ...prev, colour: newCol }));
@@ -2124,18 +2618,18 @@ export function MilestoneFlexCardModal({
               </div>
 
               {/* 3. Aesthetic Customization Studio */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                     Visual Aesthetics & Artwork
                   </label>
-                  <span className="text-[10px] font-bold text-[#ff5a1f] px-2 py-0.5 rounded-full bg-[#ff5a1f]/10">
-                    {CATEGORY_TABS.find((t) => t.id === activeCategoryTab)?.countLabel}
+                  <span className="text-[10px] font-bold text-[#22c55e] px-2 py-0.5 rounded-full bg-[#22c55e]/10">
+                    {CATEGORY_TABS.find((t) => t.id === activeCategoryTab)?.label}
                   </span>
                 </div>
 
                 {/* Category Pill Bar: Exact match to reference screenshot ([Featured] [Styles] [Moods] [Lighting] [Colours]) */}
-                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-0.5 px-0.5">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-0.5 px-0.5">
                   {CATEGORY_TABS.map((tab) => {
                     const isTabActive = activeCategoryTab === tab.id;
                     return (
@@ -2143,10 +2637,10 @@ export function MilestoneFlexCardModal({
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveCategoryTab(tab.id)}
-                        className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                           isTabActive
-                            ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] shadow-md ring-2 ring-[#ff5a1f]/40'
-                            : 'border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f]/75 dark:text-[#fbf8f1]/75 hover:border-[#ff5a1f]/50 hover:text-[#ff5a1f] bg-[#f2ecdf]/30 dark:bg-[#11100d]/30'
+                            ? 'bg-[#16382b] text-[#86efac] border border-[#22c55e]/30 shadow-xs'
+                            : 'border border-[#15130f]/15 dark:border-white/10 text-[#15130f]/70 dark:text-white/60 hover:text-[#15130f] dark:hover:text-white hover:border-[#15130f]/30 dark:hover:border-white/20 bg-[#f2ecdf]/30 dark:bg-[#181a1d]/60'
                         }`}
                       >
                         {tab.label}
@@ -2155,8 +2649,8 @@ export function MilestoneFlexCardModal({
                   })}
                 </div>
 
-                {/* Horizontal Scrollable Thumbnail Cards Carousel */}
-                <div className="flex items-stretch gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-0.5 px-0.5 touch-pan-x">
+                {/* Horizontal Scrollable Thumbnail Row: Pure tiles + label underneath, matching screenshots */}
+                <div className="flex items-start gap-3 sm:gap-3.5 overflow-x-auto no-scrollbar scroll-smooth py-2 px-1 touch-pan-x justify-start sm:justify-center">
                   {activeCategoryTab === 'featured' &&
                     FEATURED_PRESETS.map((preset) => {
                       const isSel = selectedPresetId === preset.id;
@@ -2168,29 +2662,29 @@ export function MilestoneFlexCardModal({
                             setCustomization(preset.customization);
                             setSelectedPresetId(preset.id);
                           }}
-                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                            isSel
-                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
-                          }`}
+                          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
                         >
-                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                          <div
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-200 ${
+                              isSel
+                                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#11100d] shadow-lg scale-[1.02]'
+                                : 'opacity-85 hover:opacity-100 hover:scale-[1.02]'
+                            }`}
+                          >
                             <ThumbnailPreviewTile
                               category="featured"
                               item={preset}
                               activeCustomization={customization}
                             />
-                            {isSel && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                              </div>
-                            )}
                           </div>
-                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                          <span
+                            className={`text-xs text-center truncate max-w-[64px] sm:max-w-[72px] transition-colors leading-tight ${
+                              isSel
+                                ? 'text-[#15130f] dark:text-white font-bold'
+                                : 'text-[#15130f]/50 dark:text-white/50 group-hover:text-[#15130f]/80 dark:group-hover:text-white/80 font-medium'
+                            }`}
+                          >
                             {preset.name}
-                          </span>
-                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
-                            {preset.badge}
                           </span>
                         </button>
                       );
@@ -2207,29 +2701,29 @@ export function MilestoneFlexCardModal({
                             setCustomization((prev) => ({ ...prev, style: styleOpt.id as FlexCardStyle }));
                             setSelectedPresetId('');
                           }}
-                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                            isSel
-                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
-                          }`}
+                          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
                         >
-                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                          <div
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-200 ${
+                              isSel
+                                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#11100d] shadow-lg scale-[1.02]'
+                                : 'opacity-85 hover:opacity-100 hover:scale-[1.02]'
+                            }`}
+                          >
                             <ThumbnailPreviewTile
                               category="styles"
                               item={styleOpt}
                               activeCustomization={customization}
                             />
-                            {isSel && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                              </div>
-                            )}
                           </div>
-                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                          <span
+                            className={`text-xs text-center truncate max-w-[64px] sm:max-w-[72px] transition-colors leading-tight ${
+                              isSel
+                                ? 'text-[#15130f] dark:text-white font-bold'
+                                : 'text-[#15130f]/50 dark:text-white/50 group-hover:text-[#15130f]/80 dark:group-hover:text-white/80 font-medium'
+                            }`}
+                          >
                             {styleOpt.name}
-                          </span>
-                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
-                            {styleOpt.badge}
                           </span>
                         </button>
                       );
@@ -2246,29 +2740,29 @@ export function MilestoneFlexCardModal({
                             setCustomization((prev) => ({ ...prev, mood: moodOpt.id as FlexCardMood }));
                             setSelectedPresetId('');
                           }}
-                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                            isSel
-                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
-                          }`}
+                          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
                         >
-                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                          <div
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-200 ${
+                              isSel
+                                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#11100d] shadow-lg scale-[1.02]'
+                                : 'opacity-85 hover:opacity-100 hover:scale-[1.02]'
+                            }`}
+                          >
                             <ThumbnailPreviewTile
                               category="moods"
                               item={moodOpt}
                               activeCustomization={customization}
                             />
-                            {isSel && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                              </div>
-                            )}
                           </div>
-                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                          <span
+                            className={`text-xs text-center truncate max-w-[64px] sm:max-w-[72px] transition-colors leading-tight ${
+                              isSel
+                                ? 'text-[#15130f] dark:text-white font-bold'
+                                : 'text-[#15130f]/50 dark:text-white/50 group-hover:text-[#15130f]/80 dark:group-hover:text-white/80 font-medium'
+                            }`}
+                          >
                             {moodOpt.name}
-                          </span>
-                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
-                            {moodOpt.badge}
                           </span>
                         </button>
                       );
@@ -2285,29 +2779,29 @@ export function MilestoneFlexCardModal({
                             setCustomization((prev) => ({ ...prev, lighting: lightOpt.id as FlexCardLighting }));
                             setSelectedPresetId('');
                           }}
-                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                            isSel
-                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
-                          }`}
+                          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
                         >
-                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                          <div
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-200 ${
+                              isSel
+                                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#11100d] shadow-lg scale-[1.02]'
+                                : 'opacity-85 hover:opacity-100 hover:scale-[1.02]'
+                            }`}
+                          >
                             <ThumbnailPreviewTile
                               category="lighting"
                               item={lightOpt}
                               activeCustomization={customization}
                             />
-                            {isSel && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                              </div>
-                            )}
                           </div>
-                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                          <span
+                            className={`text-xs text-center truncate max-w-[64px] sm:max-w-[72px] transition-colors leading-tight ${
+                              isSel
+                                ? 'text-[#15130f] dark:text-white font-bold'
+                                : 'text-[#15130f]/50 dark:text-white/50 group-hover:text-[#15130f]/80 dark:group-hover:text-white/80 font-medium'
+                            }`}
+                          >
                             {lightOpt.name}
-                          </span>
-                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
-                            {lightOpt.badge}
                           </span>
                         </button>
                       );
@@ -2324,29 +2818,29 @@ export function MilestoneFlexCardModal({
                             setCustomization((prev) => ({ ...prev, colour: colOpt.id as FlexCardColour }));
                             setSelectedPresetId('');
                           }}
-                          className={`w-28 sm:w-32 shrink-0 p-1.5 sm:p-2 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                            isSel
-                              ? 'border-[#ff5a1f] ring-2 ring-[#ff5a1f]/35 bg-[#ff5a1f]/10 shadow-sm'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/30 dark:bg-[#11100d]/30 hover:border-[#ff5a1f]/40 hover:bg-[#ff5a1f]/5'
-                          }`}
+                          className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
                         >
-                          <div className="w-full h-14 sm:h-16 rounded-xl border border-black/10 dark:border-white/10 relative overflow-hidden shrink-0">
+                          <div
+                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-200 ${
+                              isSel
+                                ? 'ring-2 ring-white ring-offset-2 ring-offset-[#11100d] shadow-lg scale-[1.02]'
+                                : 'opacity-85 hover:opacity-100 hover:scale-[1.02]'
+                            }`}
+                          >
                             <ThumbnailPreviewTile
                               category="colours"
                               item={colOpt}
                               activeCustomization={customization}
                             />
-                            {isSel && (
-                              <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-2.5 h-2.5" strokeWidth={3} />
-                              </div>
-                            )}
                           </div>
-                          <span className="text-[11px] font-bold truncate max-w-full leading-tight">
+                          <span
+                            className={`text-xs text-center truncate max-w-[64px] sm:max-w-[72px] transition-colors leading-tight ${
+                              isSel
+                                ? 'text-[#15130f] dark:text-white font-bold'
+                                : 'text-[#15130f]/50 dark:text-white/50 group-hover:text-[#15130f]/80 dark:group-hover:text-white/80 font-medium'
+                            }`}
+                          >
                             {colOpt.name}
-                          </span>
-                          <span className="text-[9px] opacity-60 truncate max-w-full leading-none">
-                            {colOpt.badge}
                           </span>
                         </button>
                       );
