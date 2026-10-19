@@ -455,9 +455,28 @@ export function getEffectiveCardStyling(
   customization: FlexCardCustomization,
   theme: ThemeColors
 ): CardStyleTheme {
+  const isLightPalette = theme.colour === 'ivory';
+  const accent = theme.accent;
+
+  // Determine contrast text color against accent background
+  const getAccentText = (hex: string) => {
+    const clean = hex.replace('#', '');
+    if (clean.length === 6) {
+      const r = parseInt(clean.substring(0, 2), 16);
+      const g = parseInt(clean.substring(2, 4), 16);
+      const b = parseInt(clean.substring(4, 6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 160 ? '#09090b' : '#ffffff';
+    }
+    return '#ffffff';
+  };
+
+  const badgeTextColor = getAccentText(accent);
+
   switch (customization.style) {
     case 'paper': {
-      // Authentic layered torn craft paper aesthetic (matching reference design)
+      // Authentic torn craft paper collage aesthetic (matching reference design)
+      // Light background: strictly dark charcoal text for 100% legibility
       return {
         id: 'paper',
         cardBg: '#f4ece1',
@@ -465,44 +484,45 @@ export function getEffectiveCardStyling(
         cardShadow: '0 12px 36px rgba(44, 38, 30, 0.22)',
         cardRadius: '18px',
         isPaperStyle: true,
-        primaryText: '#2b2520',
-        secondaryText: '#6e665e',
-        accent: '#df7a5e',
-        metricColor: '#ffffff',
-        metricShadow: '0 4px 10px rgba(44, 38, 30, 0.32)',
-        headerDivider: 'rgba(43, 37, 32, 0.14)',
-        headerBrandColor: '#2b2520',
-        dateColor: '#6e665e',
-        badgeBg: '#df7a5e',
+        primaryText: '#18181b',
+        secondaryText: '#57534e',
+        accent: accent,
+        metricColor: accent === '#ffffff' ? '#18181b' : accent,
+        metricShadow: '0 4px 12px rgba(44, 38, 30, 0.35)',
+        headerDivider: 'rgba(43, 37, 32, 0.16)',
+        headerBrandColor: '#18181b',
+        dateColor: '#57534e',
+        badgeBg: accent,
         badgeBorder: 'none',
-        badgeText: '#ffffff',
-        badgeShadow: '0 2px 6px rgba(223, 122, 94, 0.35)',
-        bentoBg: '#73716b',
-        bentoBorder: '1px solid rgba(255, 255, 255, 0.12)',
+        badgeText: badgeTextColor,
+        badgeShadow: '0 2px 6px rgba(44, 38, 30, 0.25)',
+        bentoBg: 'rgba(50, 48, 44, 0.92)',
+        bentoBorder: '1px solid rgba(255, 255, 255, 0.14)',
         bentoShadow: '0 6px 14px rgba(44, 38, 30, 0.25)',
         bentoRadius: '14px',
         bentoTitleColor: '#ffffff',
-        bentoSubColor: '#d1ccc4',
-        bentoAccentColor: '#df7a5e',
+        bentoSubColor: '#e4e4e7',
+        bentoAccentColor: accent,
         progressTrack: 'rgba(255, 255, 255, 0.22)',
-        progressFill: '#df7a5e',
+        progressFill: accent,
         quoteBg: '#ede4d4',
         quoteBorder: '1px solid #d4c5af',
         quoteShadow: '0 6px 16px rgba(44, 38, 30, 0.18)',
         quoteRadius: '12px',
-        quoteTextColor: '#2b2520',
-        quoteAuthorColor: '#df7a5e',
-        quoteMarkColor: '#df7a5e',
-        dotActiveBg: '#df7a5e',
+        quoteTextColor: '#18181b',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
         dotInactiveBorder: '#b8aba0',
-        dotTextColor: '#6e665e',
-        footerColor: '#6e665e',
-        footerDivider: 'rgba(43, 37, 32, 0.14)',
+        dotTextColor: '#57534e',
+        footerColor: '#57534e',
+        footerDivider: 'rgba(43, 37, 32, 0.16)',
       };
     }
 
     case 'cartoon': {
-      // Pop-art comic book aesthetic: bold ink lines, hard offset shadows, vibrant primary tones
+      // Pop-art comic book aesthetic: bold ink lines, hard offset shadows
+      // All text is crisp solid black or black-outlined so it is NEVER washed out
       return {
         id: 'cartoon',
         cardBg: '#fffbeb',
@@ -512,15 +532,15 @@ export function getEffectiveCardStyling(
         isCartoonStyle: true,
         primaryText: '#000000',
         secondaryText: '#3f3f46',
-        accent: '#ef4444',
-        metricColor: '#facc15',
-        metricShadow: '3px 3px 0px #000000',
+        accent: accent,
+        metricColor: accent === '#ffffff' ? '#000000' : accent,
+        metricShadow: '2px 2px 0px #000000, -1px -1px 0px #000000, 1px -1px 0px #000000, -1px 1px 0px #000000',
         headerDivider: '2px solid #000000',
         headerBrandColor: '#000000',
         dateColor: '#000000',
-        badgeBg: '#facc15',
+        badgeBg: accent,
         badgeBorder: '2px solid #000000',
-        badgeText: '#000000',
+        badgeText: badgeTextColor,
         badgeShadow: '3px 3px 0px #000000',
         bentoBg: '#ffffff',
         bentoBorder: '2.5px solid #000000',
@@ -528,17 +548,17 @@ export function getEffectiveCardStyling(
         bentoRadius: '12px',
         bentoTitleColor: '#000000',
         bentoSubColor: '#52525b',
-        bentoAccentColor: '#ef4444',
+        bentoAccentColor: accent,
         progressTrack: '#e4e4e7',
-        progressFill: '#ef4444',
+        progressFill: accent,
         quoteBg: '#ffffff',
         quoteBorder: '2.5px solid #000000',
         quoteShadow: '4px 4px 0px #000000',
         quoteRadius: '12px',
         quoteTextColor: '#000000',
-        quoteAuthorColor: '#ef4444',
-        quoteMarkColor: '#ef4444',
-        dotActiveBg: '#ef4444',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
         dotInactiveBorder: '#000000',
         dotTextColor: '#000000',
         footerColor: '#000000',
@@ -548,45 +568,46 @@ export function getEffectiveCardStyling(
 
     case 'illustrated': {
       // 70s psychedelic retro topographical wavy contour aesthetic
+      // Solid dark glass bento/quote boxes guarantee text is NEVER obscured by waves
       return {
         id: 'illustrated',
         cardBg: '#1a1528',
-        cardBorder: '1.5px solid rgba(251, 146, 60, 0.45)',
-        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.5)',
+        cardBorder: `1.5px solid ${accent}`,
+        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.65)',
         cardRadius: '20px',
         primaryText: '#ffffff',
-        secondaryText: '#fed7aa',
-        accent: '#fb923c',
-        metricColor: '#fb923c',
-        metricShadow: '0 4px 12px rgba(251, 146, 60, 0.4)',
-        headerDivider: 'rgba(251, 146, 60, 0.25)',
+        secondaryText: 'rgba(255, 255, 255, 0.75)',
+        accent: accent,
+        metricColor: '#ffffff',
+        metricShadow: `0 4px 16px rgba(0, 0, 0, 0.9), 0 0 12px ${theme.accentGlow}`,
+        headerDivider: 'rgba(255, 255, 255, 0.2)',
         headerBrandColor: '#ffffff',
-        dateColor: '#fed7aa',
-        badgeBg: '#fb923c',
+        dateColor: 'rgba(255, 255, 255, 0.75)',
+        badgeBg: accent,
         badgeBorder: 'none',
-        badgeText: '#1e1b2e',
-        badgeShadow: '0 2px 8px rgba(251, 146, 60, 0.4)',
-        bentoBg: 'rgba(26, 21, 40, 0.85)',
-        bentoBorder: '1.5px solid rgba(251, 146, 60, 0.35)',
-        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.35)',
+        badgeText: badgeTextColor,
+        badgeShadow: `0 2px 8px ${theme.accentGlow}`,
+        bentoBg: 'rgba(18, 14, 32, 0.94)',
+        bentoBorder: '1.5px solid rgba(255, 255, 255, 0.18)',
+        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.55)',
         bentoRadius: '16px',
         bentoTitleColor: '#ffffff',
-        bentoSubColor: '#fed7aa',
-        bentoAccentColor: '#fb923c',
+        bentoSubColor: 'rgba(255, 255, 255, 0.75)',
+        bentoAccentColor: accent,
         progressTrack: 'rgba(255, 255, 255, 0.15)',
-        progressFill: '#fb923c',
-        quoteBg: 'rgba(26, 21, 40, 0.85)',
-        quoteBorder: '1.5px solid rgba(244, 63, 94, 0.4)',
-        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.35)',
+        progressFill: accent,
+        quoteBg: 'rgba(18, 14, 32, 0.94)',
+        quoteBorder: '1.5px solid rgba(255, 255, 255, 0.18)',
+        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.55)',
         quoteRadius: '16px',
         quoteTextColor: '#ffffff',
-        quoteAuthorColor: '#f43f5e',
-        quoteMarkColor: '#fb923c',
-        dotActiveBg: '#fb923c',
-        dotInactiveBorder: 'rgba(251, 146, 60, 0.35)',
-        dotTextColor: '#fed7aa',
-        footerColor: '#fed7aa',
-        footerDivider: 'rgba(251, 146, 60, 0.25)',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: 'rgba(255, 255, 255, 0.35)',
+        dotTextColor: 'rgba(255, 255, 255, 0.75)',
+        footerColor: 'rgba(255, 255, 255, 0.75)',
+        footerDivider: 'rgba(255, 255, 255, 0.2)',
       };
     }
 
@@ -595,88 +616,89 @@ export function getEffectiveCardStyling(
       return {
         id: 'lowpoly',
         cardBg: '#130822',
-        cardBorder: '1.5px solid #a855f7',
-        cardShadow: '0 12px 36px rgba(168, 85, 247, 0.25)',
+        cardBorder: `1.5px solid ${accent}`,
+        cardShadow: `0 12px 36px ${theme.accentGlow}`,
         cardRadius: '14px',
         isLowpolyStyle: true,
-        primaryText: '#f3e8ff',
-        secondaryText: '#c084fc',
-        accent: '#c084fc',
-        metricColor: '#e9d5ff',
-        metricShadow: '0 0 16px rgba(192, 132, 252, 0.5)',
-        headerDivider: 'rgba(168, 85, 247, 0.3)',
-        headerBrandColor: '#f3e8ff',
-        dateColor: '#c084fc',
-        badgeBg: '#7e22ce',
-        badgeBorder: '1px solid #c084fc',
-        badgeText: '#ffffff',
-        badgeShadow: '0 0 10px rgba(192, 132, 252, 0.4)',
-        bentoBg: 'rgba(30, 11, 56, 0.88)',
-        bentoBorder: '1.5px solid #9333ea',
-        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.45)',
+        primaryText: '#ffffff',
+        secondaryText: 'rgba(255, 255, 255, 0.75)',
+        accent: accent,
+        metricColor: '#ffffff',
+        metricShadow: `0 0 18px ${accent}`,
+        headerDivider: 'rgba(255, 255, 255, 0.18)',
+        headerBrandColor: '#ffffff',
+        dateColor: 'rgba(255, 255, 255, 0.75)',
+        badgeBg: accent,
+        badgeBorder: 'none',
+        badgeText: badgeTextColor,
+        badgeShadow: `0 0 10px ${theme.accentGlow}`,
+        bentoBg: 'rgba(24, 12, 44, 0.92)',
+        bentoBorder: `1.5px solid ${accent}`,
+        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.5)',
         bentoRadius: '12px',
-        bentoTitleColor: '#f3e8ff',
-        bentoSubColor: '#c084fc',
-        bentoAccentColor: '#e9d5ff',
-        progressTrack: 'rgba(168, 85, 247, 0.2)',
-        progressFill: '#c084fc',
-        quoteBg: 'rgba(30, 11, 56, 0.88)',
-        quoteBorder: '1.5px solid #7e22ce',
-        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.45)',
+        bentoTitleColor: '#ffffff',
+        bentoSubColor: 'rgba(255, 255, 255, 0.75)',
+        bentoAccentColor: accent,
+        progressTrack: 'rgba(255, 255, 255, 0.15)',
+        progressFill: accent,
+        quoteBg: 'rgba(24, 12, 44, 0.92)',
+        quoteBorder: '1.5px solid rgba(255, 255, 255, 0.18)',
+        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.5)',
         quoteRadius: '12px',
-        quoteTextColor: '#f3e8ff',
-        quoteAuthorColor: '#c084fc',
-        quoteMarkColor: '#c084fc',
-        dotActiveBg: '#c084fc',
-        dotInactiveBorder: '#7e22ce',
-        dotTextColor: '#c084fc',
-        footerColor: '#c084fc',
-        footerDivider: 'rgba(168, 85, 247, 0.3)',
+        quoteTextColor: '#ffffff',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: 'rgba(255, 255, 255, 0.3)',
+        dotTextColor: 'rgba(255, 255, 255, 0.75)',
+        footerColor: 'rgba(255, 255, 255, 0.75)',
+        footerDivider: 'rgba(255, 255, 255, 0.18)',
       };
     }
 
     case 'anime': {
-      // Dreamy sakura sky aesthetic with marshmallow curves and pastel tones (zero sparkles)
+      // Dreamy pastel sky aesthetic with fluffy clouds (zero sparkles)
+      // Light pastel backdrop: strictly deep navy text for 100% legibility
       return {
         id: 'anime',
         cardBg: '#fdf2f8',
-        cardBorder: '1.5px solid rgba(244, 114, 182, 0.6)',
+        cardBorder: `1.5px solid ${accent}`,
         cardShadow: '0 12px 32px rgba(244, 114, 182, 0.25)',
         cardRadius: '24px',
         isAnimeStyle: true,
-        primaryText: '#1e1b4b',
-        secondaryText: '#64748b',
-        accent: '#ec4899',
-        metricColor: '#ec4899',
-        metricShadow: '0 4px 12px rgba(236, 72, 153, 0.25)',
-        headerDivider: 'rgba(244, 114, 182, 0.25)',
-        headerBrandColor: '#1e1b4b',
-        dateColor: '#64748b',
-        badgeBg: '#fbcfe8',
-        badgeBorder: '1px solid #f472b6',
-        badgeText: '#831843',
-        badgeShadow: '0 2px 8px rgba(244, 114, 182, 0.3)',
-        bentoBg: 'rgba(255, 255, 255, 0.88)',
-        bentoBorder: '1.5px solid #f9a8d4',
-        bentoShadow: '0 6px 16px rgba(244, 114, 182, 0.15)',
+        primaryText: '#0f172a',
+        secondaryText: '#475569',
+        accent: accent,
+        metricColor: accent === '#ffffff' ? '#0f172a' : accent,
+        metricShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        headerDivider: 'rgba(15, 23, 42, 0.12)',
+        headerBrandColor: '#0f172a',
+        dateColor: '#475569',
+        badgeBg: accent === '#ffffff' ? '#0f172a' : accent,
+        badgeBorder: 'none',
+        badgeText: accent === '#ffffff' ? '#ffffff' : badgeTextColor,
+        badgeShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        bentoBg: 'rgba(255, 255, 255, 0.94)',
+        bentoBorder: '1.5px solid rgba(15, 23, 42, 0.08)',
+        bentoShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
         bentoRadius: '20px',
-        bentoTitleColor: '#1e1b4b',
-        bentoSubColor: '#64748b',
-        bentoAccentColor: '#ec4899',
-        progressTrack: '#fce7f3',
-        progressFill: '#ec4899',
-        quoteBg: 'rgba(255, 255, 255, 0.88)',
-        quoteBorder: '1.5px solid #f9a8d4',
-        quoteShadow: '0 6px 16px rgba(244, 114, 182, 0.15)',
+        bentoTitleColor: '#0f172a',
+        bentoSubColor: '#475569',
+        bentoAccentColor: accent === '#ffffff' ? '#0f172a' : accent,
+        progressTrack: 'rgba(15, 23, 42, 0.08)',
+        progressFill: accent === '#ffffff' ? '#0f172a' : accent,
+        quoteBg: 'rgba(255, 255, 255, 0.94)',
+        quoteBorder: '1.5px solid rgba(15, 23, 42, 0.08)',
+        quoteShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
         quoteRadius: '20px',
-        quoteTextColor: '#1e1b4b',
-        quoteAuthorColor: '#ec4899',
-        quoteMarkColor: '#ec4899',
-        dotActiveBg: '#ec4899',
-        dotInactiveBorder: '#f472b6',
-        dotTextColor: '#64748b',
-        footerColor: '#64748b',
-        footerDivider: 'rgba(244, 114, 182, 0.25)',
+        quoteTextColor: '#0f172a',
+        quoteAuthorColor: accent === '#ffffff' ? '#0f172a' : accent,
+        quoteMarkColor: accent === '#ffffff' ? '#0f172a' : accent,
+        dotActiveBg: accent === '#ffffff' ? '#0f172a' : accent,
+        dotInactiveBorder: 'rgba(15, 23, 42, 0.25)',
+        dotTextColor: '#475569',
+        footerColor: '#475569',
+        footerDivider: 'rgba(15, 23, 42, 0.12)',
       };
     }
 
@@ -685,43 +707,43 @@ export function getEffectiveCardStyling(
       return {
         id: 'artdeco',
         cardBg: '#09090b',
-        cardBorder: '2px solid #fbbf24',
-        cardShadow: '0 12px 36px rgba(251, 191, 36, 0.2)',
+        cardBorder: `2px solid ${accent}`,
+        cardShadow: `0 12px 36px ${theme.accentGlow}`,
         cardRadius: '12px',
         isArtDecoStyle: true,
-        primaryText: '#fef3c7',
-        secondaryText: '#d4af37',
-        accent: '#fbbf24',
-        metricColor: '#fbbf24',
-        metricShadow: '0 0 16px rgba(251, 191, 36, 0.45)',
-        headerDivider: 'rgba(251, 191, 36, 0.35)',
-        headerBrandColor: '#fbbf24',
-        dateColor: '#d4af37',
-        badgeBg: '#fbbf24',
+        primaryText: '#ffffff',
+        secondaryText: 'rgba(255, 255, 255, 0.75)',
+        accent: accent,
+        metricColor: accent,
+        metricShadow: `0 0 16px ${theme.accentGlow}`,
+        headerDivider: 'rgba(255, 255, 255, 0.2)',
+        headerBrandColor: '#ffffff',
+        dateColor: 'rgba(255, 255, 255, 0.75)',
+        badgeBg: accent,
         badgeBorder: 'none',
-        badgeText: '#09090b',
-        badgeShadow: '0 0 10px rgba(251, 191, 36, 0.4)',
-        bentoBg: 'rgba(18, 18, 22, 0.92)',
-        bentoBorder: '1.5px solid #fbbf24',
-        bentoShadow: '0 0 15px rgba(251, 191, 36, 0.18)',
+        badgeText: badgeTextColor,
+        badgeShadow: `0 0 10px ${theme.accentGlow}`,
+        bentoBg: 'rgba(18, 18, 22, 0.94)',
+        bentoBorder: `1.5px solid ${accent}`,
+        bentoShadow: '0 0 15px rgba(0, 0, 0, 0.6)',
         bentoRadius: '10px',
-        bentoTitleColor: '#fef3c7',
-        bentoSubColor: '#d4af37',
-        bentoAccentColor: '#fbbf24',
-        progressTrack: 'rgba(251, 191, 36, 0.2)',
-        progressFill: '#fbbf24',
-        quoteBg: 'rgba(18, 18, 22, 0.92)',
-        quoteBorder: '1.5px solid #fbbf24',
-        quoteShadow: '0 0 15px rgba(251, 191, 36, 0.18)',
+        bentoTitleColor: '#ffffff',
+        bentoSubColor: 'rgba(255, 255, 255, 0.75)',
+        bentoAccentColor: accent,
+        progressTrack: 'rgba(255, 255, 255, 0.15)',
+        progressFill: accent,
+        quoteBg: 'rgba(18, 18, 22, 0.94)',
+        quoteBorder: `1.5px solid ${accent}`,
+        quoteShadow: '0 0 15px rgba(0, 0, 0, 0.6)',
         quoteRadius: '10px',
-        quoteTextColor: '#fef3c7',
-        quoteAuthorColor: '#fbbf24',
-        quoteMarkColor: '#fbbf24',
-        dotActiveBg: '#fbbf24',
-        dotInactiveBorder: 'rgba(251, 191, 36, 0.5)',
-        dotTextColor: '#d4af37',
-        footerColor: '#d4af37',
-        footerDivider: 'rgba(251, 191, 36, 0.35)',
+        quoteTextColor: '#ffffff',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: 'rgba(255, 255, 255, 0.3)',
+        dotTextColor: 'rgba(255, 255, 255, 0.75)',
+        footerColor: 'rgba(255, 255, 255, 0.75)',
+        footerDivider: 'rgba(255, 255, 255, 0.2)',
       };
     }
 
@@ -731,88 +753,89 @@ export function getEffectiveCardStyling(
       return {
         id: '3d',
         cardBg: theme.backgroundStart,
-        cardBorder: '1.5px solid rgba(255, 255, 255, 0.2)',
+        cardBorder: `1.5px solid ${theme.cardBorder}`,
         cardShadow: '12px 16px 40px rgba(0, 0, 0, 0.55), inset 1px 1px 2px rgba(255, 255, 255, 0.15)',
         cardRadius: '22px',
         is3dStyle: true,
         primaryText: theme.primaryText,
         secondaryText: theme.secondaryText,
-        accent: theme.accent,
-        metricColor: theme.accent,
+        accent: accent,
+        metricColor: isLightPalette ? theme.primaryText : '#ffffff',
         metricShadow: '0 6px 16px rgba(0, 0, 0, 0.4)',
-        headerDivider: 'rgba(255, 255, 255, 0.12)',
+        headerDivider: isLightPalette ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.14)',
         headerBrandColor: theme.primaryText,
         dateColor: theme.secondaryText,
-        badgeBg: theme.pillBg,
-        badgeBorder: '1px solid rgba(255, 255, 255, 0.25)',
-        badgeText: theme.pillText,
+        badgeBg: accent,
+        badgeBorder: 'none',
+        badgeText: badgeTextColor,
         badgeShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-        bentoBg: 'rgba(30, 30, 36, 0.9)',
-        bentoBorder: '1px solid rgba(255, 255, 255, 0.16)',
-        bentoShadow: '6px 8px 20px rgba(0, 0, 0, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.25)',
+        bentoBg: isLightPalette ? 'rgba(255, 255, 255, 0.92)' : 'rgba(26, 26, 32, 0.92)',
+        bentoBorder: `1.5px solid ${theme.cardBorder}`,
+        bentoShadow: '6px 8px 20px rgba(0, 0, 0, 0.35)',
         bentoRadius: '18px',
         bentoTitleColor: theme.primaryText,
         bentoSubColor: theme.secondaryText,
-        bentoAccentColor: theme.accent,
+        bentoAccentColor: accent,
         progressTrack: theme.progressTrack,
-        progressFill: theme.accent,
-        quoteBg: 'rgba(30, 30, 36, 0.9)',
-        quoteBorder: '1px solid rgba(255, 255, 255, 0.16)',
-        quoteShadow: '6px 8px 20px rgba(0, 0, 0, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.25)',
+        progressFill: accent,
+        quoteBg: isLightPalette ? 'rgba(255, 255, 255, 0.92)' : 'rgba(26, 26, 32, 0.92)',
+        quoteBorder: `1.5px solid ${theme.cardBorder}`,
+        quoteShadow: '6px 8px 20px rgba(0, 0, 0, 0.35)',
         quoteRadius: '18px',
         quoteTextColor: theme.primaryText,
-        quoteAuthorColor: theme.accent,
-        quoteMarkColor: theme.accent,
-        dotActiveBg: theme.accent,
-        dotInactiveBorder: 'rgba(255, 255, 255, 0.3)',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: isLightPalette ? 'rgba(21, 19, 15, 0.25)' : 'rgba(255, 255, 255, 0.3)',
         dotTextColor: theme.secondaryText,
         footerColor: theme.secondaryText,
-        footerDivider: 'rgba(255, 255, 255, 0.12)',
+        footerDivider: isLightPalette ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.14)',
       };
     }
 
     case 'watercolor': {
       // Fluid wet-on-wet cold-press paper aesthetic
+      // Light cold-press backdrop: strictly deep navy/slate text
       return {
         id: 'watercolor',
         cardBg: '#f8fafc',
-        cardBorder: '1.5px solid #93c5fd',
+        cardBorder: `1.5px solid ${accent}`,
         cardShadow: '0 12px 32px rgba(147, 197, 253, 0.3)',
         cardRadius: '18px',
         isWatercolorStyle: true,
         primaryText: '#0f172a',
         secondaryText: '#475569',
-        accent: '#0284c7',
-        metricColor: '#0284c7',
-        metricShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
-        headerDivider: 'rgba(147, 197, 253, 0.35)',
+        accent: accent,
+        metricColor: accent === '#ffffff' ? '#0f172a' : accent,
+        metricShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+        headerDivider: 'rgba(15, 23, 42, 0.12)',
         headerBrandColor: '#0f172a',
         dateColor: '#475569',
-        badgeBg: '#e0f2fe',
-        badgeBorder: '1px solid #7dd3fc',
-        badgeText: '#0369a1',
-        badgeShadow: '0 2px 8px rgba(125, 211, 252, 0.3)',
-        bentoBg: 'rgba(255, 255, 255, 0.88)',
-        bentoBorder: '1.5px solid rgba(147, 197, 253, 0.7)',
-        bentoShadow: '0 6px 16px rgba(147, 197, 253, 0.2)',
+        badgeBg: accent === '#ffffff' ? '#0f172a' : accent,
+        badgeBorder: 'none',
+        badgeText: accent === '#ffffff' ? '#ffffff' : badgeTextColor,
+        badgeShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        bentoBg: 'rgba(255, 255, 255, 0.94)',
+        bentoBorder: '1.5px solid rgba(15, 23, 42, 0.08)',
+        bentoShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
         bentoRadius: '16px',
         bentoTitleColor: '#0f172a',
         bentoSubColor: '#475569',
-        bentoAccentColor: '#0284c7',
-        progressTrack: '#e0f2fe',
-        progressFill: '#0284c7',
-        quoteBg: 'rgba(255, 255, 255, 0.88)',
-        quoteBorder: '1.5px solid rgba(147, 197, 253, 0.7)',
-        quoteShadow: '0 6px 16px rgba(147, 197, 253, 0.2)',
+        bentoAccentColor: accent === '#ffffff' ? '#0f172a' : accent,
+        progressTrack: 'rgba(15, 23, 42, 0.08)',
+        progressFill: accent === '#ffffff' ? '#0f172a' : accent,
+        quoteBg: 'rgba(255, 255, 255, 0.94)',
+        quoteBorder: '1.5px solid rgba(15, 23, 42, 0.08)',
+        quoteShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
         quoteRadius: '16px',
         quoteTextColor: '#0f172a',
-        quoteAuthorColor: '#0284c7',
-        quoteMarkColor: '#0284c7',
-        dotActiveBg: '#0284c7',
-        dotInactiveBorder: '#93c5fd',
+        quoteAuthorColor: accent === '#ffffff' ? '#0f172a' : accent,
+        quoteMarkColor: accent === '#ffffff' ? '#0f172a' : accent,
+        dotActiveBg: accent === '#ffffff' ? '#0f172a' : accent,
+        dotInactiveBorder: 'rgba(15, 23, 42, 0.25)',
         dotTextColor: '#475569',
         footerColor: '#475569',
-        footerDivider: 'rgba(147, 197, 253, 0.35)',
+        footerDivider: 'rgba(15, 23, 42, 0.12)',
       };
     }
 
@@ -825,39 +848,39 @@ export function getEffectiveCardStyling(
         cardShadow: '0 12px 32px rgba(44, 38, 30, 0.25)',
         cardRadius: '14px',
         isCollageStyle: true,
-        primaryText: '#1c1917',
-        secondaryText: '#57534e',
-        accent: '#ea580c',
-        metricColor: '#1c1917',
-        metricShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
-        headerDivider: 'rgba(120, 113, 108, 0.3)',
-        headerBrandColor: '#1c1917',
-        dateColor: '#57534e',
-        badgeBg: '#1c1917',
+        primaryText: '#18181b',
+        secondaryText: '#52525b',
+        accent: accent,
+        metricColor: '#18181b',
+        metricShadow: '0 2px 6px rgba(0, 0, 0, 0.18)',
+        headerDivider: 'rgba(120, 113, 108, 0.25)',
+        headerBrandColor: '#18181b',
+        dateColor: '#52525b',
+        badgeBg: accent,
         badgeBorder: 'none',
-        badgeText: '#fafaf9',
-        badgeShadow: '0 2px 6px rgba(0, 0, 0, 0.25)',
-        bentoBg: '#fdfbf7',
+        badgeText: badgeTextColor,
+        badgeShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+        bentoBg: '#ffffff',
         bentoBorder: '1.5px solid #a8a29e',
         bentoShadow: '0 4px 12px rgba(44, 38, 30, 0.18)',
         bentoRadius: '10px',
-        bentoTitleColor: '#1c1917',
-        bentoSubColor: '#57534e',
-        bentoAccentColor: '#ea580c',
+        bentoTitleColor: '#18181b',
+        bentoSubColor: '#52525b',
+        bentoAccentColor: accent,
         progressTrack: '#e7e5e4',
-        progressFill: '#ea580c',
-        quoteBg: '#fdfbf7',
+        progressFill: accent,
+        quoteBg: '#ffffff',
         quoteBorder: '1.5px solid #a8a29e',
         quoteShadow: '0 4px 12px rgba(44, 38, 30, 0.18)',
         quoteRadius: '10px',
-        quoteTextColor: '#1c1917',
-        quoteAuthorColor: '#ea580c',
-        quoteMarkColor: '#ea580c',
-        dotActiveBg: '#ea580c',
+        quoteTextColor: '#18181b',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
         dotInactiveBorder: '#a8a29e',
-        dotTextColor: '#57534e',
-        footerColor: '#57534e',
-        footerDivider: 'rgba(120, 113, 108, 0.3)',
+        dotTextColor: '#52525b',
+        footerColor: '#52525b',
+        footerDivider: 'rgba(120, 113, 108, 0.25)',
       };
     }
 
@@ -866,43 +889,43 @@ export function getEffectiveCardStyling(
       return {
         id: 'goth',
         cardBg: '#09090b',
-        cardBorder: '1.5px solid #3f3f46',
-        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
+        cardBorder: `1.5px solid ${accent}`,
+        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.75)',
         cardRadius: '12px',
         isGothStyle: true,
         primaryText: '#fafafa',
         secondaryText: '#a1a1aa',
-        accent: '#e11d48',
+        accent: accent,
         metricColor: '#ffffff',
-        metricShadow: '0 0 14px rgba(225, 29, 72, 0.4)',
-        headerDivider: 'rgba(63, 63, 70, 0.5)',
+        metricShadow: `0 0 16px ${accent}`,
+        headerDivider: 'rgba(255, 255, 255, 0.15)',
         headerBrandColor: '#fafafa',
         dateColor: '#a1a1aa',
-        badgeBg: '#18181b',
-        badgeBorder: '1px solid #e11d48',
-        badgeText: '#fafafa',
-        badgeShadow: '0 0 10px rgba(225, 29, 72, 0.3)',
-        bentoBg: 'rgba(18, 18, 22, 0.95)',
-        bentoBorder: '1px solid #3f3f46',
-        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.6)',
+        badgeBg: accent,
+        badgeBorder: 'none',
+        badgeText: badgeTextColor,
+        badgeShadow: `0 0 10px ${theme.accentGlow}`,
+        bentoBg: 'rgba(18, 18, 22, 0.94)',
+        bentoBorder: '1px solid rgba(255, 255, 255, 0.15)',
+        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.65)',
         bentoRadius: '10px',
         bentoTitleColor: '#fafafa',
         bentoSubColor: '#a1a1aa',
-        bentoAccentColor: '#e11d48',
+        bentoAccentColor: accent,
         progressTrack: 'rgba(255, 255, 255, 0.1)',
-        progressFill: '#e11d48',
-        quoteBg: 'rgba(18, 18, 22, 0.95)',
-        quoteBorder: '1px solid #3f3f46',
-        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.6)',
+        progressFill: accent,
+        quoteBg: 'rgba(18, 18, 22, 0.94)',
+        quoteBorder: '1px solid rgba(255, 255, 255, 0.15)',
+        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.65)',
         quoteRadius: '10px',
         quoteTextColor: '#fafafa',
-        quoteAuthorColor: '#e11d48',
-        quoteMarkColor: '#e11d48',
-        dotActiveBg: '#e11d48',
-        dotInactiveBorder: '#3f3f46',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: 'rgba(255, 255, 255, 0.25)',
         dotTextColor: '#a1a1aa',
         footerColor: '#a1a1aa',
-        footerDivider: 'rgba(63, 63, 70, 0.5)',
+        footerDivider: 'rgba(255, 255, 255, 0.15)',
       };
     }
 
@@ -911,49 +934,49 @@ export function getEffectiveCardStyling(
       return {
         id: 'cinema',
         cardBg: '#080a0f',
-        cardBorder: '1.5px solid #1e293b',
-        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.65)',
+        cardBorder: `1.5px solid ${accent}`,
+        cardShadow: '0 12px 36px rgba(0, 0, 0, 0.7)',
         cardRadius: '14px',
         isCinemaStyle: true,
         primaryText: '#f8fafc',
         secondaryText: '#94a3b8',
-        accent: '#f59e0b',
+        accent: accent,
         metricColor: '#f8fafc',
-        metricShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
-        headerDivider: 'rgba(51, 65, 85, 0.6)',
+        metricShadow: `0 4px 14px ${theme.accentGlow}`,
+        headerDivider: 'rgba(255, 255, 255, 0.15)',
         headerBrandColor: '#f8fafc',
         dateColor: '#94a3b8',
-        badgeBg: '#1e293b',
-        badgeBorder: '1px solid #f59e0b',
-        badgeText: '#f59e0b',
-        badgeShadow: '0 0 10px rgba(245, 158, 11, 0.25)',
+        badgeBg: accent,
+        badgeBorder: 'none',
+        badgeText: badgeTextColor,
+        badgeShadow: `0 0 10px ${theme.accentGlow}`,
         bentoBg: 'rgba(15, 23, 42, 0.92)',
-        bentoBorder: '1.5px solid #334155',
-        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.5)',
+        bentoBorder: '1.5px solid rgba(255, 255, 255, 0.15)',
+        bentoShadow: '0 6px 18px rgba(0, 0, 0, 0.6)',
         bentoRadius: '12px',
         bentoTitleColor: '#f8fafc',
         bentoSubColor: '#94a3b8',
-        bentoAccentColor: '#f59e0b',
+        bentoAccentColor: accent,
         progressTrack: 'rgba(255, 255, 255, 0.1)',
-        progressFill: '#f59e0b',
+        progressFill: accent,
         quoteBg: 'rgba(15, 23, 42, 0.92)',
-        quoteBorder: '1.5px solid #334155',
-        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.5)',
+        quoteBorder: '1.5px solid rgba(255, 255, 255, 0.15)',
+        quoteShadow: '0 6px 18px rgba(0, 0, 0, 0.6)',
         quoteRadius: '12px',
         quoteTextColor: '#f8fafc',
-        quoteAuthorColor: '#f59e0b',
-        quoteMarkColor: '#f59e0b',
-        dotActiveBg: '#f59e0b',
-        dotInactiveBorder: '#334155',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: 'rgba(255, 255, 255, 0.25)',
         dotTextColor: '#94a3b8',
         footerColor: '#94a3b8',
-        footerDivider: 'rgba(51, 65, 85, 0.6)',
+        footerDivider: 'rgba(255, 255, 255, 0.15)',
       };
     }
 
     default: {
       // Clean luxury fallback matching current palette tokens
-      const isIvory = theme.name === 'Warm Ivory';
+      const isIvory = theme.colour === 'ivory';
       return {
         id: customization.style,
         cardBg: `linear-gradient(145deg, ${theme.backgroundStart}, ${theme.backgroundEnd})`,
@@ -962,15 +985,15 @@ export function getEffectiveCardStyling(
         cardRadius: '18px',
         primaryText: theme.primaryText,
         secondaryText: theme.secondaryText,
-        accent: theme.accent,
-        metricColor: theme.primaryText,
+        accent: accent,
+        metricColor: isIvory ? theme.primaryText : '#ffffff',
         metricShadow: undefined,
         headerDivider: isIvory ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)',
         headerBrandColor: theme.primaryText,
         dateColor: theme.secondaryText,
-        badgeBg: theme.pillBg,
-        badgeBorder: `1px solid ${theme.accent}`,
-        badgeText: theme.pillText,
+        badgeBg: accent,
+        badgeBorder: `1px solid ${accent}`,
+        badgeText: badgeTextColor,
         badgeShadow: undefined,
         bentoBg: theme.cardBg,
         bentoBorder: `1.5px solid ${theme.cardBorder}`,
@@ -978,18 +1001,18 @@ export function getEffectiveCardStyling(
         bentoRadius: '14px',
         bentoTitleColor: theme.primaryText,
         bentoSubColor: theme.secondaryText,
-        bentoAccentColor: theme.accent,
+        bentoAccentColor: accent,
         progressTrack: theme.progressTrack,
-        progressFill: theme.accent,
+        progressFill: accent,
         quoteBg: theme.quoteBoxBg,
         quoteBorder: `1.5px solid ${theme.quoteBoxBorder}`,
         quoteShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         quoteRadius: '14px',
         quoteTextColor: theme.primaryText,
-        quoteAuthorColor: theme.accent,
-        quoteMarkColor: theme.accent,
-        dotActiveBg: theme.accent,
-        dotInactiveBorder: isIvory ? 'rgba(21, 19, 15, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+        quoteAuthorColor: accent,
+        quoteMarkColor: accent,
+        dotActiveBg: accent,
+        dotInactiveBorder: isIvory ? 'rgba(21, 19, 15, 0.2)' : 'rgba(255, 255, 255, 0.2)',
         dotTextColor: theme.secondaryText,
         footerColor: theme.secondaryText,
         footerDivider: isIvory ? 'rgba(21, 19, 15, 0.12)' : 'rgba(255, 255, 255, 0.12)',
@@ -997,6 +1020,7 @@ export function getEffectiveCardStyling(
     }
   }
 }
+
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1087,94 +1111,34 @@ export function renderCustomizationBackground(
   format: FlexCardFormat
 ) {
   const s = (n: number) => Math.round(n * scale);
-
-  // 1. Base Gradient
-  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-  bgGradient.addColorStop(0, theme.backgroundStart);
-  bgGradient.addColorStop(1, theme.backgroundEnd);
-  ctx.fillStyle = bgGradient;
-  ctx.fillRect(0, 0, width, height);
-  ctx.save();
-
-  // 2. Lighting Profile
-  switch (customization.lighting) {
-    case 'dark':
-    case 'rim': {
-      const rX1 = format === 'landscape' ? width * 0.2 : width * 0.3;
-      const rY1 = format === 'landscape' ? height * 0.35 : height * 0.22;
-      const rad1 = ctx.createRadialGradient(rX1, rY1, s(10), rX1, rY1, width * 0.55);
-      rad1.addColorStop(0, '#06b6d4');
-      rad1.addColorStop(1, 'transparent');
-      ctx.fillStyle = rad1;
-      ctx.fillRect(0, 0, width, height);
-
-      const rX2 = format === 'landscape' ? width * 0.82 : width * 0.75;
-      const rY2 = format === 'landscape' ? height * 0.7 : height * 0.78;
-      const rad2 = ctx.createRadialGradient(rX2, rY2, s(10), rX2, rY2, width * 0.55);
-      rad2.addColorStop(0, '#1e1b4b');
-      rad2.addColorStop(1, 'transparent');
-      ctx.fillStyle = rad2;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-
-    case 'sunset':
-    case 'sunburst': {
-      const sunX = width * 0.88;
-      const sunY = height * 0.12;
-      const sunRad = ctx.createRadialGradient(sunX, sunY, s(20), sunX, sunY, width * 0.95);
-      sunRad.addColorStop(0, '#ff7e47');
-      sunRad.addColorStop(0.35, 'rgba(255, 90, 31, 0.45)');
-      sunRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = sunRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-
-    case 'bright':
-    case 'spotlight': {
-      const spotX = width * 0.5;
-      const spotY = 0;
-      const spotRad = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, height * 0.85);
-      spotRad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-      spotRad.addColorStop(0.4, theme.accentGlow);
-      spotRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = spotRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-
-    case 'ethereal':
-    case 'diffuse':
-    default: {
-      const eX = width * 0.5;
-      const eY = format === 'landscape' ? height * 0.5 : height * 0.4;
-      const eRad = ctx.createRadialGradient(eX, eY, s(20), eX, eY, width * 0.65);
-      eRad.addColorStop(0, '#fbbf24');
-      eRad.addColorStop(0.35, 'rgba(245, 158, 11, 0.35)');
-      eRad.addColorStop(1, 'transparent');
-      ctx.fillStyle = eRad;
-      ctx.fillRect(0, 0, width, height);
-      break;
-    }
-  }
-
-  // 3. Procedural Style Vector Graphics (Full-card procedural artwork covering the entire canvas)
-  ctx.save();
   const styleTheme = getEffectiveCardStyling(customization, theme);
 
+  // 1. Base Canvas Background Fill
+  if (styleTheme.cardBg.startsWith('#') || styleTheme.cardBg.startsWith('rgb')) {
+    ctx.fillStyle = styleTheme.cardBg;
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, theme.backgroundStart);
+    bgGradient.addColorStop(1, theme.backgroundEnd);
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+  ctx.save();
+
+  // 2. Procedural Style Vector Graphics Artwork (Full Canvas Bleed)
   switch (customization.style) {
     case 'paper': {
-      // Authentic full-bleed layered torn craft paper collage (matching reference design)
+      // Base craft paper cream
       ctx.fillStyle = '#f4ece1';
       ctx.fillRect(0, 0, width, height);
 
-      // Layer 1: Terracotta Undulating Paper Wave across top and right
+      // Layer 1: Dynamic Accent Undulating Paper Wave across top and right
       ctx.save();
       ctx.shadowColor = 'rgba(44, 38, 30, 0.28)';
       ctx.shadowBlur = s(24);
       ctx.shadowOffsetY = s(12);
-      ctx.fillStyle = '#df7a5e';
+      ctx.fillStyle = theme.accent;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(width, 0);
@@ -1193,10 +1157,10 @@ export function renderCustomizationBackground(
       ctx.fillStyle = '#e9c46a';
       ctx.beginPath();
       ctx.moveTo(width, height * 0.25);
-      ctx.lineTo(width, height * 0.72);
-      ctx.bezierCurveTo(width * 0.75, height * 0.65, width * 0.55, height * 0.75, width * 0.35, height * 0.68);
-      ctx.bezierCurveTo(width * 0.15, height * 0.62, width * 0.05, height * 0.72, 0, height * 0.68);
-      ctx.lineTo(0, height * 0.42);
+      ctx.lineTo(width, height * 0.7);
+      ctx.bezierCurveTo(width * 0.8, height * 0.62, width * 0.55, height * 0.72, width * 0.3, height * 0.65);
+      ctx.lineTo(0, height * 0.68);
+      ctx.lineTo(0, height * 0.45);
       ctx.bezierCurveTo(width * 0.2, height * 0.38, width * 0.5, height * 0.52, width * 0.8, height * 0.32);
       ctx.closePath();
       ctx.fill();
@@ -1268,7 +1232,16 @@ export function renderCustomizationBackground(
 
       for (let i = 0; i < numRays; i++) {
         if (i % 2 === 0) {
-          ctx.fillStyle = '#fde047';
+          ctx.fillStyle = theme.accent;
+          ctx.globalAlpha = 0.35;
+          ctx.beginPath();
+          ctx.moveTo(burstX, burstY);
+          ctx.arc(burstX, burstY, burstR, i * angleStep, (i + 1) * angleStep);
+          ctx.closePath();
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        } else {
+          ctx.fillStyle = '#fef08a';
           ctx.beginPath();
           ctx.moveTo(burstX, burstY);
           ctx.arc(burstX, burstY, burstR, i * angleStep, (i + 1) * angleStep);
@@ -1278,7 +1251,8 @@ export function renderCustomizationBackground(
       }
 
       // Halftone dot overlay
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+      ctx.fillStyle = theme.accent;
+      ctx.globalAlpha = 0.14;
       const hStep = s(28);
       const hDotR = 2.4 * scale;
       for (let x = s(14); x < width; x += hStep) {
@@ -1288,6 +1262,7 @@ export function renderCustomizationBackground(
           ctx.fill();
         }
       }
+      ctx.globalAlpha = 1.0;
       break;
     }
 
@@ -1296,7 +1271,7 @@ export function renderCustomizationBackground(
       ctx.fillStyle = '#1a1528';
       ctx.fillRect(0, 0, width, height);
 
-      const illColors = ['#f43f5e', '#fb923c', '#facc15', '#22d3ee', '#a855f7', '#6366f1', '#ec4899'];
+      const illColors = [theme.accent, '#f43f5e', '#fb923c', '#facc15', '#22d3ee', '#a855f7', '#ec4899'];
       const numBands = 10;
       const bandH = height / (numBands - 1);
 
@@ -1321,7 +1296,7 @@ export function renderCustomizationBackground(
 
       const lpColors = [
         '#2e1065', '#3b0764', '#581c87', '#6b21a8', '#7e22ce',
-        '#9333ea', '#a855f7', '#c084fc', '#d8b4fe', '#4c1d95',
+        theme.accent, '#a855f7', '#c084fc', '#d8b4fe', '#4c1d95',
       ];
       const rows = 8;
       const cols = 6;
@@ -1354,6 +1329,9 @@ export function renderCustomizationBackground(
           ctx.lineTo(v01.x, v01.y);
           ctx.closePath();
           ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.lineWidth = 1 * scale;
+          ctx.stroke();
 
           // Triangle 2
           ctx.fillStyle = lpColors[(triIdx * 7 + 3) % lpColors.length];
@@ -1363,7 +1341,7 @@ export function renderCustomizationBackground(
           ctx.lineTo(v01.x, v01.y);
           ctx.closePath();
           ctx.fill();
-
+          ctx.stroke();
           triIdx++;
         }
       }
@@ -1371,7 +1349,7 @@ export function renderCustomizationBackground(
     }
 
     case 'anime': {
-      // Full-bleed dreamy sunset sky gradient with cumulus clouds & cherry blossoms (zero sparkles)
+      // Full-bleed dreamy sky gradient with cumulus clouds & cherry blossoms (zero sparkles)
       const aSky = ctx.createLinearGradient(0, 0, 0, height);
       aSky.addColorStop(0, '#fce7f3');
       aSky.addColorStop(0.35, '#fed7aa');
@@ -1397,7 +1375,8 @@ export function renderCustomizationBackground(
       }
 
       // Cherry blossom petal silhouettes gently drifting
-      ctx.fillStyle = 'rgba(244, 114, 182, 0.55)';
+      ctx.fillStyle = theme.accent;
+      ctx.globalAlpha = 0.55;
       for (let i = 0; i < 24; i++) {
         const px = ((i * 197) % width);
         const py = ((i * 311) % height);
@@ -1409,6 +1388,7 @@ export function renderCustomizationBackground(
         ctx.fill();
         ctx.restore();
       }
+      ctx.globalAlpha = 1.0;
       break;
     }
 
@@ -1417,144 +1397,98 @@ export function renderCustomizationBackground(
       ctx.fillStyle = '#09090b';
       ctx.fillRect(0, 0, width, height);
 
-      // Concentric 1920s gold rectangular border frames
-      ctx.strokeStyle = '#fbbf24';
+      // Concentric gold/accent rectangular border frames
+      const margin1 = s(55);
+      const margin2 = s(75);
+      ctx.strokeStyle = theme.accent;
       ctx.lineWidth = 2 * scale;
-      const bPad1 = s(70);
-      roundRect(ctx, bPad1, bPad1, width - bPad1 * 2, height - bPad1 * 2, s(16));
+      roundRect(ctx, margin1, margin1, width - margin1 * 2, height - margin1 * 2, s(20));
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
+      ctx.strokeStyle = theme.accentGlow;
       ctx.lineWidth = 1 * scale;
-      const bPad2 = s(90);
-      roundRect(ctx, bPad2, bPad2, width - bPad2 * 2, height - bPad2 * 2, s(10));
+      roundRect(ctx, margin2, margin2, width - margin2 * 2, height - margin2 * 2, s(14));
       ctx.stroke();
-
-      // 4 Corner Art Deco Fans
-      const fanCorners = [
-        { x: bPad1, y: bPad1, ang: 0 },
-        { x: width - bPad1, y: bPad1, ang: Math.PI / 2 },
-        { x: width - bPad1, y: height - bPad1, ang: Math.PI },
-        { x: bPad1, y: height - bPad1, ang: -Math.PI / 2 },
-      ];
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = 1.2 * scale;
-      for (const fc of fanCorners) {
-        ctx.save();
-        ctx.translate(fc.x, fc.y);
-        ctx.rotate(fc.ang);
-        for (let a = 0; a <= 90; a += 15) {
-          const rad = (a * Math.PI) / 180;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(Math.cos(rad) * s(60), Math.sin(rad) * s(60));
-          ctx.stroke();
-        }
-        ctx.beginPath();
-        ctx.arc(0, 0, s(35), 0, Math.PI / 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(0, 0, s(55), 0, Math.PI / 2);
-        ctx.stroke();
-        ctx.restore();
-      }
       break;
     }
 
     case '3d':
     case 'sphere': {
-      // Spatial studio directional key lighting with soft volumetric ambient occlusion
-      const sGrad = ctx.createRadialGradient(
-        width * 0.35, height * 0.25, s(50),
-        width * 0.5, height * 0.5, Math.max(width, height) * 0.8
-      );
-      sGrad.addColorStop(0, theme.accentGlow);
-      sGrad.addColorStop(0.4, theme.backgroundStart);
-      sGrad.addColorStop(1, '#000000');
-      ctx.fillStyle = sGrad;
+      // Deep claymorphic studio ambient blur orbs
+      const clayGrad = ctx.createRadialGradient(width * 0.35, height * 0.35, s(40), width * 0.5, height * 0.5, width * 0.8);
+      clayGrad.addColorStop(0, theme.accentGlow);
+      clayGrad.addColorStop(0.5, theme.backgroundStart);
+      clayGrad.addColorStop(1, '#050507');
+      ctx.fillStyle = clayGrad;
       ctx.fillRect(0, 0, width, height);
-
-      // Subtle atmospheric floating 3D clay spheres in deep parallax
-      const shapes = [
-        { x: width * 0.15, y: height * 0.25, r: s(80), opacity: 0.25 },
-        { x: width * 0.85, y: height * 0.45, r: s(120), opacity: 0.18 },
-        { x: width * 0.25, y: height * 0.8, r: s(100), opacity: 0.2 },
-      ];
-      for (const sh of shapes) {
-        const shGrad = ctx.createRadialGradient(sh.x - sh.r * 0.3, sh.y - sh.r * 0.3, sh.r * 0.05, sh.x, sh.y, sh.r);
-        shGrad.addColorStop(0, theme.accent);
-        shGrad.addColorStop(0.6, theme.backgroundStart);
-        shGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = shGrad;
-        ctx.beginPath();
-        ctx.arc(sh.x, sh.y, sh.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
       break;
     }
 
     case 'watercolor': {
-      // Textured cold-press paper with blooming wet-on-wet watercolor washes
+      // Cold-press paper with multi-hued bleeding wet-on-wet watercolor washes
       ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, width, height);
 
-      const wcBlobs = [
-        { x: width * 0.25, y: height * 0.2, r: width * 0.4, col: 'rgba(103, 232, 249, 0.35)' },
-        { x: width * 0.75, y: height * 0.35, r: width * 0.45, col: 'rgba(147, 197, 253, 0.4)' },
-        { x: width * 0.4, y: height * 0.65, r: width * 0.5, col: 'rgba(196, 181, 253, 0.32)' },
-        { x: width * 0.8, y: height * 0.85, r: width * 0.4, col: 'rgba(254, 240, 138, 0.3)' },
+      const washes = [
+        { x: width * 0.25, y: height * 0.2, r: width * 0.45, color: theme.accent, alpha: 0.35 },
+        { x: width * 0.75, y: height * 0.35, r: width * 0.5, color: '#38bdf8', alpha: 0.35 },
+        { x: width * 0.4, y: height * 0.65, r: width * 0.55, color: '#818cf8', alpha: 0.3 },
+        { x: width * 0.8, y: height * 0.85, r: width * 0.45, color: '#fb7185', alpha: 0.25 },
       ];
-      for (const wb of wcBlobs) {
-        const wGrad = ctx.createRadialGradient(wb.x, wb.y, s(20), wb.x, wb.y, wb.r);
-        wGrad.addColorStop(0, wb.col);
-        wGrad.addColorStop(0.7, wb.col.replace(/[\d.]+\)$/, '0.12)'));
-        wGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = wGrad;
+
+      for (const w of washes) {
+        const rad = ctx.createRadialGradient(w.x, w.y, s(10), w.x, w.y, w.r);
+        rad.addColorStop(0, w.color);
+        rad.addColorStop(1, 'transparent');
+        ctx.save();
+        ctx.globalAlpha = w.alpha;
+        ctx.fillStyle = rad;
         ctx.beginPath();
-        ctx.arc(wb.x, wb.y, wb.r, 0, Math.PI * 2);
+        ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
       }
       break;
     }
 
     case 'collage': {
-      // Layered newsprint clippings and washi tape tabs across corners
+      // Mixed-media zine scrapbook with newspaper print columns and washi tape tabs
       ctx.fillStyle = '#f5efe6';
       ctx.fillRect(0, 0, width, height);
 
-      // Newspaper column stripes
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.035)';
-      for (let x = s(60); x < width - s(60); x += s(120)) {
-        ctx.fillRect(x, s(80), s(95), height - s(160));
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+      const colW = (width - s(120)) / 4;
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(s(60) + i * (colW + s(15)), s(60), colW, height - s(120));
       }
 
-      // Scrapbook Washi tape strips in corners
-      const washiStrips = [
-        { x: s(120), y: s(120), rot: -0.3, col: 'rgba(251, 146, 60, 0.55)' },
-        { x: width - s(120), y: s(120), rot: 0.35, col: 'rgba(56, 189, 248, 0.55)' },
-        { x: s(120), y: height - s(120), rot: 0.25, col: 'rgba(74, 222, 128, 0.55)' },
-        { x: width - s(120), y: height - s(120), rot: -0.3, col: 'rgba(244, 114, 182, 0.55)' },
+      // Washi tape tabs in theme.accent
+      const tapes = [
+        { x: s(80), y: s(60), rot: -0.25, color: theme.accent },
+        { x: width - s(120), y: s(70), rot: 0.35, color: '#38bdf8' },
+        { x: s(90), y: height - s(80), rot: 0.2, color: '#4ade80' },
+        { x: width - s(110), y: height - s(70), rot: -0.3, color: '#f472b6' },
       ];
-      for (const ws of washiStrips) {
+      for (const tp of tapes) {
         ctx.save();
-        ctx.translate(ws.x, ws.y);
-        ctx.rotate(ws.rot);
-        ctx.fillStyle = ws.col;
-        ctx.fillRect(-s(50), -s(16), s(100), s(32));
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.translate(tp.x, tp.y);
+        ctx.rotate(tp.rot);
+        ctx.fillStyle = tp.color;
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(-s(50), -s(14), s(100), s(28));
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.lineWidth = 1 * scale;
-        ctx.strokeRect(-s(50), -s(16), s(100), s(32));
+        ctx.strokeRect(-s(50), -s(14), s(100), s(28));
         ctx.restore();
       }
       break;
     }
 
     case 'goth': {
-      // Midnight slate noir with manga cross-hatching, gothic arches & vignette
+      // Midnight slate noir with manga cross-hatching
       ctx.fillStyle = '#09090b';
       ctx.fillRect(0, 0, width, height);
 
-      // Cross-hatching texture across corners
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1 * scale;
       const chStep = s(16);
@@ -1572,18 +1506,17 @@ export function renderCustomizationBackground(
       ctx.fillStyle = '#080a0f';
       ctx.fillRect(0, 0, width, height);
 
-      // Top and bottom 35mm letterbox bars
       const barH = format === 'story' ? s(140) : s(90);
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, barH);
       ctx.fillRect(0, height - barH, width, barH);
 
-      // Diagonal anamorphic light beam
       const beamGrad = ctx.createLinearGradient(0, height * 0.2, width, height * 0.8);
-      beamGrad.addColorStop(0, 'rgba(6, 182, 212, 0.28)');
+      beamGrad.addColorStop(0, theme.accent);
       beamGrad.addColorStop(0.5, 'rgba(245, 158, 11, 0.22)');
       beamGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = beamGrad;
+      ctx.globalAlpha = 0.45;
       ctx.beginPath();
       ctx.moveTo(0, height * 0.15);
       ctx.lineTo(width, height * 0.65);
@@ -1591,11 +1524,11 @@ export function renderCustomizationBackground(
       ctx.lineTo(0, height * 0.35);
       ctx.closePath();
       ctx.fill();
+      ctx.globalAlpha = 1.0;
       break;
     }
 
     case 'pixel': {
-      // Full-bleed pixel matrix
       const cols = 12;
       const rows = 18;
       const pW = width / cols;
@@ -1612,9 +1545,8 @@ export function renderCustomizationBackground(
     }
 
     case 'cyber': {
-      // Synthwave perspective floor grid across bottom half
       const horizonY = height * 0.45;
-      ctx.strokeStyle = theme.cardBorder;
+      ctx.strokeStyle = theme.accent;
       ctx.lineWidth = 1.2 * scale;
       const numLines = 14;
       for (let i = 0; i <= numLines; i++) {
@@ -1634,7 +1566,6 @@ export function renderCustomizationBackground(
     }
 
     case 'topo': {
-      // Full-bleed topographic elevation contours
       ctx.strokeStyle = theme.accent;
       ctx.lineWidth = 1.5 * scale;
       for (let i = 1; i <= 6; i++) {
@@ -1647,22 +1578,85 @@ export function renderCustomizationBackground(
       break;
     }
 
+    default:
+      break;
+  }
+
+  // 3. Lighting Profile Overlay (RENDERED DIRECTLY ON TOP OF ARTWORK)
+  switch (customization.lighting) {
+    case 'dark':
+    case 'rim': {
+      // Dark cinematic vignette
+      const darkGrad = ctx.createRadialGradient(width * 0.5, height * 0.5, s(80), width * 0.5, height * 0.5, width * 0.85);
+      darkGrad.addColorStop(0, 'transparent');
+      darkGrad.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+      ctx.fillStyle = darkGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Cyan rim light in corner
+      const rX1 = format === 'landscape' ? width * 0.15 : width * 0.2;
+      const rY1 = format === 'landscape' ? height * 0.25 : height * 0.15;
+      const rad1 = ctx.createRadialGradient(rX1, rY1, s(10), rX1, rY1, width * 0.55);
+      rad1.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      rad1.addColorStop(1, 'transparent');
+      ctx.fillStyle = rad1;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'sunset':
+    case 'sunburst': {
+      // Radiant warm sunset ray from top-right
+      const sunX = width * 0.88;
+      const sunY = height * 0.12;
+      const sunRad = ctx.createRadialGradient(sunX, sunY, s(20), sunX, sunY, width * 0.95);
+      sunRad.addColorStop(0, 'rgba(251, 146, 60, 0.5)');
+      sunRad.addColorStop(0.35, 'rgba(244, 63, 94, 0.3)');
+      sunRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'bright':
+    case 'spotlight': {
+      // Overhead luminous spotlight
+      const spotX = width * 0.5;
+      const spotY = 0;
+      const spotRad = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, height * 0.75);
+      spotRad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+      spotRad.addColorStop(0.4, 'rgba(255, 255, 255, 0.12)');
+      spotRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = spotRad;
+      ctx.fillRect(0, 0, width, height);
+      break;
+    }
+
+    case 'ethereal':
+    case 'diffuse':
     default: {
-      // Minimalist clean background
+      // Golden atmospheric radiance
+      const eX = width * 0.5;
+      const eY = format === 'landscape' ? height * 0.5 : height * 0.4;
+      const eRad = ctx.createRadialGradient(eX, eY, s(20), eX, eY, width * 0.65);
+      eRad.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+      eRad.addColorStop(0.4, 'rgba(245, 158, 11, 0.18)');
+      eRad.addColorStop(1, 'transparent');
+      ctx.fillStyle = eRad;
+      ctx.fillRect(0, 0, width, height);
       break;
     }
   }
-  ctx.restore();
 
-  // 4. Mood Texture Overlay (Zero sparkles)
+  // 4. Mood Texture Overlay (RENDERED ON TOP OF LIGHTING, strictly zero sparkles)
   switch (customization.mood) {
     case 'glowy': {
-      // Bioluminescent electric glow with cyan/emerald ambient aura centered on canvas
+      // Electric bioluminescent aura centered on card
       const glowX = width * 0.5;
       const glowY = format === 'landscape' ? height * 0.5 : height * 0.42;
       const glowGrad = ctx.createRadialGradient(glowX, glowY, s(40), glowX, glowY, width * 0.65);
-      glowGrad.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
-      glowGrad.addColorStop(0.5, 'rgba(6, 182, 212, 0.2)');
+      glowGrad.addColorStop(0, 'rgba(16, 185, 129, 0.42)');
+      glowGrad.addColorStop(0.45, 'rgba(6, 182, 212, 0.28)');
       glowGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = glowGrad;
       ctx.beginPath();
@@ -1672,33 +1666,33 @@ export function renderCustomizationBackground(
     }
 
     case 'sweets': {
-      // Soft candy sprinkle dots and pastel warmth
-      ctx.fillStyle = 'rgba(244, 114, 182, 0.15)';
+      // Soft candy pink tint & 40 colorful sprinkles
+      ctx.fillStyle = 'rgba(244, 114, 182, 0.12)';
       ctx.fillRect(0, 0, width, height);
 
-      // Sprinkles (colored pill dashes)
       const sColors = ['#f472b6', '#38bdf8', '#facc15', '#4ade80', '#ffffff'];
       for (let i = 0; i < 40; i++) {
-        const sx = ((i * 179) % width);
-        const sy = ((i * 283) % height);
+        const sx = ((i * 179) % (width - s(80))) + s(40);
+        const sy = ((i * 283) % (height - s(80))) + s(40);
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate((i * 0.5) - 1);
         ctx.fillStyle = sColors[i % sColors.length];
-        ctx.fillRect(-s(8), -s(2.5), s(16), s(5));
+        ctx.fillRect(-s(14), -s(4), s(28), s(8));
         ctx.restore();
       }
       break;
     }
 
     case 'dreamy': {
-      // Warm golden bokeh circles (smooth diffused discs, absolutely no sparkles)
-      for (let i = 0; i < 16; i++) {
+      // 18 warm golden luminous bokeh discs
+      for (let i = 0; i < 18; i++) {
         const bx = ((i * 211) % (width - s(120))) + s(60);
         const by = ((i * 337) % (height - s(120))) + s(60);
-        const br = s(16) + (i % 4) * s(10);
+        const br = s(20) + (i % 4) * s(12);
         const bGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        bGrad.addColorStop(0, 'rgba(251, 191, 36, 0.35)');
+        bGrad.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
+        bGrad.addColorStop(0.7, 'rgba(245, 158, 11, 0.2)');
         bGrad.addColorStop(1, 'transparent');
         ctx.fillStyle = bGrad;
         ctx.beginPath();

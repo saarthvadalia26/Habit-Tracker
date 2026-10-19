@@ -125,7 +125,6 @@ function CardVectorArtLayer({
   styleTheme?: CardStyleTheme;
 }) {
   const effectiveStyle = styleTheme || getEffectiveCardStyling(customization, theme);
-  const isIvory = customization.colour === 'ivory' || effectiveStyle.id === 'paper' || effectiveStyle.id === 'cartoon';
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
@@ -139,104 +138,7 @@ function CardVectorArtLayer({
         }}
       />
 
-      {/* 2. Lighting Profile */}
-      {customization.lighting === 'dark' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 12%, rgba(56, 189, 248, 0.3) 0%, rgba(0,0,0,0.72) 75%)',
-          }}
-        />
-      )}
-      {customization.lighting === 'sunset' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.38) 0%, rgba(244, 63, 94, 0.22) 45%, transparent 75%)',
-          }}
-        />
-      )}
-      {customization.lighting === 'bright' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.28) 0%, transparent 65%)',
-          }}
-        />
-      )}
-      {customization.lighting === 'ethereal' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.28) 0%, rgba(245, 158, 11, 0.12) 50%, transparent 80%)',
-          }}
-        />
-      )}
-      {customization.lighting === 'spotlight' && (
-        <div
-          className="absolute inset-x-0 top-0 h-4/5 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at 50% 0%, ${theme.accentGlow} 0%, rgba(0,0,0,0) 72%)`,
-          }}
-        />
-      )}
-      {customization.lighting === 'eclipse' && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="w-48 sm:w-56 h-48 sm:h-56 rounded-full blur-xl"
-            style={{
-              background: `radial-gradient(circle, ${theme.accent} 20%, ${theme.accentGlow} 60%, transparent 80%)`,
-            }}
-          />
-          <div
-            className="absolute w-24 sm:w-28 h-24 sm:h-28 rounded-full"
-            style={{ background: theme.backgroundStart }}
-          />
-        </div>
-      )}
-      {customization.lighting === 'sunburst' && (
-        <div
-          className="absolute -top-12 -right-12 w-72 sm:w-80 h-72 sm:h-80 rounded-full blur-2xl pointer-events-none"
-          style={{
-            background: `radial-gradient(circle, ${theme.accent} 0%, ${theme.accentGlow} 45%, transparent 75%)`,
-            opacity: 0.85,
-          }}
-        />
-      )}
-      {customization.lighting === 'diffuse' && (
-        <>
-          <div
-            className="absolute top-1/4 -left-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
-            style={{ background: theme.accentGlow }}
-          />
-          <div
-            className="absolute bottom-1/4 -right-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
-            style={{ background: theme.accentGlow }}
-          />
-        </>
-      )}
-      {customization.lighting === 'stealth' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at 50% 50%, ${theme.accentGlow.replace(/[\d.]+\)$/, '0.14)')} 0%, rgba(0,0,0,0.6) 80%)`,
-          }}
-        />
-      )}
-      {customization.lighting === 'rim' && (
-        <>
-          <div
-            className="absolute -top-10 -left-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
-            style={{ background: theme.accentGlow }}
-          />
-          <div
-            className="absolute -bottom-10 -right-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
-            style={{ background: theme.accentGlow }}
-          />
-        </>
-      )}
-
-      {/* 3. Holistic Procedural Style Artwork (Full-Bleed Across the Entire Flex Card) */}
+      {/* 2. Holistic Procedural Style Vector Graphics Artwork (Full-Bleed Across Card) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {customization.style === 'paper' && (
           <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
@@ -246,10 +148,10 @@ function CardVectorArtLayer({
               </filter>
             </defs>
             <rect width="100%" height="100%" fill="#f4ece1" />
-            {/* Layer 1: Terracotta Undulating Wave across top and right */}
+            {/* Layer 1: Dynamic Accent Undulating Wave across top and right */}
             <path
               d="M 0,0 L 400,0 L 400,360 Q 320,400 240,320 Q 160,260 80,340 Q 30,380 0,330 Z"
-              fill="#df7a5e"
+              fill={theme.accent}
               filter="url(#domPaperShadow)"
             />
             {/* Layer 2: Warm Mustard Ochre Wave across middle right */}
@@ -282,7 +184,7 @@ function CardVectorArtLayer({
           <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <defs>
               <pattern id="domHalftoneDots" width="16" height="16" patternUnits="userSpaceOnUse">
-                <circle cx="8" cy="8" r="2.2" fill="#ef4444" opacity="0.14" />
+                <circle cx="8" cy="8" r="2.2" fill={theme.accent} opacity="0.16" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="#fffbeb" />
@@ -294,7 +196,8 @@ function CardVectorArtLayer({
                   <path
                     key={deg}
                     d={`M 200,310 L ${200 + Math.cos(rad) * 600},${310 + Math.sin(rad) * 600} L ${200 + Math.cos(nextRad) * 600},${310 + Math.sin(nextRad) * 600} Z`}
-                    fill={idx % 2 === 0 ? '#fde047' : '#fef08a'}
+                    fill={idx % 2 === 0 ? theme.accent : '#fef08a'}
+                    opacity={idx % 2 === 0 ? 0.35 : 0.8}
                   />
                 );
               })}
@@ -306,11 +209,11 @@ function CardVectorArtLayer({
         {customization.style === 'illustrated' && (
           <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <rect width="100%" height="100%" fill="#1a1528" />
-            <path d="M 0,0 L 400,0 L 400,120 Q 280,70 180,120 T 0,100 Z" fill="#6366f1" />
+            <path d="M 0,0 L 400,0 L 400,120 Q 280,70 180,120 T 0,100 Z" fill={theme.accent} />
             <path d="M 0,90 Q 120,50 220,110 T 400,80 L 400,200 Q 280,150 180,210 T 0,180 Z" fill="#a855f7" />
             <path d="M 0,170 Q 120,130 220,190 T 400,160 L 400,280 Q 280,230 180,290 T 0,260 Z" fill="#22d3ee" />
             <path d="M 0,250 Q 120,210 220,270 T 400,240 L 400,360 Q 280,310 180,370 T 0,340 Z" fill="#facc15" />
-            <path d="M 0,330 Q 120,290 220,350 T 400,320 L 400,450 Q 280,400 180,460 T 0,430 Z" fill="#fb923c" />
+            <path d="M 0,330 Q 120,290 220,350 T 400,320 L 400,450 Q 280,400 180,460 T 0,430 Z" fill={theme.accent} opacity="0.8" />
             <path d="M 0,420 Q 120,380 220,440 T 400,410 L 400,540 Q 280,490 180,550 T 0,520 Z" fill="#f43f5e" />
             <path d="M 0,510 Q 120,470 220,530 T 400,500 L 400,700 L 0,700 Z" fill="#ec4899" />
           </svg>
@@ -322,21 +225,21 @@ function CardVectorArtLayer({
             {[
               { p: "0,0 80,0 0,90", c: "#2e1065" }, { p: "80,0 160,0 80,95", c: "#3b0764" },
               { p: "160,0 240,0 170,85", c: "#581c87" }, { p: "240,0 320,0 250,95", c: "#6b21a8" },
-              { p: "320,0 400,0 330,85", c: "#7e22ce" }, { p: "400,0 400,100 330,85", c: "#9333ea" },
+              { p: "320,0 400,0 330,85", c: "#7e22ce" }, { p: "400,0 400,100 330,85", c: theme.accent },
               { p: "0,90 80,0 80,95", c: "#4c1d95" }, { p: "80,95 160,0 170,85", c: "#6b21a8" },
-              { p: "170,85 240,0 250,95", c: "#7e22ce" }, { p: "250,95 320,0 330,85", c: "#9333ea" },
+              { p: "170,85 240,0 250,95", c: "#7e22ce" }, { p: "250,95 320,0 330,85", c: theme.accent },
               { p: "0,90 80,95 0,190", c: "#581c87" }, { p: "80,95 170,85 90,195", c: "#7e22ce" },
-              { p: "170,85 250,95 180,185", c: "#9333ea" }, { p: "250,95 330,85 260,195", c: "#a855f7" },
-              { p: "330,85 400,100 400,200", c: "#c084fc" }, { p: "330,85 260,195 400,200", c: "#9333ea" },
+              { p: "170,85 250,95 180,185", c: theme.accent }, { p: "250,95 330,85 260,195", c: "#a855f7" },
+              { p: "330,85 400,100 400,200", c: "#c084fc" }, { p: "330,85 260,195 400,200", c: theme.accent },
               { p: "0,190 80,95 90,195", c: "#6b21a8" }, { p: "90,195 170,85 180,185", c: "#8b5cf6" },
               { p: "180,185 250,95 260,195", c: "#a855f7" },
               { p: "0,190 90,195 0,300", c: "#3b0764" }, { p: "90,195 180,185 85,290", c: "#6b21a8" },
-              { p: "180,185 260,195 175,295", c: "#7e22ce" }, { p: "260,195 400,200 270,300", c: "#9333ea" },
+              { p: "180,185 260,195 175,295", c: "#7e22ce" }, { p: "260,195 400,200 270,300", c: theme.accent },
               { p: "270,300 400,200 400,310", c: "#a855f7" }, { p: "0,300 90,195 85,290", c: "#581c87" },
               { p: "85,290 180,185 175,295", c: "#7e22ce" }, { p: "175,295 260,195 270,300", c: "#8b5cf6" },
               { p: "0,300 85,290 0,420", c: "#2e1065" }, { p: "85,290 175,295 90,410", c: "#581c87" },
               { p: "175,295 270,300 185,415", c: "#6b21a8" }, { p: "270,300 400,310 280,410", c: "#7e22ce" },
-              { p: "280,410 400,310 400,420", c: "#9333ea" }, { p: "0,420 85,290 90,410", c: "#4c1d95" },
+              { p: "280,410 400,310 400,420", c: theme.accent }, { p: "0,420 85,290 90,410", c: "#4c1d95" },
               { p: "90,410 175,295 185,415", c: "#6b21a8" }, { p: "185,415 270,300 280,410", c: "#7e22ce" },
               { p: "0,420 90,410 0,560", c: "#1e1b4b" }, { p: "90,410 185,415 80,550", c: "#3b0764" },
               { p: "185,415 280,410 175,560", c: "#581c87" }, { p: "280,410 400,420 270,555", c: "#6b21a8" },
@@ -377,8 +280,8 @@ function CardVectorArtLayer({
               <circle cx="330" cy="560" r="52" />
               <circle cx="365" cy="565" r="38" />
             </g>
-            {/* Drifting Sakura Petals (Strictly Zero Sparkles) */}
-            <g fill="rgba(244, 114, 182, 0.55)">
+            {/* Drifting Sakura Petals in Theme Accent (Strictly Zero Sparkles) */}
+            <g fill={theme.accent} opacity="0.65">
               <ellipse cx="60" cy="80" rx="9" ry="4" transform="rotate(25 60 80)" />
               <ellipse cx="180" cy="190" rx="8" ry="3.5" transform="rotate(-30 180 190)" />
               <ellipse cx="290" cy="110" rx="10" ry="4.5" transform="rotate(45 290 110)" />
@@ -394,10 +297,10 @@ function CardVectorArtLayer({
         {customization.style === 'artdeco' && (
           <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <rect width="100%" height="100%" fill="#09090b" />
-            <rect x="25" y="25" width="350" height="650" fill="none" stroke="#fbbf24" strokeWidth="1.8" rx="8" />
-            <rect x="35" y="35" width="330" height="630" fill="none" stroke="rgba(251, 191, 36, 0.4)" strokeWidth="1" rx="6" />
+            <rect x="25" y="25" width="350" height="650" fill="none" stroke={theme.accent} strokeWidth="1.8" rx="8" />
+            <rect x="35" y="35" width="330" height="630" fill="none" stroke={theme.accentGlow} strokeWidth="1" rx="6" />
             {[[25, 25, 0], [375, 25, 90], [375, 675, 180], [25, 675, -90]].map(([fx, fy, fa], i) => (
-              <g key={i} transform={`translate(${fx}, ${fy}) rotate(${fa})`} stroke="#fbbf24" strokeWidth="1">
+              <g key={i} transform={`translate(${fx}, ${fy}) rotate(${fa})`} stroke={theme.accent} strokeWidth="1">
                 {[0, 15, 30, 45, 60, 75, 90].map((deg) => (
                   <line key={deg} x1="0" y1="0" x2={Math.cos((deg * Math.PI) / 180) * 36} y2={Math.sin((deg * Math.PI) / 180) * 36} />
                 ))}
@@ -411,15 +314,15 @@ function CardVectorArtLayer({
         {(customization.style === '3d' || customization.style === 'sphere') && (
           <div className="w-full h-full relative overflow-hidden">
             <div
-              className="absolute -top-12 -left-12 w-48 h-48 rounded-full blur-3xl opacity-35"
+              className="absolute -top-12 -left-12 w-48 h-48 rounded-full blur-3xl opacity-45"
               style={{ background: theme.accent }}
             />
             <div
-              className="absolute top-1/3 -right-12 w-56 h-56 rounded-full blur-3xl opacity-25"
+              className="absolute top-1/3 -right-12 w-56 h-56 rounded-full blur-3xl opacity-35"
               style={{ background: theme.accentGlow }}
             />
             <div
-              className="absolute -bottom-12 left-1/4 w-52 h-52 rounded-full blur-3xl opacity-30"
+              className="absolute -bottom-12 left-1/4 w-52 h-52 rounded-full blur-3xl opacity-40"
               style={{ background: theme.accent }}
             />
           </div>
@@ -428,10 +331,10 @@ function CardVectorArtLayer({
         {customization.style === 'watercolor' && (
           <svg className="w-full h-full" viewBox="0 0 400 700" preserveAspectRatio="none">
             <rect width="100%" height="100%" fill="#f8fafc" />
-            <circle cx="100" cy="140" r="160" fill="rgba(103, 232, 249, 0.35)" filter="blur(20px)" />
-            <circle cx="300" cy="245" r="180" fill="rgba(147, 197, 253, 0.4)" filter="blur(24px)" />
-            <circle cx="160" cy="455" r="200" fill="rgba(196, 181, 253, 0.35)" filter="blur(25px)" />
-            <circle cx="320" cy="595" r="160" fill="rgba(254, 240, 138, 0.3)" filter="blur(22px)" />
+            <circle cx="100" cy="140" r="160" fill={theme.accent} opacity="0.3" filter="blur(20px)" />
+            <circle cx="300" cy="245" r="180" fill="#38bdf8" opacity="0.3" filter="blur(24px)" />
+            <circle cx="160" cy="455" r="200" fill="#818cf8" opacity="0.25" filter="blur(25px)" />
+            <circle cx="320" cy="595" r="160" fill="#fb7185" opacity="0.25" filter="blur(22px)" />
           </svg>
         )}
 
@@ -444,10 +347,10 @@ function CardVectorArtLayer({
               <rect x="205" y="40" width="75" height="620" />
               <rect x="295" y="40" width="75" height="620" />
             </g>
-            <rect x="20" y="25" width="60" height="20" fill="rgba(251, 146, 60, 0.55)" transform="rotate(-15 50 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
-            <rect x="320" y="25" width="60" height="20" fill="rgba(56, 189, 248, 0.55)" transform="rotate(20 350 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
-            <rect x="20" y="650" width="60" height="20" fill="rgba(74, 222, 128, 0.55)" transform="rotate(15 50 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
-            <rect x="320" y="650" width="60" height="20" fill="rgba(244, 114, 182, 0.55)" transform="rotate(-20 350 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="20" y="25" width="60" height="20" fill={theme.accent} opacity="0.6" transform="rotate(-15 50 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="320" y="25" width="60" height="20" fill="#38bdf8" opacity="0.6" transform="rotate(20 350 35)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="20" y="650" width="60" height="20" fill="#4ade80" opacity="0.6" transform="rotate(15 50 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            <rect x="320" y="650" width="60" height="20" fill="#f472b6" opacity="0.6" transform="rotate(-20 350 660)" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
           </svg>
         )}
 
@@ -469,8 +372,8 @@ function CardVectorArtLayer({
             <rect x="0" y="655" width="400" height="45" fill="#000000" />
             <defs>
               <linearGradient id="domCinemaBeam" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="rgba(6, 182, 212, 0.28)" />
-                <stop offset="50%" stopColor="rgba(245, 158, 11, 0.2)" />
+                <stop offset="0%" stopColor={theme.accent} stopOpacity="0.45" />
+                <stop offset="50%" stopColor="rgba(245, 158, 11, 0.22)" />
                 <stop offset="100%" stopColor="transparent" />
               </linearGradient>
             </defs>
@@ -501,36 +404,13 @@ function CardVectorArtLayer({
           </svg>
         )}
 
-        {customization.style === 'nebula' && (
-          <svg className="w-full h-full opacity-85" viewBox="0 0 400 400">
-            <circle cx="130" cy="140" r="90" fill={theme.accent} opacity="0.28" />
-            <circle cx="270" cy="220" r="110" fill={theme.accentGlow} opacity="0.32" />
-            <circle cx="190" cy="300" r="85" fill={theme.accent} opacity="0.2" />
-          </svg>
-        )}
-
-        {customization.style === 'aurora' && (
-          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400" preserveAspectRatio="none">
-            <path
-              d="M0,120 Q100,50 200,140 T400,100 L400,280 Q300,320 200,230 T0,260 Z"
-              fill={theme.accentGlow}
-              opacity="0.7"
-            />
-            <path
-              d="M0,190 Q120,270 240,180 T400,220 L400,360 Q280,290 160,370 T0,320 Z"
-              fill={theme.accent}
-              opacity="0.35"
-            />
-          </svg>
-        )}
-
         {customization.style === 'cyber' && (
           <svg className="w-full h-full opacity-70" viewBox="0 0 400 400" preserveAspectRatio="none">
             {[20, 60, 100, 140, 180, 220, 260, 300, 340, 380].map((bx, idx) => (
-              <line key={idx} x1="200" y1="170" x2={bx} y2="400" stroke={theme.cardBorder} strokeWidth="1.2" />
+              <line key={idx} x1="200" y1="170" x2={bx} y2="400" stroke={theme.accent} strokeWidth="1.2" />
             ))}
             {[180, 195, 215, 240, 275, 320, 375].map((y, idx) => (
-              <line key={idx} x1="0" y1={y} x2="400" y2={y} stroke={theme.cardBorder} strokeWidth="1.2" opacity="0.6" />
+              <line key={idx} x1="0" y1={y} x2="400" y2={y} stroke={theme.accent} strokeWidth="1.2" opacity="0.6" />
             ))}
           </svg>
         )}
@@ -544,72 +424,172 @@ function CardVectorArtLayer({
           </svg>
         )}
 
-        {customization.style === 'prism' && (
-          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
-            <polygon points="-50,150 180,-50 240,-50 10,150" fill={theme.accentGlow} opacity="0.6" />
-            <polygon points="50,420 320,150 370,150 100,420" fill={theme.accentGlow} opacity="0.4" />
-          </svg>
-        )}
-
-        {customization.style === 'orbit' && (
-          <svg className="w-full h-full opacity-75" viewBox="0 0 400 400" fill="none">
-            <ellipse cx="200" cy="180" rx="90" ry="45" transform="rotate(-20 200 180)" stroke={theme.cardBorder} strokeWidth="1.5" />
-            <circle cx="200" cy="180" r="14" fill={theme.accent} />
-          </svg>
-        )}
-
-        {customization.style === 'liquid' && (
-          <svg className="w-full h-full opacity-65" viewBox="0 0 400 400">
-            <circle cx="160" cy="170" r="65" fill={theme.accentGlow} opacity="0.7" />
-            <circle cx="230" cy="190" r="75" fill={theme.accent} opacity="0.35" />
-          </svg>
-        )}
-
-        {customization.style === 'hex' && (
-          <svg className="w-full h-full opacity-55" viewBox="0 0 400 400" stroke={theme.cardBorder} strokeWidth="1.2" fill="none">
-            {[
-              [120, 140], [200, 140], [280, 140],
-              [80, 200], [200, 200], [320, 200],
-            ].map(([hx, hy], idx) => {
-              const r = 26;
-              const points = Array.from({ length: 6 }).map((_, a) => {
-                const angle = (Math.PI / 3) * a + Math.PI / 6;
-                return `${hx + r * Math.cos(angle)},${hy + r * Math.sin(angle)}`;
-              }).join(' ');
-              return <polygon key={idx} points={points} stroke={theme.cardBorder} />;
-            })}
-          </svg>
-        )}
-
         {customization.style === 'minimal' && <div className="w-full h-full" />}
       </div>
 
-      {/* 4. Mood Texture Overlay (Strictly Zero Sparkles) */}
-      {customization.mood === 'glowy' && (
+      {/* 3. Lighting Profile Overlay (RENDERED DIRECTLY ON TOP OF ARTWORK) */}
+      {customization.lighting === 'dark' && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse at 50% 50%, transparent 20%, rgba(0, 0, 0, 0.72) 90%)',
+            }}
+          />
+          <div
+            className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-2xl opacity-60"
+            style={{ background: '#38bdf8' }}
+          />
+        </div>
+      )}
+      {customization.lighting === 'sunset' && (
         <div
-          className="absolute inset-0 pointer-events-none opacity-60"
+          className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.4) 0%, rgba(6, 182, 212, 0.2) 40%, transparent 70%)',
+            background: 'radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.5) 0%, rgba(244, 63, 94, 0.3) 40%, transparent 75%)',
           }}
         />
       )}
+      {customization.lighting === 'bright' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 45%, transparent 75%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'ethereal' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 45%, rgba(251, 191, 36, 0.35) 0%, rgba(245, 158, 11, 0.18) 50%, transparent 80%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'spotlight' && (
+        <div
+          className="absolute inset-x-0 top-0 h-4/5 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at 50% 0%, ${theme.accentGlow} 0%, rgba(255, 255, 255, 0.2) 20%, transparent 72%)`,
+          }}
+        />
+      )}
+      {customization.lighting === 'eclipse' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="w-48 sm:w-56 h-48 sm:h-56 rounded-full blur-xl"
+            style={{
+              background: `radial-gradient(circle, ${theme.accent} 25%, ${theme.accentGlow} 65%, transparent 80%)`,
+            }}
+          />
+        </div>
+      )}
+      {customization.lighting === 'sunburst' && (
+        <div
+          className="absolute -top-12 -right-12 w-72 sm:w-80 h-72 sm:h-80 rounded-full blur-2xl pointer-events-none"
+          style={{
+            background: `radial-gradient(circle, ${theme.accent} 0%, ${theme.accentGlow} 45%, transparent 75%)`,
+            opacity: 0.85,
+          }}
+        />
+      )}
+      {customization.lighting === 'diffuse' && (
+        <>
+          <div
+            className="absolute top-1/4 -left-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+          <div
+            className="absolute bottom-1/4 -right-12 w-56 sm:w-64 h-56 sm:h-64 rounded-full blur-3xl opacity-70 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+        </>
+      )}
+      {customization.lighting === 'stealth' && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 50%, transparent 20%, rgba(0,0,0,0.75) 85%)',
+          }}
+        />
+      )}
+      {customization.lighting === 'rim' && (
+        <>
+          <div
+            className="absolute -top-10 -left-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+          <div
+            className="absolute -bottom-10 -right-10 w-44 h-44 rounded-full blur-2xl opacity-60 pointer-events-none"
+            style={{ background: theme.accentGlow }}
+          />
+        </>
+      )}
+
+      {/* 4. Mood Texture Overlay (RENDERED ON TOP OF LIGHTING, strictly zero sparkles) */}
+      {customization.mood === 'glowy' && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 50% 45%, rgba(16, 185, 129, 0.42) 0%, rgba(6, 182, 212, 0.28) 45%, transparent 75%)',
+            }}
+          />
+          <div className="absolute inset-0 shadow-[inset_0_0_35px_rgba(16,185,129,0.35)]" />
+        </div>
+      )}
       {customization.mood === 'sweets' && (
-        <div className="absolute inset-0 pointer-events-none opacity-40">
-          <div className="w-full h-full bg-pink-500/10" />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-pink-500/12" />
+          <svg className="w-full h-full" viewBox="0 0 400 700">
+            {[
+              [60, 90, '#f472b6', 25], [140, 60, '#38bdf8', -15], [230, 80, '#facc15', 40],
+              [320, 110, '#4ade80', -30], [80, 200, '#ffffff', 15], [300, 230, '#f472b6', -45],
+              [50, 360, '#38bdf8', 35], [340, 340, '#facc15', 20], [180, 430, '#4ade80', -20],
+              [70, 520, '#ffffff', -10], [310, 500, '#f472b6', 30], [150, 620, '#38bdf8', 45],
+              [270, 640, '#facc15', -25], [360, 610, '#4ade80', 10], [40, 660, '#f472b6', -35],
+            ].map(([x, y, col, rot], idx) => (
+              <rect
+                key={idx}
+                x={(x as number) - 8}
+                y={(y as number) - 2.5}
+                width="16"
+                height="5"
+                rx="2.5"
+                fill={col as string}
+                opacity="0.85"
+                transform={`rotate(${rot} ${x} ${y})`}
+              />
+            ))}
+          </svg>
         </div>
       )}
       {customization.mood === 'dreamy' && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-amber-400/20 blur-xl" />
-          <div className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-yellow-500/15 blur-2xl" />
-          <div className="absolute top-1/2 right-1/3 w-20 h-20 rounded-full bg-amber-300/25 blur-lg" />
+          <svg className="w-full h-full" viewBox="0 0 400 700">
+            {[
+              [80, 120, 28, 0.4], [310, 160, 38, 0.35], [200, 250, 22, 0.45],
+              [70, 370, 34, 0.3], [330, 420, 42, 0.4], [160, 510, 30, 0.35],
+              [90, 620, 26, 0.4], [290, 630, 36, 0.35],
+            ].map(([cx, cy, r, op], idx) => (
+              <circle
+                key={idx}
+                cx={cx}
+                cy={cy}
+                r={r}
+                fill="#fbbf24"
+                opacity={op}
+                filter="blur(6px)"
+              />
+            ))}
+          </svg>
         </div>
       )}
       {customization.mood === 'grain' && (
         <div
           className="absolute inset-0 opacity-45 pointer-events-none"
           style={{
-            backgroundImage: `radial-gradient(${isIvory ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)'} 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(${theme.colour === 'ivory' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)'} 1px, transparent 1px)`,
             backgroundSize: '4px 4px',
           }}
         />
@@ -642,7 +622,6 @@ function CardVectorArtLayer({
     </div>
   );
 }
-
 
 function RenderStylePreviewSphere({ styleId, theme }: { styleId: string; theme: ThemeColors }) {
   if (styleId === '3d' || styleId === 'sphere') {
