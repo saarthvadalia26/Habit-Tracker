@@ -2354,17 +2354,22 @@ function renderHeaderBrand(
   const chipSize = s(42);
   const chipRadius = s(12);
 
+  const brandColor = styleTheme ? styleTheme.headerBrandColor : theme.primaryText;
+  const isDarkText = brandColor === '#18181b' || brandColor === '#0f172a' || brandColor === '#000000';
+  const chipBg = isDarkText ? 'rgba(24, 24, 27, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+  const chipBorder = isDarkText ? 'rgba(24, 24, 27, 0.18)' : 'rgba(255, 255, 255, 0.18)';
+
   // Squircle base
-  ctx.fillStyle = theme.name === 'Warm Ivory' ? 'rgba(21, 19, 15, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+  ctx.fillStyle = chipBg;
   roundRect(ctx, x, y, chipSize, chipSize, chipRadius);
   ctx.fill();
-  ctx.strokeStyle = theme.cardBorder;
+  ctx.strokeStyle = chipBorder;
   ctx.lineWidth = 1.2 * scale;
   ctx.stroke();
 
-  // Draw bold "H"
+  // Draw bold "H" in matching brandColor
   ctx.font = `700 ${s(24)}px ${FONT_HEAD}`;
-  ctx.fillStyle = theme.primaryText;
+  ctx.fillStyle = brandColor;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillText('H', x + s(9), y + chipSize / 2 + s(1));

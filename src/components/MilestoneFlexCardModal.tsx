@@ -84,9 +84,19 @@ type CardMode = 'streak' | 'today' | 'challenge' | 'habit';
  * Official Brand Logo Component ("H.")
  * Squircle badge rendering the brand's bold Grotesque H and signature accent dot.
  */
-function BrandLogoIcon({ size = 18, theme }: { size?: number; theme: ThemeColors }) {
-  const isIvory = theme.name === 'Warm Ivory';
-  const chipBg = isIvory ? 'rgba(21, 19, 15, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+function BrandLogoIcon({
+  size = 18,
+  theme,
+  styleTheme,
+}: {
+  size?: number;
+  theme: ThemeColors;
+  styleTheme?: CardStyleTheme;
+}) {
+  const brandColor = styleTheme ? styleTheme.headerBrandColor : theme.primaryText;
+  const isDarkText = brandColor === '#18181b' || brandColor === '#0f172a' || brandColor === '#000000';
+  const chipBg = isDarkText ? 'rgba(24, 24, 27, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+  const chipBorder = isDarkText ? 'rgba(24, 24, 27, 0.16)' : 'rgba(255, 255, 255, 0.16)';
 
   return (
     <div
@@ -95,13 +105,13 @@ function BrandLogoIcon({ size = 18, theme }: { size?: number; theme: ThemeColors
         width: size,
         height: size,
         background: chipBg,
-        border: `1px solid ${theme.cardBorder}`,
+        border: `1px solid ${chipBorder}`,
       }}
     >
       <svg viewBox="0 0 512 512" className="w-[78%] h-[78%]">
         <path
           d="M 148 116 L 222 116 L 222 224 L 290 224 L 290 116 L 364 116 L 364 396 L 290 396 L 290 288 L 222 288 L 222 396 L 148 396 Z"
-          fill={theme.primaryText}
+          fill={brandColor}
         />
         <circle cx="410" cy="368" r="32" fill={theme.accent} />
       </svg>
@@ -1194,7 +1204,7 @@ function FlexCardVectorPreview({
           style={{ borderColor: styleTheme.headerDivider }}
         >
           <div className="flex items-center gap-1.5 shrink-0">
-            <BrandLogoIcon size={18} theme={theme} />
+            <BrandLogoIcon size={18} theme={theme} styleTheme={styleTheme} />
             <span
               className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
               style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
@@ -1444,7 +1454,7 @@ function FlexCardVectorPreview({
           style={{ borderColor: styleTheme.headerDivider }}
         >
           <div className="flex items-center gap-1.5 shrink-0">
-            <BrandLogoIcon size={18} theme={theme} />
+            <BrandLogoIcon size={18} theme={theme} styleTheme={styleTheme} />
             <span
               className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
               style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
@@ -1674,7 +1684,7 @@ function FlexCardVectorPreview({
         style={{ borderColor: styleTheme.headerDivider }}
       >
         <div className="flex items-center gap-1.5 shrink-0">
-          <BrandLogoIcon size={18} theme={theme} />
+          <BrandLogoIcon size={18} theme={theme} styleTheme={styleTheme} />
           <span
             className="font-clash font-bold text-[10.5px] tracking-tight shrink-0"
             style={{ color: styleTheme.headerBrandColor, whiteSpace: 'nowrap' }}
