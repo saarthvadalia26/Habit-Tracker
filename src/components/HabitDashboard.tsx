@@ -54,6 +54,7 @@ import {
   Shield,
   Sunrise,
   Link2,
+  HelpCircle,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
@@ -286,10 +287,11 @@ export function HabitDashboard({
   // Drop 4: Habit Stacking & Dayflows Studio state
   const [isStackingModalOpen, setIsStackingModalOpen] = useState(false);
   const [stackingInitialHabitId, setStackingInitialHabitId] = useState<string | undefined>(undefined);
+  const [stackingInitialShowGuide, setStackingInitialShowGuide] = useState(false);
   const [drop4Unlocked, setDrop4Unlocked] = useState(false);
   const [dayflowFilter, setDayflowFilter] = useState<'all' | TimeOfDay>('all');
 
-  const handleOpenStackingModal = useCallback((habitId?: string) => {
+  const handleOpenStackingModal = useCallback((habitId?: string, showGuide: boolean = false) => {
     if (!isDrop4Unlocked()) {
       toast.info('Drop 4: Habit Stacking & Dayflows', {
         description: 'Habit Stacking & Dayflows release on October 31st! Opening roadmap...',
@@ -298,6 +300,7 @@ export function HabitDashboard({
       return;
     }
     setStackingInitialHabitId(habitId);
+    setStackingInitialShowGuide(showGuide);
     setIsStackingModalOpen(true);
   }, []);
 
@@ -1615,7 +1618,7 @@ export function HabitDashboard({
 
       {/* Drop 4 Announcement Toast (First visit after Oct 31) */}
       <DayflowAnnouncementToast
-        onOpenStudio={() => handleOpenStackingModal()}
+        onOpenStudio={(showGuide) => handleOpenStackingModal(undefined, showGuide ?? true)}
       />
 
       {/* ============================================================== */}
@@ -2172,14 +2175,26 @@ export function HabitDashboard({
                     </h3>
                     <div className="flex items-center gap-2">
                       {drop4Unlocked && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenStackingModal()}
-                          className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Layers className="w-3.5 h-3.5" />
-                          <span>Build Routine</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenStackingModal(undefined, true)}
+                            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                            title="How Habit Stacking & Dayflows work"
+                          >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">How it works</span>
+                          </button>
+                          <span className="text-[#15130f]/20 dark:text-[#fbf8f1]/20 hidden sm:inline">•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenStackingModal(undefined, false)}
+                            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Layers className="w-3.5 h-3.5" />
+                            <span>Build Routine</span>
+                          </button>
+                        </div>
                       )}
                       <span className="text-xs sm:text-[13px] font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
                         {habits.length} habits
@@ -3540,6 +3555,7 @@ export function HabitDashboard({
           isGuestMode={isGuestMode}
           onUpdateHabitStack={handleUpdateHabitStack}
           initialHabitId={stackingInitialHabitId}
+          initialShowGuide={stackingInitialShowGuide}
         />
       )}
     </div>

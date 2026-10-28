@@ -6,7 +6,7 @@ import { ArrowRight, X, Layers, Sunrise } from 'lucide-react';
 import { isDrop4Unlocked } from '@/config/releases';
 
 interface DayflowAnnouncementToastProps {
-  onOpenStudio: () => void;
+  onOpenStudio: (showGuide?: boolean) => void;
   suppressed?: boolean;
 }
 
@@ -41,7 +41,7 @@ export function DayflowAnnouncementToast({
 
   const handleOpen = () => {
     handleDismiss();
-    onOpenStudio();
+    onOpenStudio(true);
   };
 
   if (suppressed || !isVisible) {
@@ -103,7 +103,7 @@ export function DayflowAnnouncementToast({
                 onClick={handleOpen}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-[#ff5a1f] hover:bg-[#e04a12] shadow-sm transition-all cursor-pointer"
               >
-                <span>Build Routine</span>
+                <span>How it works</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

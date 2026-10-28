@@ -15,6 +15,7 @@ import {
   Info,
   ChevronRight,
   RotateCcw,
+  HelpCircle,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import {
@@ -31,6 +32,7 @@ interface HabitStackingModalProps {
   habits: HabitWithLogs[];
   isGuestMode: boolean;
   initialHabitId?: string;
+  initialShowGuide?: boolean;
   onUpdateHabitStack: (
     habitId: string,
     timeOfDay: TimeOfDay,
@@ -46,6 +48,7 @@ export function HabitStackingModal({
   habits,
   isGuestMode,
   initialHabitId,
+  initialShowGuide,
   onUpdateHabitStack,
 }: HabitStackingModalProps) {
   const [selectedHabitId, setSelectedHabitId] = useState<string>(
@@ -60,6 +63,31 @@ export function HabitStackingModal({
   const [customCue, setCustomCue] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [showFormulaGuide, setShowFormulaGuide] = useState(false);
+
+  // How it works guide toggle with first-visit memory
+  const [showGuide, setShowGuide] = useState(() => {
+    if (initialShowGuide !== undefined) return initialShowGuide;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ht_dayflow_guide_seen_v1') !== 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (initialShowGuide) {
+      setShowGuide(true);
+    }
+  }, [initialShowGuide]);
+
+  const handleToggleGuide = (explicitState?: boolean) => {
+    setShowGuide((prev) => {
+      const next = typeof explicitState === 'boolean' ? explicitState : !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ht_dayflow_guide_seen_v1', 'true');
+      }
+      return next;
+    });
+  };
 
   // Sync internal state when selected habit changes or modal opens
   useEffect(() => {
@@ -151,13 +179,97 @@ export function HabitStackingModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleToggleGuide()}
+                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
+                  showGuide
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400'
+                }`}
+                title="How Habit Stacking & Dayflows works"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">How it works</span>
+                <span className="sm:hidden text-[10.5px]">Guide</span>
+              </button>
+
+              <button
+                onClick={onClose}
+                aria-label="Close Habit Stacking modal"
+                className="p-1.5 rounded-full text-[#15130f]/40 hover:text-[#15130f] dark:text-[#fbf8f1]/40 dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+
+          {/* Collapsible How It Works Guide Drawer */}
+          <AnimatePresence>
+            {showGuide && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-2xl p-3.5 sm:p-4.5 bg-linear-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/25 space-y-3 text-xs max-h-[38vh] sm:max-h-none overflow-y-auto">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-indigo-500" />
+                      <h4 className="font-clash font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
+                        How Habit Stacking & Dayflows Work
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleGuide(false)}
+                      className="text-[11px] font-semibold text-[#15130f]/50 dark:text-[#fbf8f1]/50 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+                    >
+                      Hide guide ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Card 1 */}
+                    <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-xs">
+                        <Sunrise className="w-3.5 h-3.5 text-amber-500" />
+                        <span>1. Dayflow Rituals</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Group daily habits into <strong>Morning</strong> (4–12), <strong>Afternoon</strong> (12–17), <strong>Evening</strong> (17–4), or <strong>Anytime</strong>. Your dashboard gently spotlights your current ritual in real time.
+                      </p>
+                    </div>
+
+                    {/* Card 2 */}
+                    <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                        <Link2 className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>2. Atomic Stacking</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Based on James Clear’s formula: <em>&ldquo;After [Current Habit / Life Event], I will [New Habit]&rdquo;</em>. Anchor new disciplines to existing cues so they execute without mental friction.
+                      </p>
+                    </div>
+
+                    {/* Card 3 */}
+                    <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                        <Layers className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>3. Automatic Chaining</span>
+                      </div>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                        Chained habits seamlessly nest under their parent anchor with connecting cues (<code>↳ After...</code>) and track live completion percentages for each dayflow block.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Active Habit Selector Pill Bar */}
           <div className="flex flex-col gap-1.5">
