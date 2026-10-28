@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Habit, HabitLog, HabitWithLogs } from '@/types/database.types';
+import { Habit, HabitLog, HabitWithLogs, TimeOfDay, StackTriggerType, HabitStackConfig } from '@/types/database.types';
 import {
   cleanHexColor,
   cleanText,
@@ -11,6 +11,9 @@ import {
   isValidCadenceType,
   cleanCadenceDays,
   isValidFrequency,
+  isValidTimeOfDay,
+  isValidStackTriggerType,
+  cleanStackCue,
 } from '@/lib/validation';
 import { calculateCadenceStreak, computeHabitShieldBank } from '@/lib/cadenceUtils';
 
@@ -103,22 +106,40 @@ export async function getHabitsWithLogsAction(
       }
     });
 
-    // 4. Combine habits with logs and cadence defaults
+    // 4. Combine habits with logs, cadence defaults, and habit stacking dayflow config
     const result: HabitWithLogs[] = habits.map((habit) => {
       const cadenceType = (habit.cadence_type as 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency') || 'everyday';
       const cadenceDays = habit.cadence_days || [0, 1, 2, 3, 4, 5, 6];
       const targetFrequency = habit.target_frequency || 7;
+
+      const tod = (habit.time_of_day as TimeOfDay) || 'anytime';
+      const triggerType = (habit.stack_trigger_type as StackTriggerType) || 'none';
+      const parentHabit = habits.find((h) => h.id === habit.stack_parent_habit_id);
+      const stack: HabitStackConfig = {
+        timeOfDay: tod,
+        triggerType,
+        parentHabitId: habit.stack_parent_habit_id ?? null,
+        parentHabitTitle: parentHabit?.title,
+        customCue: habit.stack_custom_cue ?? '',
+        order: habit.stack_order ?? 0,
+      };
 
       return {
         ...habit,
         cadence_type: cadenceType,
         cadence_days: cadenceDays,
         target_frequency: targetFrequency,
+        time_of_day: tod,
+        stack_trigger_type: triggerType,
+        stack_parent_habit_id: habit.stack_parent_habit_id ?? null,
+        stack_custom_cue: habit.stack_custom_cue ?? '',
+        stack_order: habit.stack_order ?? 0,
         cadence: {
           type: cadenceType,
           daysOfWeek: cadenceDays,
           frequencyPerWeek: targetFrequency,
         },
+        stack,
         logs: logsByHabit[habit.id] || {},
         frozenLogs: frozenLogsByHabit[habit.id] || {},
       };
@@ -131,14 +152,19 @@ export async function getHabitsWithLogsAction(
 }
 
 /**
- * Creates a new habit for the current user with strict input sanitization and optional cadence
+ * Creates a new habit for the current user with strict input sanitization, cadence, and dayflow stacking
  */
 export async function createHabitAction(
   title: string,
   colorTheme: string = '#6366F1',
   cadenceType: string = 'everyday',
   cadenceDays?: number[],
-  targetFrequency?: number
+  targetFrequency?: number,
+  timeOfDay: string = 'anytime',
+  stackTriggerType: string = 'none',
+  stackParentHabitId?: string | null,
+  stackCustomCue?: string,
+  stackOrder: number = 0
 ): Promise<ActionResponse<Habit>> {
   try {
     const trimmedTitle = cleanText(title, 60);
@@ -165,8 +191,12 @@ export async function createHabitAction(
     const validCadence = isValidCadenceType(cadenceType) ? cadenceType : 'everyday';
     const validDays = cleanCadenceDays(cadenceDays) ?? [0, 1, 2, 3, 4, 5, 6];
     const validFrequency = isValidFrequency(targetFrequency) ? targetFrequency : 7;
+    const validTimeOfDay = isValidTimeOfDay(timeOfDay) ? timeOfDay : 'anytime';
+    const validTriggerType = isValidStackTriggerType(stackTriggerType) ? stackTriggerType : 'none';
+    const validParentId = stackParentHabitId && isUuid(stackParentHabitId) ? stackParentHabitId : null;
+    const validCustomCue = cleanStackCue(stackCustomCue, 80);
 
-    // Try inserting with cadence columns; fallback if schema has not been updated yet
+    // Try inserting with full Drop 3 & Drop 4 columns; fallback gracefully if remote schema is older
     const payload: any = {
       user_id: user.id,
       title: trimmedTitle,
@@ -174,6 +204,11 @@ export async function createHabitAction(
       cadence_type: validCadence,
       cadence_days: validDays,
       target_frequency: validFrequency,
+      time_of_day: validTimeOfDay,
+      stack_trigger_type: validTriggerType,
+      stack_parent_habit_id: validParentId,
+      stack_custom_cue: validCustomCue,
+      stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
     };
 
     let { data, error } = await supabase
@@ -183,18 +218,37 @@ export async function createHabitAction(
       .single();
 
     if (error) {
-      // Graceful fallback without new columns if remote DB is older schema
-      const fallback = await supabase
+      // Graceful fallback without Drop 4 columns if remote DB is older schema
+      const fallbackCadence = await supabase
         .from('habits')
         .insert({
           user_id: user.id,
           title: trimmedTitle,
           color_theme: validatedColor,
+          cadence_type: validCadence,
+          cadence_days: validDays,
+          target_frequency: validFrequency,
         })
         .select()
         .single();
-      data = fallback.data;
-      error = fallback.error;
+
+      if (fallbackCadence.data) {
+        data = fallbackCadence.data;
+        error = null;
+      } else {
+        // Fallback to base v1 schema
+        const fallbackBase = await supabase
+          .from('habits')
+          .insert({
+            user_id: user.id,
+            title: trimmedTitle,
+            color_theme: validatedColor,
+          })
+          .select()
+          .single();
+        data = fallbackBase.data;
+        error = fallbackBase.error;
+      }
     }
 
     if (error) {
@@ -275,6 +329,143 @@ export async function updateHabitCadenceAction(
     return { data: null, error: 'Unable to update cadence settings.' };
   }
 }
+
+/**
+ * Updates a habit's Dayflow time-of-day bucket and Habit Stacking cue chaining.
+ * Validates ownership, prevents circular parent dependencies, and sanitizes cues.
+ */
+export async function updateHabitStackingAction(
+  habitId: string,
+  timeOfDay: string,
+  stackTriggerType: string = 'none',
+  stackParentHabitId?: string | null,
+  stackCustomCue?: string,
+  stackOrder: number = 0
+): Promise<ActionResponse<{ habitId: string; timeOfDay: string; triggerType: string }>> {
+  try {
+    if (!isUuid(habitId)) {
+      return { data: null, error: 'Invalid habit ID.' };
+    }
+
+    if (!isValidTimeOfDay(timeOfDay)) {
+      return { data: null, error: 'Invalid time of day.' };
+    }
+
+    const validTriggerType = isValidStackTriggerType(stackTriggerType) ? stackTriggerType : 'none';
+    let validParentId: string | null = null;
+
+    if (validTriggerType === 'habit') {
+      if (!stackParentHabitId || !isUuid(stackParentHabitId) || stackParentHabitId === habitId) {
+        return { data: null, error: 'Invalid parent habit selected for chaining.' };
+      }
+      validParentId = stackParentHabitId;
+    }
+
+    const validCustomCue = cleanStackCue(stackCustomCue, 80);
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    // Verify habit ownership explicitly before mutating
+    const { data: habit, error: habitError } = await supabase
+      .from('habits')
+      .select('id')
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (habitError || !habit) {
+      return { data: null, error: 'Habit not found or unauthorized.' };
+    }
+
+    // If parent habit specified, verify it also belongs to this user
+    if (validParentId) {
+      const { data: parentHabit } = await supabase
+        .from('habits')
+        .select('id')
+        .eq('id', validParentId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!parentHabit) {
+        return { data: null, error: 'Selected parent habit does not belong to your account.' };
+      }
+    }
+
+    const { error } = await supabase
+      .from('habits')
+      .update({
+        time_of_day: timeOfDay,
+        stack_trigger_type: validTriggerType,
+        stack_parent_habit_id: validParentId,
+        stack_custom_cue: validCustomCue,
+        stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
+      })
+      .eq('id', habitId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      return { data: null, error: 'Unable to update Dayflow stacking settings.' };
+    }
+
+    revalidatePath('/');
+    return { data: { habitId, timeOfDay, triggerType: validTriggerType }, error: null };
+  } catch {
+    return { data: null, error: 'Unable to update Dayflow stacking settings.' };
+  }
+}
+
+/**
+ * Reorders habits within a Dayflow ritual for the current user
+ */
+export async function reorderHabitsAction(
+  orderedHabitIds: string[]
+): Promise<ActionResponse<{ success: boolean }>> {
+  try {
+    if (!Array.isArray(orderedHabitIds) || orderedHabitIds.length === 0) {
+      return { data: null, error: 'No habits provided for reordering.' };
+    }
+
+    const validIds = orderedHabitIds.filter(isUuid);
+    if (validIds.length === 0) {
+      return { data: null, error: 'Invalid habit IDs.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    // Update stack_order for each habit
+    await Promise.all(
+      validIds.map((id, index) =>
+        supabase
+          .from('habits')
+          .update({ stack_order: index })
+          .eq('id', id)
+          .eq('user_id', user.id)
+      )
+    );
+
+    revalidatePath('/');
+    return { data: { success: true }, error: null };
+  } catch {
+    return { data: null, error: 'Failed to reorder habits.' };
+  }
+}
+
 
 /**
  * Toggles a Streak Armor freeze shield for a habit on a specific date.

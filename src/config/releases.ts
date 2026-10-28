@@ -20,14 +20,15 @@ export const V2_RELEASE_INFO = {
   version: 'v2.0',
   title: 'The v2.0 Evolution Cycle',
   subtitle: '6 weekly staged drops designed to systematically refine your discipline.',
-  currentDrop: 3,
+  currentDrop: 4,
   totalDrops: 6,
-  nextDropDate: '24th October 2026',
+  nextDropDate: '31st October 2026',
 };
 
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
 export const DROP_2_RELEASE_DATE = '2026-10-17T00:00:00';
 export const DROP_3_RELEASE_DATE = '2026-10-24T00:00:00';
+export const DROP_4_RELEASE_DATE = '2026-10-31T00:00:00';
 
 /**
  * Gets current effective timestamp, allowing optional ?mock_date=YYYY-MM-DD for testing
@@ -234,6 +235,43 @@ export function getDrop3DaysRemaining(): number {
   return getDropDaysRemaining(V2_DROPS[2]);
 }
 
+/**
+ * Checks whether Drop 4 (Habit Stacking & Dayflows) is unlocked.
+ * - Always unlocked on localhost (NODE_ENV === 'development')
+ * - Unlocked if ?preview=true, ?drop4=true, ?stacking=true, ?dayflow=true, or ?beta=true query param is present
+ * - Automatically unlocks on production when reaching Oct 31, 2026 00:00
+ */
+export function isDrop4Unlocked(): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      if (
+        search.includes('preview=true') ||
+        search.includes('drop4=true') ||
+        search.includes('stacking=true') ||
+        search.includes('dayflow=true') ||
+        search.includes('dayflows=true') ||
+        search.includes('beta=true')
+      ) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return isDropReleased(V2_DROPS[3]);
+}
+
+/**
+ * Returns days remaining until Drop 4 launch
+ */
+export function getDrop4DaysRemaining(): number {
+  return getDropDaysRemaining(V2_DROPS[3]);
+}
+
 export const V2_DROPS: V2Drop[] = [
   {
     id: 'heatmap-365',
@@ -288,8 +326,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 3',
     targetDate: '24th October 2026',
     releaseDate: '2026-10-24T00:00:00',
-    status: 'up_next',
-    statusBadge: 'SPOTLIGHT • RELEASING OCT 24',
+    status: 'in_development',
+    statusBadge: 'RELEASED • OCT 24',
     category: '🛡️ RESILIENCE',
     tagline: 'Streak shields & guilt-free recovery days.',
     description:
@@ -310,8 +348,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 4',
     targetDate: '31st October 2026',
     releaseDate: '2026-10-31T00:00:00',
-    status: 'planned',
-    statusBadge: 'RELEASING OCT 31',
+    status: 'up_next',
+    statusBadge: 'SPOTLIGHT • RELEASING OCT 31',
     category: '⚡ ROUTINES',
     tagline: 'Group atomic habits into seamless morning, afternoon, and evening rituals.',
     description:

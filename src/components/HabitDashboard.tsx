@@ -52,8 +52,10 @@ import {
   Share2,
   ShieldCheck,
   Shield,
+  Sunrise,
+  Link2,
 } from 'lucide-react';
-import { HabitWithLogs } from '@/types/database.types';
+import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
 import { CadenceConfig } from '@/types/cadence.types';
 import { formatDateToISO, getTodayDateString, isLeapYear } from '@/lib/dateUtils';
@@ -64,6 +66,15 @@ import {
   isHabitScheduledForDay,
   computeHabitShieldBank,
 } from '@/lib/cadenceUtils';
+import {
+  DAYFLOW_META,
+  DAYFLOW_ORDER,
+  getCurrentTimeOfDay,
+  getHabitTimeOfDay,
+  getHabitStackTriggerText,
+  groupAndOrderHabitsByDayflow,
+  calculateDayflowAdherence,
+} from '@/lib/dayflowUtils';
 import { MONTH_NAMES } from '@/lib/monthUtils';
 import {
   toggleHabitLogAction,
@@ -71,6 +82,7 @@ import {
   createHabitAction,
   updateHabitCadenceAction,
   toggleStreakFreezeAction,
+  updateHabitStackingAction,
 } from '@/app/actions/habits';
 import {
   createChallengeAction,
@@ -90,13 +102,15 @@ import { CreateChallengeModal } from '@/components/CreateChallengeModal';
 import { ActiveChallengeModal } from '@/components/ActiveChallengeModal';
 import { MilestoneFlexCardModal } from '@/components/MilestoneFlexCardModal';
 import { StreakArmorModal } from '@/components/StreakArmorModal';
+import { HabitStackingModal } from '@/components/HabitStackingModal';
 import { NotesSection } from '@/components/NotesSection';
 import { YearHeatmapMatrix } from '@/components/YearHeatmapMatrix';
 import { ChallengeBanner } from '@/components/ChallengeBanner';
 import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
 import { StreakArmorAnnouncementToast } from '@/components/StreakArmorAnnouncementToast';
-import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked } from '@/config/releases';
+import { DayflowAnnouncementToast } from '@/components/DayflowAnnouncementToast';
+import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked } from '@/config/releases';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -269,6 +283,80 @@ export function HabitDashboard({
     []
   );
 
+  // Drop 4: Habit Stacking & Dayflows Studio state
+  const [isStackingModalOpen, setIsStackingModalOpen] = useState(false);
+  const [stackingInitialHabitId, setStackingInitialHabitId] = useState<string | undefined>(undefined);
+  const [drop4Unlocked, setDrop4Unlocked] = useState(false);
+  const [dayflowFilter, setDayflowFilter] = useState<'all' | TimeOfDay>('all');
+
+  const handleOpenStackingModal = useCallback((habitId?: string) => {
+    if (!isDrop4Unlocked()) {
+      toast.info('Drop 4: Habit Stacking & Dayflows', {
+        description: 'Habit Stacking & Dayflows release on October 31st! Opening roadmap...',
+      });
+      setIsRoadmapOpen(true);
+      return;
+    }
+    setStackingInitialHabitId(habitId);
+    setIsStackingModalOpen(true);
+  }, []);
+
+  const handleUpdateHabitStack = useCallback(
+    async (
+      habitId: string,
+      tod: TimeOfDay,
+      trigType: StackTriggerType,
+      parentId?: string | null,
+      cue?: string
+    ): Promise<boolean> => {
+      // Optimistic client update
+      setHabits((prev) =>
+        prev.map((h) => {
+          if (h.id !== habitId) return h;
+          const parent = prev.find((p) => p.id === parentId);
+          return {
+            ...h,
+            time_of_day: tod,
+            stack_trigger_type: trigType,
+            stack_parent_habit_id: parentId ?? null,
+            stack_custom_cue: cue ?? '',
+            stack: {
+              timeOfDay: tod,
+              triggerType: trigType,
+              parentHabitId: parentId ?? null,
+              parentHabitTitle: parent?.title,
+              customCue: cue ?? '',
+              order: h.stack_order ?? 0,
+            },
+          };
+        })
+      );
+
+      if (isGuestMode) {
+        return true;
+      }
+
+      try {
+        const res = await updateHabitStackingAction(
+          habitId,
+          tod,
+          trigType,
+          parentId,
+          cue
+        );
+        if (res.error) {
+          toast.error(res.error);
+          return false;
+        }
+        return true;
+      } catch {
+        toast.error('Failed to sync routine with cloud');
+        return false;
+      }
+    },
+    [isGuestMode]
+  );
+
   // Challenge state (guests never persist or see fake challenge history)
   const [challenge, setChallenge] = useState<Challenge | null>(isGuestMode ? null : initialChallenge);
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>(
@@ -289,6 +377,10 @@ export function HabitDashboard({
   const [newSubtitle, setNewSubtitle] = useState('');
   const [newTargetTime, setNewTargetTime] = useState('');
   const [newIcon, setNewIcon] = useState('brain');
+  const [newTimeOfDay, setNewTimeOfDay] = useState<TimeOfDay>('anytime');
+  const [newTriggerType, setNewTriggerType] = useState<StackTriggerType>('none');
+  const [newParentHabitId, setNewParentHabitId] = useState<string>('');
+  const [newCustomCue, setNewCustomCue] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const [openMenuHabitId, setOpenMenuHabitId] = useState<string | null>(null);
   const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null);
@@ -306,6 +398,7 @@ export function HabitDashboard({
     setDrop1Unlocked(isDrop1Unlocked());
     setDrop2Unlocked(isDrop2Unlocked());
     setDrop3Unlocked(isDrop3Unlocked());
+    setDrop4Unlocked(isDrop4Unlocked());
   }, []);
 
   // Permanently lock desktop sidebar to viewport: prevent wheel/touch scroll propagation
@@ -570,6 +663,27 @@ export function HabitDashboard({
     return days;
   }, [habits, todayStr, todayPercentage, doneCount]);
 
+  // Drop 4: Dayflow period, counts, and grouping
+  const currentTimeOfDay = useMemo(() => getCurrentTimeOfDay(), []);
+
+  const dayflowCounts = useMemo(() => {
+    const counts: Record<TimeOfDay, number> = {
+      morning: 0,
+      afternoon: 0,
+      evening: 0,
+      anytime: 0,
+    };
+    habits.forEach((h) => {
+      const tod = getHabitTimeOfDay(h);
+      counts[tod] = (counts[tod] || 0) + 1;
+    });
+    return counts;
+  }, [habits]);
+
+  const groupedHabits = useMemo(() => {
+    return groupAndOrderHabitsByDayflow(habits);
+  }, [habits]);
+
   // Compute next pending habit reminder for today
   const nextReminder = useMemo(() => {
     if (habits.length === 0) return null;
@@ -677,7 +791,7 @@ export function HabitDashboard({
             description: "You'll receive timely reminders for your scheduled habits.",
           });
           try {
-            new Notification('Habit Reminders Active ✨', {
+            new Notification('Habit Reminders Active', {
               body: nextReminder && !nextReminder.allDone
                 ? `Next habit: ${nextReminder.title}${nextReminder.timeStr ? ` at ${nextReminder.timeStr}` : ''}`
                 : 'Habit reminder alerts are now active on this device.',
@@ -707,7 +821,7 @@ export function HabitDashboard({
         description: 'Browser notifications are now active.',
       });
       try {
-        new Notification('Habit Reminders Active ✨', {
+        new Notification('Habit Reminders Active', {
           body: nextReminder && !nextReminder.allDone
             ? `Next habit: ${nextReminder.title}${nextReminder.timeStr ? ` at ${nextReminder.timeStr}` : ''}`
             : 'Habit reminder alerts are now active on this device.',
@@ -867,16 +981,42 @@ export function HabitDashboard({
 
     try {
       const compoundTitle = `${titleVal} | ${subtitleVal}`;
-      const res = await createHabitAction(compoundTitle, '#ff5a1f');
+      const parentId = newTriggerType === 'habit' && newParentHabitId ? newParentHabitId : null;
+      const customCue = newTriggerType === 'custom' ? newCustomCue.trim() : '';
+
+      const res = await createHabitAction(
+        compoundTitle,
+        '#ff5a1f',
+        'everyday',
+        [0, 1, 2, 3, 4, 5, 6],
+        7,
+        newTimeOfDay,
+        newTriggerType,
+        parentId,
+        customCue
+      );
       if (res.error) {
         toast.error('Could not create habit', { description: res.error });
       } else if (res.data) {
+        const parent = habits.find((p) => p.id === parentId);
         const created: HabitWithLogs = {
           ...res.data,
           title: titleVal,
           subtitle: subtitleVal,
           icon: newIcon,
           targetTime: timeVal,
+          time_of_day: newTimeOfDay,
+          stack_trigger_type: newTriggerType,
+          stack_parent_habit_id: parentId,
+          stack_custom_cue: customCue,
+          stack: {
+            timeOfDay: newTimeOfDay,
+            triggerType: newTriggerType,
+            parentHabitId: parentId,
+            parentHabitTitle: parent?.title,
+            customCue,
+            order: 0,
+          },
           logs: { [todayStr]: false },
           currentStreak: 0,
         };
@@ -885,6 +1025,10 @@ export function HabitDashboard({
         setNewTitle('');
         setNewSubtitle('');
         setNewTargetTime('');
+        setNewTimeOfDay('anytime');
+        setNewTriggerType('none');
+        setNewParentHabitId('');
+        setNewCustomCue('');
         toast.success('Habit created!', { description: `${titleVal} added to your tracker.` });
       }
     } catch {
@@ -1136,6 +1280,319 @@ export function HabitDashboard({
   // Days in month calculation for the full monthly table
   const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
+  // Render single habit card (used across default view and Dayflow ritual groupings)
+  const renderHabitCard = (habit: HabitWithLogs) => {
+    const isDone = Boolean(habit.logs?.[todayStr]);
+    const currentStreak = calculateContinuousStreak(habit.logs || {});
+
+    let displayTitle = habit.title;
+    let displaySubtitle = habit.subtitle || 'Daily routine';
+    if (habit.title.includes(' | ')) {
+      const parts = habit.title.split(' | ');
+      displayTitle = parts[0];
+      displaySubtitle = parts[1] || displaySubtitle;
+    }
+
+    const triggerInfo = drop4Unlocked ? getHabitStackTriggerText(habit, habits) : null;
+    const stackCue = triggerInfo?.hasTrigger ? triggerInfo.text : null;
+    const habitTod = getHabitTimeOfDay(habit);
+
+    return (
+      <motion.div
+        layout
+        key={habit.id}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        className={`relative group rounded-[18px] sm:rounded-[20px] p-3.5 sm:px-4.5 sm:py-4 flex items-center justify-between gap-2.5 sm:gap-4 transition-all duration-300 border ${
+          openMenuHabitId === habit.id ? 'z-30' : 'z-10'
+        } ${
+          isDone
+            ? 'bg-[#15130f] dark:bg-[#181612] text-[#fbf8f1] border-[#15130f] dark:border-[#2a2620] shadow-sm'
+            : 'bg-[#fbf8f1] dark:bg-[#1c1a16] text-[#15130f] dark:text-[#fbf8f1] border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card hover:-translate-y-0.5'
+        }`}
+      >
+        {/* Left: Icon Chip + Title / Subtitle / Stack Cue */}
+        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+          <div
+            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[13px] sm:rounded-[14px] flex items-center justify-center shrink-0 transition-colors [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[21px] sm:[&>svg]:h-[21px] ${
+              isDone
+                ? 'bg-[#fbf8f1]/10 text-[#fbf8f1]'
+                : 'bg-[#f2ecdf] dark:bg-[#2b2721] text-[#15130f] dark:text-[#fbf8f1]'
+            }`}
+          >
+            {getSmartIcon(displayTitle, habit.icon)}
+          </div>
+
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h4
+                className={`font-clash font-semibold text-[16px] sm:text-[17px] tracking-[-0.01em] truncate transition-all ${
+                  isDone
+                    ? 'line-through text-[#fbf8f1]/90'
+                    : 'text-[#15130f] dark:text-[#fbf8f1]'
+                }`}
+              >
+                {displayTitle}
+              </h4>
+              {Boolean(habit.frozenLogs?.[todayStr]) && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                  <Shield className="w-2.5 h-2.5 fill-current" />
+                  <span>Frozen</span>
+                </span>
+              )}
+              {!isDone && isHabitRestDay(habit.cadence, todayStr) && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25">
+                  <Coffee className="w-2.5 h-2.5" />
+                  <span>Rest Day</span>
+                </span>
+              )}
+              {drop4Unlocked && habitTod !== 'anytime' && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25">
+                  <span>{DAYFLOW_META[habitTod]?.icon}</span>
+                  <span>{DAYFLOW_META[habitTod]?.label}</span>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-[12px] sm:text-[13px] truncate">
+              <p
+                className={`text-[13px] sm:text-[13.5px] truncate font-normal ${
+                  isDone
+                    ? 'text-[#fbf8f1]/55'
+                    : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
+                }`}
+              >
+                {displaySubtitle}
+              </p>
+            </div>
+            {stackCue && (
+              <div className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-[11.5px] font-medium text-indigo-600 dark:text-indigo-400 truncate select-none">
+                <Link2 className="w-3 h-3 shrink-0 rotate-45 opacity-80" />
+                <span className="truncate">{stackCue}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Streak Flame + Interactive Check Button */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+          {/* Streak Badge - Only shown when streak is 1 or more */}
+          {currentStreak > 0 && (
+            <div
+              className="flex items-center gap-1 sm:gap-1.5 select-none"
+              title={`${currentStreak} day streak`}
+            >
+              <Flame className="w-4 h-4 text-[#ff5a1f]" />
+              <span
+                className={`font-semibold text-[13.5px] sm:text-[14px] font-archivo ${
+                  isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
+                }`}
+              >
+                {currentStreak}
+              </span>
+            </div>
+          )}
+
+          {/* Check Button */}
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={(e) => handleToggleHabit(habit.id, e)}
+            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+              isDone
+                ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
+                : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
+            }`}
+            title={isDone ? 'Mark as todo' : 'Mark as done'}
+          >
+            <Check
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
+                isDone ? 'scale-100' : 'scale-75'
+              }`}
+            />
+          </motion.button>
+
+          {/* Habit Context Actions */}
+          <div className="relative" data-habit-menu>
+            <button
+              data-habit-menu
+              type="button"
+              aria-label={`Options for ${displayTitle}`}
+              aria-expanded={openMenuHabitId === habit.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeletingHabitId(null);
+                setOpenMenuHabitId((prev) => (prev === habit.id ? null : habit.id));
+              }}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                openMenuHabitId === habit.id
+                  ? 'opacity-100 bg-[#15130f]/10 dark:bg-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1]'
+                  : 'opacity-40 hover:opacity-100'
+              } ${isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'}`}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            <AnimatePresence>
+              {openMenuHabitId === habit.id && (
+                <motion.div
+                  data-habit-menu
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-2xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl z-50 text-[#15130f] dark:text-[#fbf8f1]"
+                >
+                  {deletingHabitId === habit.id ? (
+                    <div className="p-2 space-y-2 select-none">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Delete habit?</span>
+                      </div>
+                      <p className="text-[11.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 leading-tight">
+                        Permanently remove &quot;{displayTitle}&quot; and all streak history.
+                      </p>
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingHabitId(null);
+                          }}
+                          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteHabit(habit.id);
+                            setDeletingHabitId(null);
+                          }}
+                          className="flex-1 py-1 px-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleHabit(habit.id, e);
+                          setOpenMenuHabitId(null);
+                        }}
+                        className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                      >
+                        {isDone ? (
+                          <>
+                            <RotateCcw className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                            <span>Mark as todo</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Mark as complete</span>
+                          </>
+                        )}
+                      </button>
+
+                      {drop2Unlocked && (
+                        <>
+                          <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuHabitId(null);
+                              handleOpenFlexCard('habit', habit.id);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
+                            <span>Flex habit milestone</span>
+                          </button>
+                        </>
+                      )}
+
+                      {drop3Unlocked && (
+                        <>
+                          <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuHabitId(null);
+                              handleOpenArmorModal(habit.id, 'cadence');
+                            }}
+                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                          >
+                            <Coffee className="w-3.5 h-3.5 text-sky-500" />
+                            <span>Rest cadence ({getCadenceLabel(habit.cadence)})</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuHabitId(null);
+                              handleOpenArmorModal(habit.id, 'armor');
+                            }}
+                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Deploy Streak Armor 🛡️</span>
+                          </button>
+                        </>
+                      )}
+
+                      {drop4Unlocked && (
+                        <>
+                          <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuHabitId(null);
+                              handleOpenStackingModal(habit.id);
+                            }}
+                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Stack & Dayflow routine</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingHabitId(habit.id);
+                        }}
+                        className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete habit</span>
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#f2ecdf] dark:bg-[#11100d] text-[#15130f] dark:text-[#fbf8f1] font-archivo flex flex-col lg:pl-[260px] xl:pl-[268px] antialiased transition-colors duration-300">
       <Toaster
@@ -1154,6 +1611,11 @@ export function HabitDashboard({
       {/* Drop 3 Announcement Toast (First visit after update) */}
       <StreakArmorAnnouncementToast
         onOpenGuide={() => handleOpenArmorModal(undefined, 'armor', true)}
+      />
+
+      {/* Drop 4 Announcement Toast (First visit after Oct 31) */}
+      <DayflowAnnouncementToast
+        onOpenStudio={() => handleOpenStackingModal()}
       />
 
       {/* ============================================================== */}
@@ -1521,6 +1983,19 @@ export function HabitDashboard({
                   </motion.button>
                 )}
 
+                {drop4Unlocked && (
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleOpenStackingModal()}
+                    className="inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 min-w-[98px] sm:min-w-[104px] px-3 sm:px-3.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-indigo-500/30 hover:border-indigo-500 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    title="Habit Stacking & Dayflows Studio"
+                  >
+                    <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+                    <span className="leading-none">Dayflows</span>
+                  </motion.button>
+                )}
+
                 {drop2Unlocked && (
                   <motion.button
                     whileHover={{ scale: 1.03 }}
@@ -1690,13 +2165,74 @@ export function HabitDashboard({
                 transition={{ duration: 0.32, delay: 0.14 }}
                 className="flex-1 w-full flex flex-col gap-3 min-w-0"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
-                    Today’s habits
-                  </h3>
-                  <span className="text-xs sm:text-[13px] font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
-                    {habits.length} habits
-                  </span>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
+                      Today’s habits
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {drop4Unlocked && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenStackingModal()}
+                          className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>Build Routine</span>
+                        </button>
+                      )}
+                      <span className="text-xs sm:text-[13px] font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                        {habits.length} habits
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Drop 4: Dayflow Filter Tabs & Spotlight */}
+                  {drop4Unlocked && habits.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none select-none -mx-1 px-1">
+                      <button
+                        type="button"
+                        onClick={() => setDayflowFilter('all')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          dayflowFilter === 'all'
+                            ? 'bg-[#15130f] text-[#fbf8f1] dark:bg-[#fbf8f1] dark:text-[#15130f] shadow-sm'
+                            : 'bg-[#15130f]/5 text-[#15130f]/70 dark:bg-[#fbf8f1]/5 dark:text-[#fbf8f1]/70 hover:bg-[#15130f]/10 dark:hover:bg-[#fbf8f1]/10'
+                        }`}
+                      >
+                        All Flows ({habits.length})
+                      </button>
+
+                      {DAYFLOW_ORDER.map((tod) => {
+                        const meta = DAYFLOW_META[tod];
+                        const isSelected = dayflowFilter === tod;
+                        const isCurrent = currentTimeOfDay === tod;
+                        const count = dayflowCounts[tod] || 0;
+
+                        return (
+                            <button
+                            key={tod}
+                            type="button"
+                            onClick={() => setDayflowFilter(tod)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#15130f] text-[#fbf8f1] dark:bg-[#fbf8f1] dark:text-[#15130f] shadow-sm ring-1 ring-indigo-500/40'
+                                : 'bg-[#15130f]/5 text-[#15130f]/70 dark:bg-[#fbf8f1]/5 dark:text-[#fbf8f1]/70 hover:bg-[#15130f]/10 dark:hover:bg-[#fbf8f1]/10'
+                            }`}
+                          >
+                            <span>{meta.icon}</span>
+                            <span>{meta.label}</span>
+                            <span className="opacity-70 text-[10.5px]">({count})</span>
+                            {isCurrent && (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/30 animate-pulse"
+                                title="Active ritual right now"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {habits.length === 0 ? (
@@ -1715,284 +2251,91 @@ export function HabitDashboard({
                       + Add habit
                     </button>
                   </div>
+                ) : drop4Unlocked ? (
+                  dayflowFilter !== 'all' ? (
+                    <div className="flex flex-col gap-2.5 w-full">
+                      {(groupedHabits[dayflowFilter] || []).length === 0 ? (
+                        <div className="rounded-[20px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15 p-7 sm:p-8 text-center flex flex-col items-center justify-center gap-2.5">
+                          <span className="text-2xl">{DAYFLOW_META[dayflowFilter].icon}</span>
+                          <h4 className="font-clash font-semibold text-sm sm:text-base text-[#15130f] dark:text-[#fbf8f1]">
+                            No {DAYFLOW_META[dayflowFilter].label} habits yet
+                          </h4>
+                          <p className="text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60 max-w-xs">
+                            {DAYFLOW_META[dayflowFilter].timeRange} • Assign habits to this ritual using the routine builder.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenStackingModal()}
+                            className="mt-1 px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                          >
+                            Stack a habit here →
+                          </button>
+                        </div>
+                      ) : (
+                        (groupedHabits[dayflowFilter] || []).map((habit) => renderHabitCard(habit))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-5 w-full">
+                      {DAYFLOW_ORDER.map((tod) => {
+                        const group = groupedHabits[tod] || [];
+                        if (group.length === 0) return null;
+                        const meta = DAYFLOW_META[tod];
+                        const isCurrent = currentTimeOfDay === tod;
+                        const adherence = calculateDayflowAdherence(group, todayStr)[tod];
+
+                        return (
+                          <div key={tod} className="flex flex-col gap-2.5 w-full">
+                            {/* Ritual Section Divider Banner */}
+                            <div
+                              className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
+                                isCurrent
+                                  ? 'bg-indigo-50/80 dark:bg-indigo-950/25 border-indigo-500/30 text-indigo-900 dark:text-indigo-200 shadow-xs'
+                                  : 'bg-[#15130f]/3 dark:bg-[#fbf8f1]/3 border-transparent text-[#15130f]/70 dark:text-[#fbf8f1]/70'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-sm shrink-0">{meta.icon}</span>
+                                <h4 className="font-clash font-semibold text-xs sm:text-[13px] tracking-tight truncate text-[#15130f] dark:text-[#fbf8f1]">
+                                  {meta.label} Ritual
+                                </h4>
+                                <span className="text-[10px] sm:text-[11px] opacity-60 hidden sm:inline truncate">
+                                  • {meta.timeRange}
+                                </span>
+                                {isCurrent && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                    Active Now
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2.5 shrink-0">
+                                <span className="text-[10.5px] font-medium opacity-70">
+                                  {adherence.completed}/{adherence.total} done ({adherence.percentage}%)
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenStackingModal(group[0]?.id)}
+                                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                                >
+                                  Edit
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Habit Cards */}
+                            <div className="flex flex-col gap-2.5 w-full">
+                              {group.map((habit) => renderHabitCard(habit))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
                 ) : (
                   <div className="flex flex-col gap-2.5 w-full">
-                    {habits.map((habit) => {
-                      const isDone = Boolean(habit.logs?.[todayStr]);
-                      const currentStreak = calculateContinuousStreak(habit.logs || {});
-
-                      let displayTitle = habit.title;
-                      let displaySubtitle = habit.subtitle || 'Daily routine';
-                      if (habit.title.includes(' | ')) {
-                        const parts = habit.title.split(' | ');
-                        displayTitle = parts[0];
-                        displaySubtitle = parts[1] || displaySubtitle;
-                      }
-
-                      return (
-                        <motion.div
-                          layout
-                          key={habit.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.98 }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                          className={`relative group rounded-[18px] sm:rounded-[20px] p-3.5 sm:px-4.5 sm:py-4 flex items-center justify-between gap-2.5 sm:gap-4 transition-all duration-300 border ${
-                            openMenuHabitId === habit.id ? 'z-30' : 'z-10'
-                          } ${
-                            isDone
-                              ? 'bg-[#15130f] dark:bg-[#181612] text-[#fbf8f1] border-[#15130f] dark:border-[#2a2620] shadow-sm'
-                              : 'bg-[#fbf8f1] dark:bg-[#1c1a16] text-[#15130f] dark:text-[#fbf8f1] border-[#15130f]/10 dark:border-[#fbf8f1]/10 shadow-framer-card hover:-translate-y-0.5'
-                          }`}
-                        >
-                          {/* Left: Icon Chip + Title / Subtitle */}
-                          <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
-                            <div
-                              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[13px] sm:rounded-[14px] flex items-center justify-center shrink-0 transition-colors [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-[21px] sm:[&>svg]:h-[21px] ${
-                                isDone
-                                  ? 'bg-[#fbf8f1]/10 text-[#fbf8f1]'
-                                  : 'bg-[#f2ecdf] dark:bg-[#2b2721] text-[#15130f] dark:text-[#fbf8f1]'
-                              }`}
-                            >
-                              {getSmartIcon(displayTitle, habit.icon)}
-                            </div>
-
-                            <div className="flex flex-col min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <h4
-                                  className={`font-clash font-semibold text-[16px] sm:text-[17px] tracking-[-0.01em] truncate transition-all ${
-                                    isDone
-                                      ? 'line-through text-[#fbf8f1]/90'
-                                      : 'text-[#15130f] dark:text-[#fbf8f1]'
-                                  }`}
-                                >
-                                  {displayTitle}
-                                </h4>
-                                {Boolean(habit.frozenLogs?.[todayStr]) && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                                    <Shield className="w-2.5 h-2.5 fill-current" />
-                                    <span>Frozen</span>
-                                  </span>
-                                )}
-                                {!isDone && isHabitRestDay(habit.cadence, todayStr) && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25">
-                                    <Coffee className="w-2.5 h-2.5" />
-                                    <span>Rest Day</span>
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-[12px] sm:text-[13px] truncate">
-                                <p
-                                  className={`text-[13px] sm:text-[13.5px] truncate font-normal ${
-                                    isDone
-                                      ? 'text-[#fbf8f1]/55'
-                                      : 'text-[#15130f]/55 dark:text-[#fbf8f1]/55'
-                                  }`}
-                                >
-                                  {displaySubtitle}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right: Streak Flame + Interactive Check Button */}
-                          <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-                            {/* Streak Badge - Only shown when streak is 1 or more */}
-                            {currentStreak > 0 && (
-                              <div
-                                className="flex items-center gap-1 sm:gap-1.5 select-none"
-                                title={`${currentStreak} day streak`}
-                              >
-                                <Flame className="w-4 h-4 text-[#ff5a1f]" />
-                                <span
-                                  className={`font-semibold text-[13.5px] sm:text-[14px] font-archivo ${
-                                    isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'
-                                  }`}
-                                >
-                                  {currentStreak}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Check Button */}
-                            <motion.button
-                              whileHover={{ scale: 1.08 }}
-                              whileTap={{ scale: 0.92 }}
-                              onClick={(e) => handleToggleHabit(habit.id, e)}
-                              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                                isDone
-                                  ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
-                                  : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
-                              }`}
-                              title={isDone ? 'Mark as todo' : 'Mark as done'}
-                            >
-                              <Check
-                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
-                                  isDone ? 'scale-100' : 'scale-75'
-                                }`}
-                              />
-                            </motion.button>
-
-                            {/* Habit Context Actions */}
-                            <div className="relative" data-habit-menu>
-                              <button
-                                data-habit-menu
-                                type="button"
-                                aria-label={`Options for ${displayTitle}`}
-                                aria-expanded={openMenuHabitId === habit.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeletingHabitId(null);
-                                  setOpenMenuHabitId((prev) => (prev === habit.id ? null : habit.id));
-                                }}
-                                className={`p-1.5 rounded-xl transition-all cursor-pointer ${
-                                  openMenuHabitId === habit.id
-                                    ? 'opacity-100 bg-[#15130f]/10 dark:bg-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1]'
-                                    : 'opacity-40 hover:opacity-100'
-                                } ${isDone ? 'text-[#fbf8f1]' : 'text-[#15130f] dark:text-[#fbf8f1]'}`}
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-
-                              <AnimatePresence>
-                                {openMenuHabitId === habit.id && (
-                                  <motion.div
-                                    data-habit-menu
-                                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-2xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl z-50 text-[#15130f] dark:text-[#fbf8f1]"
-                                  >
-                                    {deletingHabitId === habit.id ? (
-                                      <div className="p-2 space-y-2 select-none">
-                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                                          <span>Delete habit?</span>
-                                        </div>
-                                        <p className="text-[11.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 leading-tight">
-                                          Permanently remove &quot;{displayTitle}&quot; and all streak history.
-                                        </p>
-                                        <div className="flex items-center gap-1.5 pt-1">
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setDeletingHabitId(null);
-                                            }}
-                                            className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
-                                          >
-                                            Cancel
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeleteHabit(habit.id);
-                                              setDeletingHabitId(null);
-                                            }}
-                                            className="flex-1 py-1 px-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-sm"
-                                          >
-                                            Delete
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="space-y-0.5">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleToggleHabit(habit.id, e);
-                                            setOpenMenuHabitId(null);
-                                          }}
-                                          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
-                                        >
-                                          {isDone ? (
-                                            <>
-                                              <RotateCcw className="w-3.5 h-3.5 text-[#ff5a1f]" />
-                                              <span>Mark as todo</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Check className="w-3.5 h-3.5 text-emerald-500" />
-                                              <span>Mark as complete</span>
-                                            </>
-                                          )}
-                                        </button>
-
-                                        {drop2Unlocked && (
-                                          <>
-                                            <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
-
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOpenMenuHabitId(null);
-                                                handleOpenFlexCard('habit', habit.id);
-                                              }}
-                                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
-                                            >
-                                              <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
-                                              <span>Flex habit milestone</span>
-                                            </button>
-                                          </>
-                                        )}
-
-                                        {drop3Unlocked && (
-                                          <>
-                                            <div className="h-px bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 my-0.5" />
-
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOpenMenuHabitId(null);
-                                                handleOpenArmorModal(habit.id, 'cadence');
-                                              }}
-                                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
-                                            >
-                                              <Coffee className="w-3.5 h-3.5 text-sky-500" />
-                                              <span>Rest cadence ({getCadenceLabel(habit.cadence)})</span>
-                                            </button>
-
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setOpenMenuHabitId(null);
-                                                handleOpenArmorModal(habit.id, 'armor');
-                                              }}
-                                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
-                                            >
-                                              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                                              <span>Deploy Streak Armor 🛡️</span>
-                                            </button>
-                                          </>
-                                        )}
-
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeletingHabitId(habit.id);
-                                          }}
-                                          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                          <span>Delete habit</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                    {habits.map((habit) => renderHabitCard(habit))}
                   </div>
                 )}
               </motion.div>
@@ -2914,6 +3257,121 @@ export function HabitDashboard({
                   </div>
                 </div>
 
+                {drop4Unlocked && (
+                  <div className="flex flex-col gap-2.5 pt-1 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+                    {/* Ritual Period */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                          Dayflow Ritual
+                        </label>
+                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                          {DAYFLOW_META[newTimeOfDay]?.label || 'Anytime'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {DAYFLOW_ORDER.map((tod) => {
+                          const meta = DAYFLOW_META[tod];
+                          const isSelected = newTimeOfDay === tod;
+                          return (
+                            <button
+                              key={tod}
+                              type="button"
+                              onClick={() => setNewTimeOfDay(tod)}
+                              className={`py-2 px-1 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white border-transparent shadow-sm'
+                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-indigo-400'
+                              }`}
+                            >
+                              <span className="text-sm">{meta.icon}</span>
+                              <span className="text-[10px] leading-tight">{meta.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Stacking Cue */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                          Habit Stacking (Atomic Habit)
+                        </label>
+                        <span className="text-[10px] text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+                          After [Cue] → [Habit]
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewTriggerType('none');
+                            setNewParentHabitId('');
+                            setNewCustomCue('');
+                          }}
+                          className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer border ${
+                            newTriggerType === 'none'
+                              ? 'bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] border-transparent'
+                              : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70'
+                          }`}
+                        >
+                          Standalone
+                        </button>
+                        <button
+                          type="button"
+                          disabled={habits.length === 0}
+                          onClick={() => setNewTriggerType('habit')}
+                          className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer border disabled:opacity-40 ${
+                            newTriggerType === 'habit'
+                              ? 'bg-indigo-600 text-white border-transparent'
+                              : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70'
+                          }`}
+                        >
+                          Anchor Habit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewTriggerType('custom')}
+                          className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer border ${
+                            newTriggerType === 'custom'
+                              ? 'bg-indigo-600 text-white border-transparent'
+                              : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70'
+                          }`}
+                        >
+                          Custom Cue
+                        </button>
+                      </div>
+
+                      {newTriggerType === 'habit' && (
+                        <select
+                          value={newParentHabitId}
+                          onChange={(e) => setNewParentHabitId(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
+                        >
+                          <option value="">Select anchor habit...</option>
+                          {habits.map((h) => (
+                            <option key={h.id} value={h.id}>
+                              After: {h.title}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {newTriggerType === 'custom' && (
+                        <input
+                          type="text"
+                          placeholder="e.g. Pouring my morning espresso"
+                          value={newCustomCue}
+                          onChange={(e) => setNewCustomCue(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={isCreating}
@@ -3070,6 +3528,18 @@ export function HabitDashboard({
           initialHabitId={armorInitialHabitId}
           initialTab={armorInitialTab}
           initialShowGuide={armorInitialShowGuide}
+        />
+      )}
+
+      {/* Drop 4: Habit Stacking & Dayflows Studio Modal */}
+      {isStackingModalOpen && (
+        <HabitStackingModal
+          isOpen={isStackingModalOpen}
+          onClose={() => setIsStackingModalOpen(false)}
+          habits={habits}
+          isGuestMode={isGuestMode}
+          onUpdateHabitStack={handleUpdateHabitStack}
+          initialHabitId={stackingInitialHabitId}
         />
       )}
     </div>

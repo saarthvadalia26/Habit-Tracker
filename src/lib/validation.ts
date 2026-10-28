@@ -66,3 +66,26 @@ export function isValidFrequency(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 7;
 }
 
+export const ALLOWED_TIME_OF_DAY = ['morning', 'afternoon', 'evening', 'anytime'] as const;
+export type ValidTimeOfDay = (typeof ALLOWED_TIME_OF_DAY)[number];
+
+export function isValidTimeOfDay(value: unknown): value is ValidTimeOfDay {
+  return typeof value === 'string' && (ALLOWED_TIME_OF_DAY as readonly string[]).includes(value);
+}
+
+export const ALLOWED_STACK_TRIGGER_TYPES = ['none', 'habit', 'custom'] as const;
+export type ValidStackTriggerType = (typeof ALLOWED_STACK_TRIGGER_TYPES)[number];
+
+export function isValidStackTriggerType(value: unknown): value is ValidStackTriggerType {
+  return typeof value === 'string' && (ALLOWED_STACK_TRIGGER_TYPES as readonly string[]).includes(value);
+}
+
+export function cleanStackCue(value: unknown, maxLength = 80): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+    .trim()
+    .slice(0, maxLength);
+}
+
+

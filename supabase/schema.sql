@@ -392,3 +392,31 @@ CREATE POLICY "Users can delete freezes for their own habits"
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.streak_freezes TO authenticated;
 GRANT ALL ON TABLE public.streak_freezes TO service_role;
 
+-- ==============================================================================
+-- 14. Drop 4: Habit Stacking & Dayflows Schema Migration
+-- ==============================================================================
+
+-- Add time of day grouping to public.habits (morning, afternoon, evening, anytime)
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS time_of_day TEXT NOT NULL DEFAULT 'anytime'
+    CONSTRAINT check_time_of_day CHECK (time_of_day IN ('morning', 'afternoon', 'evening', 'anytime'));
+
+-- Add habit stacking trigger configurations
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS stack_trigger_type TEXT NOT NULL DEFAULT 'none'
+    CONSTRAINT check_stack_trigger_type CHECK (stack_trigger_type IN ('none', 'habit', 'custom'));
+
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS stack_parent_habit_id UUID REFERENCES public.habits(id) ON DELETE SET NULL;
+
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS stack_custom_cue TEXT DEFAULT ''
+    CONSTRAINT check_stack_custom_cue CHECK (char_length(stack_custom_cue) <= 80);
+
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS stack_order INT NOT NULL DEFAULT 0;
+
+-- Performance index for filtering habits by user and dayflow ritual
+CREATE INDEX IF NOT EXISTS idx_habits_time_of_day ON public.habits(user_id, time_of_day);
+CREATE INDEX IF NOT EXISTS idx_habits_stack_parent ON public.habits(stack_parent_habit_id);
+

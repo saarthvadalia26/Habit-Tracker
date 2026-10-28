@@ -18,6 +18,11 @@ export type Database = {
           cadence_type?: 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency';
           cadence_days?: number[];
           target_frequency?: number;
+          time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
+          stack_trigger_type?: 'none' | 'habit' | 'custom';
+          stack_parent_habit_id?: string | null;
+          stack_custom_cue?: string;
+          stack_order?: number;
           created_at: string;
         };
         Insert: {
@@ -28,6 +33,11 @@ export type Database = {
           cadence_type?: 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency';
           cadence_days?: number[];
           target_frequency?: number;
+          time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
+          stack_trigger_type?: 'none' | 'habit' | 'custom';
+          stack_parent_habit_id?: string | null;
+          stack_custom_cue?: string;
+          stack_order?: number;
           created_at?: string;
         };
         Update: {
@@ -38,6 +48,11 @@ export type Database = {
           cadence_type?: 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency';
           cadence_days?: number[];
           target_frequency?: number;
+          time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
+          stack_trigger_type?: 'none' | 'habit' | 'custom';
+          stack_parent_habit_id?: string | null;
+          stack_custom_cue?: string;
+          stack_order?: number;
           created_at?: string;
         };
         Relationships: [];
@@ -185,17 +200,39 @@ export type Database = {
   };
 };
 
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'anytime';
+export type StackTriggerType = 'none' | 'habit' | 'custom';
+
+export interface HabitStackConfig {
+  timeOfDay: TimeOfDay;
+  triggerType: StackTriggerType;
+  parentHabitId?: string | null;
+  parentHabitTitle?: string;
+  customCue?: string;
+  order: number;
+}
+
 export type Habit = Database['public']['Tables']['habits']['Row'] & {
   cadence_type?: 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency';
   cadence_days?: number[];
   target_frequency?: number;
   streak_shields?: number;
+  time_of_day?: TimeOfDay;
+  stack_trigger_type?: StackTriggerType;
+  stack_parent_habit_id?: string | null;
+  stack_custom_cue?: string;
+  stack_order?: number;
 };
 export type HabitInsert = Database['public']['Tables']['habits']['Insert'] & {
   cadence_type?: string;
   cadence_days?: number[];
   target_frequency?: number;
   streak_shields?: number;
+  time_of_day?: TimeOfDay;
+  stack_trigger_type?: StackTriggerType;
+  stack_parent_habit_id?: string | null;
+  stack_custom_cue?: string;
+  stack_order?: number;
 };
 export type HabitLog = Database['public']['Tables']['habit_logs']['Row'] & {
   is_frozen?: boolean;
@@ -214,6 +251,7 @@ export interface HabitWithLogs extends Habit {
     daysOfWeek?: number[];
     frequencyPerWeek?: number;
   };
+  stack?: HabitStackConfig;
   availableShields?: number;
   usedShields?: number;
   currentStreak?: number;
@@ -222,4 +260,5 @@ export interface HabitWithLogs extends Habit {
   icon?: string;
   targetTime?: string;
 }
+
 
