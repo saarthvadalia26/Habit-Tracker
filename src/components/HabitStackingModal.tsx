@@ -161,10 +161,10 @@ export function HabitStackingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[540px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 p-5 sm:p-6 shadow-2xl flex flex-col gap-4 text-[#15130f] dark:text-[#fbf8f1] max-h-[min(92vh,740px)] overflow-y-auto"
+          className="relative w-full max-w-[540px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl text-[#15130f] dark:text-[#fbf8f1] max-h-[min(92vh,740px)] flex flex-col overflow-hidden my-auto"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between pb-1 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8">
+          {/* Header (Pinned) */}
+          <div className="p-5 sm:p-6 pb-3.5 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0 flex items-center justify-between bg-[#fbf8f1] dark:bg-[#1c1a16]">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 <Layers className="w-4.5 h-4.5" />
@@ -204,6 +204,9 @@ export function HabitStackingModal({
               </button>
             </div>
           </div>
+
+          {/* Scrollable Content Body */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 pt-3 space-y-4">
 
           {/* Collapsible How It Works Guide Drawer */}
           <AnimatePresence>
@@ -276,7 +279,7 @@ export function HabitStackingModal({
             <label className="text-[10.5px] font-bold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
               Configure Habit
             </label>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none no-scrollbar">
               {habits.map((h) => {
                 const isSelected = h.id === selectedHabit?.id;
                 const tod = getHabitTimeOfDay(h);
@@ -511,8 +514,10 @@ export function HabitStackingModal({
             </span>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8">
+          </div>
+
+          {/* Action buttons (Pinned Footer) */}
+          <div className="p-4 sm:p-5 pt-3 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0 flex items-center justify-end gap-2 bg-[#fbf8f1] dark:bg-[#1c1a16]">
             <button
               type="button"
               onClick={onClose}

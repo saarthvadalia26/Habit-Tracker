@@ -169,6 +169,17 @@
   background: rgba(21, 19, 15, 0.3);
 }
 
+/* Hide scrollbar utilities */
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* View transitions */
 ::view-transition-old(root),
 ::view-transition-new(root) {
