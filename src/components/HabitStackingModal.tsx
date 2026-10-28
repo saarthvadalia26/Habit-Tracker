@@ -281,6 +281,7 @@ export function HabitStackingModal({
                 const isSelected = h.id === selectedHabit?.id;
                 const tod = getHabitTimeOfDay(h);
                 const meta = DAYFLOW_META[tod];
+                const hasAssignedRitual = tod !== 'anytime';
                 return (
                   <button
                     key={h.id}
@@ -292,8 +293,8 @@ export function HabitStackingModal({
                         : 'bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-[#ff5a1f]/40'
                     }`}
                   >
-                    <span>{meta.icon}</span>
-                    <span className="truncate max-w-[120px]">{h.title}</span>
+                    {hasAssignedRitual && <span className="text-xs">{meta.icon}</span>}
+                    <span className="truncate max-w-[130px]">{h.title}</span>
                   </button>
                 );
               })}

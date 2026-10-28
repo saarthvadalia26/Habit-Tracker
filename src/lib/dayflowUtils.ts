@@ -50,7 +50,7 @@ export const DAYFLOW_META: Record<TimeOfDay, DayflowMeta> = {
     id: 'anytime',
     label: 'Anytime Flow',
     shortLabel: 'Anytime',
-    icon: '🔄',
+    icon: '🎯',
     timeRange: 'All Day',
     color: '#8B5CF6',
     accentBg: 'bg-purple-500/10 dark:bg-purple-500/15',
