@@ -54,7 +54,6 @@ import {
   Shield,
   Sunrise,
   Link2,
-  HelpCircle,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
@@ -2173,33 +2172,9 @@ export function HabitDashboard({
                     <h3 className="font-clash font-semibold text-[19px] sm:text-[20px] text-[#15130f] dark:text-[#fbf8f1] tracking-tight">
                       Today’s habits
                     </h3>
-                    <div className="flex items-center gap-2">
-                      {drop4Unlocked && (
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenStackingModal(undefined, true)}
-                            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                            title="How Habit Stacking & Dayflows work"
-                          >
-                            <HelpCircle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">How it works</span>
-                          </button>
-                          <span className="text-[#15130f]/20 dark:text-[#fbf8f1]/20 hidden sm:inline">•</span>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenStackingModal(undefined, false)}
-                            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <Layers className="w-3.5 h-3.5" />
-                            <span>Build Routine</span>
-                          </button>
-                        </div>
-                      )}
-                      <span className="text-xs sm:text-[13px] font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
-                        {habits.length} habits
-                      </span>
-                    </div>
+                    <span className="text-xs sm:text-[13px] font-medium text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                      {habits.length} habits
+                    </span>
                   </div>
 
                   {/* Drop 4: Dayflow Filter Tabs & Spotlight */}
