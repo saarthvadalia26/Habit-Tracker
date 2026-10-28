@@ -1511,12 +1511,11 @@ export function HabitDashboard({
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleOpenArmorModal(undefined, 'armor')}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-amber-500/30 hover:border-amber-500 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 min-w-[98px] sm:min-w-[104px] px-3 sm:px-3.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-amber-500/30 hover:border-amber-500 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer"
                     title="Streak Armor Vault & Rest Cadence Studio"
                   >
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="hidden min-[420px]:inline">Streak Armor</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+                    <span className="px-1.5 py-0.5 rounded-full text-[10.5px] sm:text-[11px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold leading-none shrink-0 flex items-center gap-0.5">
                       {totalAvailableShields} 🛡️
                     </span>
                   </motion.button>
@@ -1527,11 +1526,11 @@ export function HabitDashboard({
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleOpenFlexCard('streak')}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40 font-semibold text-xs sm:text-[13.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 min-w-[98px] sm:min-w-[104px] px-3 sm:px-3.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40 font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer"
                     title="Design & Export Milestone Flex Cards"
                   >
-                    <Share2 className="w-3.5 h-3.5 text-[#ff5a1f]" />
-                    <span>Flex Card</span>
+                    <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ff5a1f] shrink-0" />
+                    <span className="leading-none">Flex Card</span>
                   </motion.button>
                 )}
 
@@ -1539,10 +1538,10 @@ export function HabitDashboard({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
-                  className="hidden sm:inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14.5px] shadow-sm transition-all shrink-0 cursor-pointer"
+                  className="hidden sm:inline-flex items-center justify-center gap-1.5 sm:gap-2 h-10 px-4 sm:px-5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                  <span>New habit</span>
+                  <span className="leading-none">New habit</span>
                 </motion.button>
               </div>
             </motion.header>
