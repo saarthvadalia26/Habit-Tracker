@@ -161,12 +161,12 @@ export function HabitStackingModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-[540px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl text-[#15130f] dark:text-[#fbf8f1] max-h-[min(92vh,740px)] flex flex-col overflow-hidden my-auto"
+          className="relative w-full max-w-[540px] rounded-[28px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl text-[#15130f] dark:text-[#fbf8f1] max-h-[min(92vh,740px)] flex flex-col overflow-hidden my-auto font-archivo"
         >
           {/* Header (Pinned) */}
           <div className="p-5 sm:p-6 pb-3.5 border-b border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0 flex items-center justify-between bg-[#fbf8f1] dark:bg-[#1c1a16]">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-2xl bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/20 text-[#ff5a1f] flex items-center justify-center shrink-0">
                 <Layers className="w-4.5 h-4.5" />
               </div>
               <div>
@@ -185,8 +185,8 @@ export function HabitStackingModal({
                 onClick={() => handleToggleGuide()}
                 className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
                   showGuide
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-[#ff5a1f] text-white border-[#ff5a1f] shadow-xs'
+                    : 'bg-[#15130f]/5 dark:bg-[#fbf8f1]/8 text-[#15130f]/75 dark:text-[#fbf8f1]/75 border-[#15130f]/10 dark:border-[#fbf8f1]/10 hover:border-[#ff5a1f]/40 hover:text-[#ff5a1f]'
                 }`}
                 title="How Habit Stacking & Dayflows works"
               >
@@ -218,10 +218,10 @@ export function HabitStackingModal({
                 transition={{ duration: 0.2 }}
                 className="w-full shrink-0"
               >
-                <div className="rounded-2xl p-4 bg-indigo-500/10 dark:bg-indigo-950/30 border border-indigo-500/25 space-y-3 text-xs">
+                <div className="rounded-2xl p-4 bg-linear-to-br from-[#ff5a1f]/10 via-amber-500/5 to-transparent border border-[#ff5a1f]/25 space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <HelpCircle className="w-4 h-4 text-[#ff5a1f] shrink-0" />
                       <h4 className="font-clash font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
                         How Habit Stacking & Dayflows Work
                       </h4>
@@ -229,7 +229,7 @@ export function HabitStackingModal({
                     <button
                       type="button"
                       onClick={() => handleToggleGuide(false)}
-                      className="text-[11px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+                      className="text-[11px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#ff5a1f] cursor-pointer"
                     >
                       Hide guide ✕
                     </button>
@@ -249,8 +249,8 @@ export function HabitStackingModal({
 
                     {/* Card 2 */}
                     <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#201d18] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 space-y-1.5 shadow-xs">
-                      <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                        <Link2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-[#ff5a1f] font-bold text-xs">
+                        <Link2 className="w-3.5 h-3.5 text-[#ff5a1f] shrink-0" />
                         <span>2. Atomic Stacking</span>
                       </div>
                       <p className="text-[11px] text-[#15130f]/70 dark:text-[#fbf8f1]/70 leading-relaxed">

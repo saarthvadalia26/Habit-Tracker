@@ -59,11 +59,11 @@ export function DayflowAnnouncementToast({
           aria-label="New feature announcement: Habit Stacking & Dayflows"
           className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40 max-w-xs sm:max-w-sm w-[calc(100%-2rem)] select-none font-archivo"
         >
-          <div className="relative overflow-hidden rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-indigo-500/25 dark:border-indigo-500/30 shadow-2xl p-4 transition-all text-[#15130f] dark:text-[#fbf8f1]">
+          <div className="relative overflow-hidden rounded-[24px] bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#ff5a1f]/25 dark:border-[#ff5a1f]/30 shadow-2xl p-4 transition-all text-[#15130f] dark:text-[#fbf8f1]">
             {/* Top row */}
             <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wider uppercase bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25">
-                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold tracking-wider uppercase bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/25">
+                <Layers className="w-3.5 h-3.5 text-[#ff5a1f]" />
                 <span>New Feature • Drop 4</span>
               </span>
 

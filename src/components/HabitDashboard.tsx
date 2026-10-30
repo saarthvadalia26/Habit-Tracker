@@ -1351,7 +1351,7 @@ export function HabitDashboard({
                 </span>
               )}
               {drop4Unlocked && habitTod !== 'anytime' && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25">
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${DAYFLOW_META[habitTod]?.badgeBg || 'bg-[#ff5a1f]/10 text-[#ff5a1f] border-[#ff5a1f]/20'}`}>
                   <span>{DAYFLOW_META[habitTod]?.icon}</span>
                   <span>{DAYFLOW_META[habitTod]?.label}</span>
                 </span>
@@ -1369,7 +1369,7 @@ export function HabitDashboard({
               </p>
             </div>
             {stackCue && (
-              <div className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-[11.5px] font-medium text-indigo-600 dark:text-indigo-400 truncate select-none">
+              <div className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-[11.5px] font-medium text-[#ff5a1f] dark:text-[#ff7847] truncate select-none">
                 <Link2 className="w-3 h-3 shrink-0 rotate-45 opacity-80" />
                 <span className="truncate">{stackCue}</span>
               </div>
@@ -1567,7 +1567,7 @@ export function HabitDashboard({
                             }}
                             className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-medium text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 transition-colors cursor-pointer"
                           >
-                            <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                            <Layers className="w-3.5 h-3.5 text-[#ff5a1f]" />
                             <span>Stack & Dayflow routine</span>
                           </button>
                         </>
@@ -1990,10 +1990,10 @@ export function HabitDashboard({
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleOpenStackingModal()}
-                    className="inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 min-w-[98px] sm:min-w-[104px] px-3 sm:px-3.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-indigo-500/30 hover:border-indigo-500 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 min-w-[98px] sm:min-w-[104px] px-3 sm:px-3.5 rounded-full bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:border-[#ff5a1f]/40 text-[#15130f] dark:text-[#fbf8f1] font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer"
                     title="Habit Stacking & Dayflows Studio"
                   >
-                    <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 shrink-0" />
+                    <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ff5a1f] shrink-0" />
                     <span className="leading-none">Dayflows</span>
                   </motion.button>
                 )}
@@ -2205,7 +2205,7 @@ export function HabitDashboard({
                             onClick={() => setDayflowFilter(tod)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-[#15130f] text-[#fbf8f1] dark:bg-[#fbf8f1] dark:text-[#15130f] shadow-sm ring-1 ring-indigo-500/40'
+                                ? 'bg-[#15130f] text-[#fbf8f1] dark:bg-[#fbf8f1] dark:text-[#15130f] shadow-sm ring-1 ring-[#ff5a1f]/40'
                                 : 'bg-[#15130f]/5 text-[#15130f]/70 dark:bg-[#fbf8f1]/5 dark:text-[#fbf8f1]/70 hover:bg-[#15130f]/10 dark:hover:bg-[#fbf8f1]/10'
                             }`}
                           >
@@ -2256,7 +2256,7 @@ export function HabitDashboard({
                           <button
                             type="button"
                             onClick={() => handleOpenStackingModal()}
-                            className="mt-1 px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                            className="mt-1 px-3.5 py-1.5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
                           >
                             Stack a habit here →
                           </button>
@@ -2280,7 +2280,7 @@ export function HabitDashboard({
                             <div
                               className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
                                 isCurrent
-                                  ? 'bg-indigo-50/80 dark:bg-indigo-950/25 border-indigo-500/30 text-indigo-900 dark:text-indigo-200 shadow-xs'
+                                  ? 'bg-[#ff5a1f]/8 dark:bg-[#ff5a1f]/12 border-[#ff5a1f]/25 text-[#15130f] dark:text-[#fbf8f1] shadow-xs'
                                   : 'bg-[#15130f]/3 dark:bg-[#fbf8f1]/3 border-transparent text-[#15130f]/70 dark:text-[#fbf8f1]/70'
                               }`}
                             >
@@ -2293,8 +2293,8 @@ export function HabitDashboard({
                                   • {meta.timeRange}
                                 </span>
                                 {isCurrent && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25 shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/25 shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff5a1f] animate-pulse" />
                                     Active Now
                                   </span>
                                 )}
@@ -2307,7 +2307,7 @@ export function HabitDashboard({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenStackingModal(group[0]?.id)}
-                                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                                  className="text-[11px] text-[#ff5a1f] hover:underline font-semibold cursor-pointer"
                                 >
                                   Edit
                                 </button>
@@ -3255,7 +3255,7 @@ export function HabitDashboard({
                         <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                           Dayflow Ritual
                         </label>
-                        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                        <span className="text-[11px] font-medium text-[#ff5a1f]">
                           {DAYFLOW_META[newTimeOfDay]?.label || 'Anytime'}
                         </span>
                       </div>
@@ -3270,8 +3270,8 @@ export function HabitDashboard({
                               onClick={() => setNewTimeOfDay(tod)}
                               className={`py-2 px-1 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
                                 isSelected
-                                  ? 'bg-indigo-600 text-white border-transparent shadow-sm'
-                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-indigo-400'
+                                  ? 'bg-[#ff5a1f] text-white border-transparent shadow-sm'
+                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-[#ff5a1f]/40'
                               }`}
                             >
                               <span className="text-sm">{meta.icon}</span>
@@ -3315,7 +3315,7 @@ export function HabitDashboard({
                           onClick={() => setNewTriggerType('habit')}
                           className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer border disabled:opacity-40 ${
                             newTriggerType === 'habit'
-                              ? 'bg-indigo-600 text-white border-transparent'
+                              ? 'bg-[#ff5a1f] text-white border-transparent'
                               : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70'
                           }`}
                         >
@@ -3326,7 +3326,7 @@ export function HabitDashboard({
                           onClick={() => setNewTriggerType('custom')}
                           className={`py-1.5 rounded-xl text-[11px] font-semibold transition-all cursor-pointer border ${
                             newTriggerType === 'custom'
-                              ? 'bg-indigo-600 text-white border-transparent'
+                              ? 'bg-[#ff5a1f] text-white border-transparent'
                               : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70'
                           }`}
                         >
@@ -3338,7 +3338,7 @@ export function HabitDashboard({
                         <select
                           value={newParentHabitId}
                           onChange={(e) => setNewParentHabitId(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
                         >
                           <option value="">Select anchor habit...</option>
                           {habits.map((h) => (
@@ -3355,7 +3355,7 @@ export function HabitDashboard({
                           placeholder="e.g. Pouring my morning espresso"
                           value={newCustomCue}
                           onChange={(e) => setNewCustomCue(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
+                          className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
                         />
                       )}
                     </div>

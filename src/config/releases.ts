@@ -359,8 +359,8 @@ export const V2_DROPS: V2Drop[] = [
       'Filter table views by active time of day',
       'Cue-to-action chaining reminders',
     ],
-    accentGradient: 'from-indigo-500/20 via-purple-500/10 to-transparent',
-    borderAccent: 'border-indigo-500/30 dark:border-indigo-500/40',
+    accentGradient: 'from-[#ff5a1f]/20 via-orange-500/10 to-transparent',
+    borderAccent: 'border-[#ff5a1f]/30 dark:border-[#ff5a1f]/40',
   },
   {
     id: 'numeric-goals',
