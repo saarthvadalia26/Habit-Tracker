@@ -44,18 +44,7 @@ export function PersonalizeProfileModal({
     }
   }, [isOpen, initialFirstName, initialLastName, initialNickname]);
 
-  const previewTitle = (() => {
-    const chosen = (nickname.trim() || firstName.trim()).slice(0, 15);
-    if (!chosen) return 'HABIT TRACKER';
-    const upper = chosen.toUpperCase();
-    if (upper.endsWith("'S") || upper.endsWith('’S')) {
-      return `${upper} TRACKER`;
-    }
-    if (upper.endsWith('S')) {
-      return `${upper}' TRACKER`;
-    }
-    return `${upper}'S TRACKER`;
-  })();
+  const greetingPreviewName = (nickname.trim() || firstName.trim() || 'friend');
 
   const handleDismiss = () => {
     if (userId) {
@@ -186,17 +175,17 @@ export function PersonalizeProfileModal({
 
             <div className="flex flex-col gap-1">
               <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
-                Custom Board Name (Optional)
+                Nickname / Preferred Name (Optional)
               </label>
               <input
                 type="text"
-                placeholder="e.g. FOCUS, PRIME"
+                placeholder="e.g. Alex"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 className="w-full px-3 py-2 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
               />
               <p className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50">
-                Preview: <span className="font-semibold text-[#ff5a1f]">{previewTitle}</span>
+                Greeting preview: <span className="font-semibold text-[#ff5a1f]">Good morning, {greetingPreviewName}.</span>
               </p>
             </div>
 

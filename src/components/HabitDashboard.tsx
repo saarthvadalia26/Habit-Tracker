@@ -604,20 +604,8 @@ export function HabitDashboard({
     return null;
   }, [initialCustomName, userFirstName]);
 
-  // Board Title: Generate personalized board name like "ABC'S TRACKER"
-  const boardTitle = useMemo(() => {
-    const name = personalizedName;
-    if (!name) return 'HABIT TRACKER';
-
-    const upper = name.toUpperCase();
-    if (upper.endsWith("'S") || upper.endsWith("'S")) {
-      return `${upper} TRACKER`;
-    }
-    if (upper.endsWith('S')) {
-      return `${upper}' TRACKER`;
-    }
-    return `${upper}'S TRACKER`;
-  }, [personalizedName]);
+  // Brand Logo: Fixed product identity ("HABIT TRACKER.")
+  const boardTitle = 'HABIT TRACKER';
 
   const greetingTime = useMemo(() => {
     const hour = new Date().getHours();
