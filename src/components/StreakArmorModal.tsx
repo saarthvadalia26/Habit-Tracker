@@ -260,7 +260,7 @@ export function StreakArmorModal({
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-bold tracking-wider uppercase bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/20 truncate">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#ff5a1f] shrink-0" />
-                <span className="hidden sm:inline">v2.0 • Drop 3 · </span>Streak Armor & Cadence
+                Streak Armor & Cadence
               </span>
 
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

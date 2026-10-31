@@ -1114,7 +1114,44 @@ export function HabitDashboard({
   // Delete Habit
   const handleDeleteHabit = async (habitId: string) => {
     const habit = habits.find((h) => h.id === habitId);
-    setHabits((prev) => prev.filter((h) => h.id !== habitId));
+    // Optimistically remove habit AND unlink any local child habits that referenced it
+    setHabits((prev) =>
+      prev
+        .filter((h) => h.id !== habitId)
+        .map((h) => {
+          const isChainedToDeleted =
+            h.stack_parent_habit_id === habitId ||
+            h.stack?.parentHabitId === habitId ||
+            (Array.isArray(h.stack_parent_habit_ids) && h.stack_parent_habit_ids.includes(habitId)) ||
+            (Array.isArray(h.stack?.parentHabitIds) && h.stack.parentHabitIds.includes(habitId));
+
+          if (!isChainedToDeleted) return h;
+
+          const remainingParentIds = (h.stack_parent_habit_ids || h.stack?.parentHabitIds || []).filter(
+            (id) => id !== habitId
+          );
+          const nextParentId = remainingParentIds[0] || null;
+
+          const currentTod = (h.time_of_day as TimeOfDay) || h.stack?.timeOfDay || 'anytime';
+          return {
+            ...h,
+            time_of_day: currentTod,
+            stack_parent_habit_id: nextParentId,
+            stack_parent_habit_ids: remainingParentIds,
+            stack_trigger_type: nextParentId ? 'habit' : 'none',
+            stack: {
+              timeOfDay: currentTod,
+              customCue: h.stack_custom_cue || h.stack?.customCue || '',
+              order: h.stack_order ?? h.stack?.order ?? 0,
+              triggerType: nextParentId ? 'habit' : 'none',
+              parentHabitId: nextParentId,
+              parentHabitIds: remainingParentIds,
+              parentHabitTitle: undefined,
+              parentHabitTitles: [],
+            },
+          };
+        })
+    );
     setOpenMenuHabitId(null);
     setDeletingHabitId(null);
 
@@ -1126,7 +1163,7 @@ export function HabitDashboard({
     try {
       const res = await deleteHabitAction(habitId);
       if (res?.error) {
-        toast.error(res.error);
+        toast.error(res.error, { duration: 6000 });
         if (habit) setHabits((prev) => [habit, ...prev]);
         return;
       }

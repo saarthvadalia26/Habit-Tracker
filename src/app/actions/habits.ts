@@ -852,9 +852,10 @@ export async function deleteHabitAction(
       };
     }
 
-    // 1. Unlink any other habits where this habit is an anchor/parent (prevents Postgres FK 23503 violation)
+    // 1. Unlink any and all habits referencing this habit (handles both stack_parent_habit_id and stack_parent_habit_ids)
     try {
-      await supabase
+      // Step 1a: Unlink habits where stack_parent_habit_id === habitId
+      const { error: unlinkParentErr } = await supabase
         .from('habits')
         .update({
           stack_parent_habit_id: null,
@@ -862,8 +863,48 @@ export async function deleteHabitAction(
         })
         .eq('stack_parent_habit_id', habitId)
         .eq('user_id', user.id);
+
+      if (unlinkParentErr) {
+        console.warn('[deleteHabitAction] unlinkParentErr:', unlinkParentErr);
+      }
+
+      // Step 1b: Fetch all habits to clean up multi-anchor arrays & sever any references
+      const { data: userHabits } = await supabase
+        .from('habits')
+        .select('id, stack_parent_habit_id, stack_parent_habit_ids')
+        .eq('user_id', user.id);
+
+      if (userHabits && userHabits.length > 0) {
+        for (const h of userHabits) {
+          // If this habit references habitId in its array
+          if (Array.isArray(h.stack_parent_habit_ids) && h.stack_parent_habit_ids.includes(habitId)) {
+            const nextParentIds = h.stack_parent_habit_ids.filter((id: string) => id !== habitId);
+            const nextPrimary = nextParentIds[0] || null;
+            await supabase
+              .from('habits')
+              .update({
+                stack_parent_habit_id: nextPrimary,
+                stack_parent_habit_ids: nextParentIds,
+                stack_trigger_type: nextPrimary ? 'habit' : 'none',
+              })
+              .eq('id', h.id)
+              .eq('user_id', user.id);
+          }
+        }
+      }
+
+      // Step 1c: Sever the deleted habit's own outgoing parent foreign key reference before deletion
+      await supabase
+        .from('habits')
+        .update({
+          stack_parent_habit_id: null,
+          stack_parent_habit_ids: [],
+          stack_trigger_type: 'none',
+        })
+        .eq('id', habitId)
+        .eq('user_id', user.id);
     } catch (e) {
-      console.warn('Could not unlink stack_parent_habit_id before delete:', e);
+      console.warn('[deleteHabitAction] Could not unlink habit dependencies before delete:', e);
     }
 
     // 2. Remove habitId from any challenge habit_ids array
@@ -876,7 +917,7 @@ export async function deleteHabitAction(
       if (challenges && challenges.length > 0) {
         for (const c of challenges) {
           if (Array.isArray(c.habit_ids) && c.habit_ids.includes(habitId)) {
-            const nextIds = c.habit_ids.filter((id) => id !== habitId);
+            const nextIds = c.habit_ids.filter((id: string) => id !== habitId);
             await supabase
               .from('challenges')
               .update({ habit_ids: nextIds })
@@ -886,7 +927,7 @@ export async function deleteHabitAction(
         }
       }
     } catch (e) {
-      console.warn('Could not clean challenge habit_ids before delete:', e);
+      console.warn('[deleteHabitAction] Could not clean challenge habit_ids before delete:', e);
     }
 
     // 3. Proactively clean up habit logs and streak freezes (in case cascade is missing on remote DB)
@@ -901,7 +942,7 @@ export async function deleteHabitAction(
         .delete()
         .eq('habit_id', habitId);
     } catch (e) {
-      console.warn('Could not clean habit logs or streak freezes before delete:', e);
+      console.warn('[deleteHabitAction] Could not clean habit logs or streak freezes before delete:', e);
     }
 
     // 4. Delete the habit record
@@ -913,7 +954,12 @@ export async function deleteHabitAction(
 
     if (deleteError) {
       console.error('[deleteHabitAction error]', deleteError);
-      return { data: null, error: deleteError.message || 'Unable to delete this habit.' };
+      return {
+        data: null,
+        error: deleteError.message
+          ? `${deleteError.message} (${deleteError.code || 'DELETE_FAILED'})`
+          : 'Unable to delete this habit.',
+      };
     }
 
     revalidatePath('/');
