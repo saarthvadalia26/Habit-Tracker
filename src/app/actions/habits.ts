@@ -641,8 +641,15 @@ export async function toggleHabitLogAction(
     const [y, m, d] = date.split('-').map(Number);
     const targetDate = new Date(Date.UTC(y, m - 1, d));
 
-    const now = new Date();
-    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    // Use server time from Supabase to prevent client clock manipulation
+    // Note: get_current_timestamp() is a custom RPC function in schema.sql
+    const { data: serverTimeData } = await supabase.rpc('get_current_timestamp' as any);
+    const serverNow = serverTimeData ? new Date(serverTimeData) : new Date();
+    const todayUTC = new Date(Date.UTC(
+      serverNow.getUTCFullYear(),
+      serverNow.getUTCMonth(),
+      serverNow.getUTCDate()
+    ));
 
     const diffDays = Math.round((todayUTC.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
 

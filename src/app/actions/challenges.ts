@@ -165,6 +165,13 @@ export async function createChallengeAction(
       .single();
 
     if (error) {
+      // Handle unique constraint violation (23505 = unique_violation in PostgreSQL)
+      if (error.code === '23505' && error.message.includes('idx_one_active_challenge_per_user')) {
+        return {
+          data: null,
+          error: 'You already have an active challenge. Complete or abandon it before starting a new one.',
+        };
+      }
       return { data: null, error: 'Unable to create this challenge.' };
     }
 

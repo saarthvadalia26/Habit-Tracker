@@ -3,6 +3,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cleanText, isValidEmail, isValidPassword } from '@/lib/validation';
+import { checkRateLimit, recordAttempt, resetRateLimit, addTimingDelay } from '@/lib/rateLimiter';
+import { generateRequestId, logError, logAudit, createErrorResponse, createSuccessResponse } from '@/lib/requestTracking';
+import { ERROR_MESSAGES, CONTENT_LIMITS } from '@/lib/constants';
+import { headers } from 'next/headers';
 
 interface CurrentUser {
   id: string;
@@ -87,12 +91,31 @@ export async function getCurrentUserAction(): Promise<{ user: CurrentUser | null
 }
 
 export async function signInAction(email: string, password: string) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
   try {
     const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    // Input validation
     if (!isValidEmail(cleanEmail) || !isValidPassword(password)) {
-      return { error: 'Invalid email or password.' };
+      await addTimingDelay();
+      return createErrorResponse(ERROR_MESSAGES.INVALID_CREDENTIALS, requestId);
     }
 
+    // Rate limiting check
+    const rateLimitResult = checkRateLimit(cleanEmail);
+    if (rateLimitResult.isLimited) {
+      logError(new Error('Rate limit exceeded'), {
+        requestId,
+        action: 'signIn',
+        metadata: { email: cleanEmail, resetTime: rateLimitResult.resetTime },
+      });
+      await addTimingDelay();
+      return createErrorResponse(ERROR_MESSAGES.RATE_LIMIT_EXCEEDED, requestId);
+    }
+
+    // Attempt authentication
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
@@ -100,14 +123,46 @@ export async function signInAction(email: string, password: string) {
     });
 
     if (error) {
-      // Do not expose provider details that could help account enumeration.
-      return { error: 'Invalid email or password.' };
+      // Record failed attempt
+      recordAttempt(cleanEmail);
+
+      logError(error, {
+        requestId,
+        action: 'signIn',
+        metadata: { email: cleanEmail },
+      });
+
+      // Normalize timing to prevent timing attacks
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 200) {
+        await addTimingDelay(200 - elapsed);
+      }
+
+      // Do not expose provider details that could help account enumeration
+      return createErrorResponse(ERROR_MESSAGES.INVALID_CREDENTIALS, requestId);
     }
 
+    // Success: reset rate limit
+    resetRateLimit(cleanEmail);
+
+    logAudit({
+      requestId,
+      action: 'signIn',
+      userId: data.user?.id || 'unknown',
+      resourceType: 'session',
+      metadata: { email: cleanEmail },
+    });
+
     revalidatePath('/');
-    return { data, error: null };
-  } catch {
-    return { error: 'Unable to sign in right now. Please try again.' };
+    return createSuccessResponse(data, requestId);
+  } catch (error) {
+    logError(error, {
+      requestId,
+      action: 'signIn',
+      metadata: { email: typeof email === 'string' ? email.trim().toLowerCase() : '' },
+    });
+    await addTimingDelay();
+    return createErrorResponse(ERROR_MESSAGES.NETWORK_ERROR, requestId);
   }
 }
 
@@ -116,10 +171,27 @@ export async function signUpAction(
   password: string,
   profile?: SignUpProfile
 ) {
+  const requestId = generateRequestId();
+
   try {
     const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+    // Enhanced input validation
     if (!isValidEmail(cleanEmail) || !isValidPassword(password)) {
-      return { error: 'Use a valid email and a password between 6 and 128 characters.' };
+      await addTimingDelay();
+      return createErrorResponse(ERROR_MESSAGES.WEAK_PASSWORD, requestId);
+    }
+
+    // Rate limiting check
+    const rateLimitResult = checkRateLimit(cleanEmail);
+    if (rateLimitResult.isLimited) {
+      logError(new Error('Rate limit exceeded on signup'), {
+        requestId,
+        action: 'signUp',
+        metadata: { email: cleanEmail },
+      });
+      await addTimingDelay();
+      return createErrorResponse(ERROR_MESSAGES.RATE_LIMIT_EXCEEDED, requestId);
     }
 
     const cleanFirst = cleanText(profile?.firstName, 15) ?? '';
@@ -146,18 +218,51 @@ export async function signUpAction(
     });
 
     if (error) {
+      // Record failed attempt
+      recordAttempt(cleanEmail);
+
+      logError(error, {
+        requestId,
+        action: 'signUp',
+        metadata: { email: cleanEmail },
+      });
+
       if (error.message.toLowerCase().includes('rate limit')) {
-        return {
-          error: 'Too many sign-up attempts. Please wait before trying again.',
-        };
+        await addTimingDelay();
+        return createErrorResponse(ERROR_MESSAGES.RATE_LIMIT_EXCEEDED, requestId);
       }
-      return { error: 'Unable to create an account. Check your details and try again.' };
+
+      if (error.message.toLowerCase().includes('already registered') ||
+          error.message.toLowerCase().includes('already exists')) {
+        await addTimingDelay();
+        return createErrorResponse(ERROR_MESSAGES.ACCOUNT_EXISTS, requestId);
+      }
+
+      await addTimingDelay();
+      return createErrorResponse('Unable to create an account. Check your details and try again.', requestId);
     }
 
+    // Success: reset rate limit
+    resetRateLimit(cleanEmail);
+
+    logAudit({
+      requestId,
+      action: 'signUp',
+      userId: data.user?.id || 'unknown',
+      resourceType: 'account',
+      metadata: { email: cleanEmail },
+    });
+
     revalidatePath('/');
-    return { data, error: null };
-  } catch {
-    return { error: 'Unable to create an account right now. Please try again.' };
+    return createSuccessResponse(data, requestId);
+  } catch (error) {
+    logError(error, {
+      requestId,
+      action: 'signUp',
+      metadata: { email: typeof email === 'string' ? email.trim().toLowerCase() : '' },
+    });
+    await addTimingDelay();
+    return createErrorResponse(ERROR_MESSAGES.NETWORK_ERROR, requestId);
   }
 }
 

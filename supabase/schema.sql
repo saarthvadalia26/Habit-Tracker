@@ -241,6 +241,19 @@ $$;
 REVOKE ALL ON FUNCTION public.delete_user_account() FROM public;
 GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
+-- 10b. Server Timestamp Function for Time Validation
+CREATE OR REPLACE FUNCTION public.get_current_timestamp()
+RETURNS timestamptz
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    SELECT now();
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_current_timestamp() TO authenticated;
+
 -- 11. Hardened Role Permissions (Least Privilege)
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC, anon;

@@ -1,4 +1,5 @@
 import 'server-only';
+import { AUTH_CONSTANTS, PASSWORD_PATTERNS } from './constants';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -42,7 +43,63 @@ export function isValidEmail(value: unknown): value is string {
 }
 
 export function isValidPassword(value: unknown): value is string {
-  return typeof value === 'string' && value.length >= 6 && value.length <= 128;
+  if (typeof value !== 'string') return false;
+
+  const { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } = AUTH_CONSTANTS;
+
+  // Check length requirements
+  if (value.length < MIN_PASSWORD_LENGTH || value.length > MAX_PASSWORD_LENGTH) {
+    return false;
+  }
+
+  // Check complexity requirements (at least 3 of 4 character types)
+  let complexityScore = 0;
+  if (PASSWORD_PATTERNS.UPPERCASE.test(value)) complexityScore++;
+  if (PASSWORD_PATTERNS.LOWERCASE.test(value)) complexityScore++;
+  if (PASSWORD_PATTERNS.NUMBER.test(value)) complexityScore++;
+  if (PASSWORD_PATTERNS.SPECIAL_CHAR.test(value)) complexityScore++;
+
+  return complexityScore >= 3;
+}
+
+export function getPasswordStrength(password: string): {
+  score: number;
+  feedback: string[];
+} {
+  const feedback: string[] = [];
+  let score = 0;
+
+  if (password.length >= AUTH_CONSTANTS.MIN_PASSWORD_LENGTH) {
+    score += 25;
+  } else {
+    feedback.push(`Must be at least ${AUTH_CONSTANTS.MIN_PASSWORD_LENGTH} characters`);
+  }
+
+  if (PASSWORD_PATTERNS.UPPERCASE.test(password)) {
+    score += 25;
+  } else {
+    feedback.push('Add uppercase letters');
+  }
+
+  if (PASSWORD_PATTERNS.LOWERCASE.test(password)) {
+    score += 25;
+  } else {
+    feedback.push('Add lowercase letters');
+  }
+
+  if (PASSWORD_PATTERNS.NUMBER.test(password)) {
+    score += 15;
+  } else {
+    feedback.push('Add numbers');
+  }
+
+  if (PASSWORD_PATTERNS.SPECIAL_CHAR.test(password)) {
+    score += 10;
+  } else {
+    feedback.push('Add special characters (!@#$%^&*)');
+  }
+
+  return { score, feedback };
 }
 
 export const ALLOWED_CADENCE_TYPES = ['everyday', 'weekdays', 'weekends', 'custom', 'frequency'] as const;
