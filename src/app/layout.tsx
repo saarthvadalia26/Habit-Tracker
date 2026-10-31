@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 export const metadata: Metadata = {
   title: "Habit Tracker | Daily Discipline & Consistency",
   description: "Build unstoppable momentum with daily habit rituals, continuous streaks, and consistency tracking.",
-  manifest: "/manifest.json?v=4",
+  manifest: "/manifest.json?v=5",
   icons: {
     icon: [
       { url: "/favicon.svg?v=4", type: "image/svg+xml" },
@@ -45,6 +45,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('habit_tracker_theme');
+                  var theme = saved || 'dark';
+                  var hex = theme === 'dark' ? '#11100d' : '#f2ecdf';
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                    document.documentElement.style.colorScheme = 'light';
+                  }
+                  var metas = document.querySelectorAll('meta[name="theme-color"]');
+                  for (var i = 0; i < metas.length; i++) {
+                    metas[i].setAttribute('content', hex);
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
         <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
         <link rel="icon" href="/favicon-32x32.png?v=4" sizes="32x32" type="image/png" />
         <link rel="icon" href="/favicon-16x16.png?v=4" sizes="16x16" type="image/png" />

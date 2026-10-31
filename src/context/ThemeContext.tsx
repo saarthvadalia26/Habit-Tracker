@@ -34,12 +34,9 @@ function applyTheme(t: Theme) {
 
   // Update theme-color meta tag so Android/iOS navigation bar & status bar match background
   try {
-    let meta = document.querySelector('meta[name="theme-color"]:not([media])');
-    if (!meta) {
-      meta = document.querySelector('meta[name="theme-color"]');
-    }
-    if (meta) {
-      meta.setAttribute('content', themeHex);
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas.length > 0) {
+      metas.forEach((m) => m.setAttribute('content', themeHex));
     } else {
       const newMeta = document.createElement('meta');
       newMeta.name = 'theme-color';
