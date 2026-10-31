@@ -4,8 +4,8 @@
   "description": "Daily habit tracker, continuous streak momentum, and consistency matrix dashboard.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#11100d",
-  "theme_color": "#ff5a1f",
+  "background_color": "#f2ecdf",
+  "theme_color": "#f2ecdf",
   "icons": [
     {
       "src": "/favicon-32x32.png?v=4",

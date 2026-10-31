@@ -21,6 +21,7 @@ const ThemeContext = createContext<ThemeContextType>({
 function applyTheme(t: Theme) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  const themeHex = t === 'dark' ? '#11100d' : '#f2ecdf';
   if (t === 'dark') {
     root.classList.add('dark');
     root.classList.remove('light');
@@ -29,6 +30,24 @@ function applyTheme(t: Theme) {
     root.classList.remove('dark');
     root.classList.add('light');
     root.style.colorScheme = 'light';
+  }
+
+  // Update theme-color meta tag so Android/iOS navigation bar & status bar match background
+  try {
+    let meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) {
+      meta = document.querySelector('meta[name="theme-color"]');
+    }
+    if (meta) {
+      meta.setAttribute('content', themeHex);
+    } else {
+      const newMeta = document.createElement('meta');
+      newMeta.name = 'theme-color';
+      newMeta.content = themeHex;
+      document.head.appendChild(newMeta);
+    }
+  } catch {
+    // Ignore in non-browser environments
   }
 }
 
