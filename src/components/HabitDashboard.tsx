@@ -637,16 +637,13 @@ export function HabitDashboard({
 
       const dayTotal = habits.length;
       const pct = dayTotal > 0 ? Math.round((dayCompleted / dayTotal) * 100) : 0;
+      const effectivePct = isToday ? todayPercentage : pct;
+      const effectiveCompleted = isToday ? doneCount : dayCompleted;
 
-      let barHeight = 24;
-      if (pct > 0) {
-        barHeight = Math.max(24, Math.round((pct / 100) * 120));
-      } else if (isToday) {
-        barHeight = Math.max(24, Math.round((todayPercentage / 100) * 120));
-      } else if (isPast) {
-        const sampleHeights = [120, 72, 96, 120, 48, 108, 24];
-        barHeight = sampleHeights[i];
-      }
+      // Minimum baseline height of 18px for 0% / empty days, scaling linearly up to 106px for 100%
+      const barHeight = effectivePct > 0
+        ? Math.round(18 + (effectivePct / 100) * 88)
+        : 18;
 
       days.push({
         label: labels[i],
@@ -655,8 +652,8 @@ export function HabitDashboard({
         isToday,
         isPast,
         isFuture,
-        pct: isToday ? todayPercentage : pct,
-        completed: isToday ? doneCount : dayCompleted,
+        pct: effectivePct,
+        completed: effectiveCompleted,
         total: dayTotal,
         barHeight,
       });
@@ -2367,7 +2364,7 @@ export function HabitDashboard({
                           className={`w-[26px] sm:w-[28px] rounded-[7px] sm:rounded-[8px] transition-colors ${
                             day.isToday
                               ? 'bg-[#ff5a1f] shadow-sm'
-                              : day.completed > 0 || (day.isPast && day.pct >= 50)
+                              : day.completed > 0
                               ? 'bg-[#15130f] dark:bg-[#fbf8f1]'
                               : 'bg-[#15130f]/18 dark:bg-[#fbf8f1]/18'
                           }`}
