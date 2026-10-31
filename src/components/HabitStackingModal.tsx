@@ -13,6 +13,7 @@ import {
   Check,
   X,
   Info,
+  Plus,
   ChevronRight,
   RotateCcw,
   HelpCircle,
@@ -41,6 +42,10 @@ interface HabitStackingModalProps {
     parentHabitIds?: string[] | string | null,
     customCue?: string
   ) => Promise<boolean>;
+  onSaveHabitChain?: (
+    chainHabitIds: string[],
+    timeOfDay: TimeOfDay
+  ) => Promise<boolean>;
 }
 
 export function HabitStackingModal({
@@ -51,6 +56,7 @@ export function HabitStackingModal({
   initialHabitId,
   initialShowGuide,
   onUpdateHabitStack,
+  onSaveHabitChain,
 }: HabitStackingModalProps) {
   const [selectedHabitId, setSelectedHabitId] = useState<string>(
     initialHabitId || habits[0]?.id || ''
@@ -60,7 +66,7 @@ export function HabitStackingModal({
 
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('anytime');
   const [triggerType, setTriggerType] = useState<StackTriggerType>('none');
-  const [parentHabitIds, setParentHabitIds] = useState<string[]>([]);
+  const [chainHabitIds, setChainHabitIds] = useState<string[]>([]);
   const [customCue, setCustomCue] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [showFormulaGuide, setShowFormulaGuide] = useState(false);
@@ -94,38 +100,56 @@ export function HabitStackingModal({
   useEffect(() => {
     if (selectedHabit) {
       setTimeOfDay(getHabitTimeOfDay(selectedHabit));
-      setTriggerType(selectedHabit.stack_trigger_type || selectedHabit.stack?.triggerType || 'none');
-      const initialIds: string[] =
-        selectedHabit.stack_parent_habit_ids && selectedHabit.stack_parent_habit_ids.length > 0
-          ? selectedHabit.stack_parent_habit_ids
-          : selectedHabit.stack?.parentHabitIds && selectedHabit.stack.parentHabitIds.length > 0
-          ? selectedHabit.stack.parentHabitIds
-          : (selectedHabit.stack_parent_habit_id || selectedHabit.stack?.parentHabitId)
-          ? [selectedHabit.stack_parent_habit_id || selectedHabit.stack?.parentHabitId!]
-          : [];
-      setParentHabitIds(initialIds);
+      const trig = selectedHabit.stack_trigger_type || selectedHabit.stack?.triggerType || 'none';
+      setTriggerType(trig);
+
+      // Build initial chain sequence for selected habit
+      const parentId =
+        (selectedHabit.stack_parent_habit_ids && selectedHabit.stack_parent_habit_ids[0]) ||
+        selectedHabit.stack_parent_habit_id ||
+        selectedHabit.stack?.parentHabitId;
+
+      if (parentId) {
+        const initialChain: string[] = [selectedHabit.id];
+        let curr: string | null = parentId;
+        const seen = new Set<string>([selectedHabit.id]);
+        while (curr && !seen.has(curr)) {
+          seen.add(curr);
+          initialChain.unshift(curr);
+          const p = habits.find((h) => h.id === curr);
+          curr =
+            (p?.stack_parent_habit_ids && p.stack_parent_habit_ids[0]) ||
+            p?.stack_parent_habit_id ||
+            p?.stack?.parentHabitId ||
+            null;
+        }
+        setChainHabitIds(initialChain);
+      } else {
+        setChainHabitIds([selectedHabit.id]);
+      }
+
       setCustomCue(
         (selectedHabit.stack_custom_cue || selectedHabit.stack?.customCue || '').trim()
       );
     }
-  }, [selectedHabit, isOpen]);
+  }, [selectedHabit, isOpen, habits]);
 
   if (!isOpen) return null;
 
-  // Available candidate habits for chaining (cannot chain to self)
-  const candidateParents = habits.filter((h) => h.id !== selectedHabit?.id);
-
-  const handleToggleParentHabit = (id: string) => {
-    setParentHabitIds((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
+  const handleToggleChainHabit = (id: string) => {
+    setChainHabitIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      return [...prev, id];
+    });
   };
 
-  const parentHabits = candidateParents.filter((h) => parentHabitIds.includes(h.id));
+  const handleRemoveFromChain = (id: string) => {
+    setChainHabitIds((prev) => prev.filter((item) => item !== id));
+  };
 
   const handleSave = async () => {
-    if (!selectedHabit) return;
-
     if (isGuestMode) {
       toast.info('Sign in required', {
         description: 'Please sign in or create an account to save Dayflow routines.',
@@ -133,8 +157,41 @@ export function HabitStackingModal({
       return;
     }
 
-    if (triggerType === 'habit' && parentHabitIds.length === 0) {
-      toast.error('Select at least one anchor habit to chain this routine to.');
+    if (triggerType === 'habit') {
+      if (chainHabitIds.length < 2) {
+        toast.error('Select at least two habits to build an A → B → C routine chain.');
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        let ok = false;
+        if (onSaveHabitChain) {
+          ok = await onSaveHabitChain(chainHabitIds, timeOfDay);
+        } else {
+          ok = await onUpdateHabitStack(
+            chainHabitIds[1],
+            timeOfDay,
+            'habit',
+            chainHabitIds[0],
+            ''
+          );
+        }
+
+        if (ok) {
+          const chainTitles = chainHabitIds
+            .map((id) => habits.find((h) => h.id === id)?.title)
+            .filter(Boolean);
+          toast.success('Dayflow routine chain saved!', {
+            description: chainTitles.join(' → '),
+          });
+          onClose();
+        }
+      } catch {
+        toast.error('Failed to save routine chain');
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
 
@@ -143,13 +200,15 @@ export function HabitStackingModal({
       return;
     }
 
+    if (!selectedHabit) return;
+
     setIsSaving(true);
     try {
       const ok = await onUpdateHabitStack(
         selectedHabit.id,
         timeOfDay,
         triggerType,
-        triggerType === 'habit' ? parentHabitIds : null,
+        null,
         triggerType === 'custom' ? customCue.trim() : ''
       );
 
@@ -402,7 +461,7 @@ export function HabitStackingModal({
             <div className="grid grid-cols-3 gap-1.5">
               {[
                 { id: 'none', label: 'No Trigger', sub: 'Standalone' },
-                { id: 'habit', label: 'After Habit', sub: 'Chain routine' },
+                { id: 'habit', label: 'Chain Routine', sub: 'A → B → C' },
                 { id: 'custom', label: 'Custom Cue', sub: 'Life event' },
               ].map((item) => {
                 const isSelected = triggerType === item.id;
@@ -424,55 +483,95 @@ export function HabitStackingModal({
               })}
             </div>
 
-            {/* Sub-config: Chain to existing habit(s) */}
+            {/* Sub-config: Routine Sequence Chain (A → B → C) */}
             {triggerType === 'habit' && (
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-1.5 mt-1"
+                className="flex flex-col gap-2 mt-1"
               >
                 <div className="flex items-center justify-between">
                   <label className="text-[10.5px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60">
-                    Select Anchor Habit(s):
+                    Routine Sequence (A → B → C):
                   </label>
-                  {parentHabitIds.length > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f]">
-                      {parentHabitIds.length} selected
-                    </span>
+                  {chainHabitIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setChainHabitIds([])}
+                      className="text-[10.5px] text-[#ff5a1f] hover:underline font-semibold cursor-pointer"
+                    >
+                      Clear chain
+                    </button>
                   )}
                 </div>
-                {candidateParents.length === 0 ? (
-                  <p className="text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 italic p-2 bg-[#f2ecdf] dark:bg-[#11100d] rounded-xl">
-                    Create at least two habits to chain them together.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto p-0.5 scrollbar-thin">
-                    {candidateParents.map((parent) => {
-                      const isSelected = parentHabitIds.includes(parent.id);
+
+                {/* Interactive Visual Chain Pipeline */}
+                <div className="flex items-center gap-1.5 flex-wrap p-2.5 rounded-xl bg-[#f2ecdf]/80 dark:bg-[#11100d]/80 border border-[#15130f]/10 dark:border-[#fbf8f1]/10 min-h-[46px]">
+                  {chainHabitIds.length === 0 ? (
+                    <p className="text-[11px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 italic">
+                      Click habits below in sequence to form your A → B → C routine.
+                    </p>
+                  ) : (
+                    chainHabitIds.map((id, index) => {
+                      const h = habits.find((item) => item.id === id);
+                      if (!h) return null;
                       return (
-                        <button
-                          key={parent.id}
-                          type="button"
-                          onClick={() => handleToggleParentHabit(parent.id)}
-                          className={`flex items-center gap-2 p-2 rounded-xl border text-left text-xs transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-[#ff5a1f] bg-[#ff5a1f]/10 text-[#ff5a1f] font-bold shadow-xs'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 hover:border-[#ff5a1f]/40 text-[#15130f] dark:text-[#fbf8f1]'
-                          }`}
-                        >
-                          <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: parent.color_theme || '#ff5a1f' }}
-                          />
-                          <span className="truncate flex-1">{parent.title}</span>
-                          {isSelected && (
-                            <Check className="w-3.5 h-3.5 stroke-[3] text-[#ff5a1f] shrink-0" />
+                        <React.Fragment key={id}>
+                          {index > 0 && (
+                            <ArrowRight className="w-3.5 h-3.5 text-[#ff5a1f] shrink-0" />
                           )}
-                        </button>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#ff5a1f]/30 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] shadow-xs">
+                            <span className="w-4 h-4 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center text-[10px] font-bold">
+                              {index + 1}
+                            </span>
+                            <span className="truncate max-w-[120px]">{h.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFromChain(id)}
+                              className="text-[#15130f]/40 hover:text-red-500 cursor-pointer ml-0.5"
+                              title="Remove from sequence"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </React.Fragment>
                       );
-                    })}
-                  </div>
-                )}
+                    })
+                  )}
+                </div>
+
+                {/* Habit Grid with numbered sequence badges */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto p-0.5 scrollbar-thin">
+                  {habits.map((habit) => {
+                    const chainIndex = chainHabitIds.indexOf(habit.id);
+                    const isInChain = chainIndex !== -1;
+                    return (
+                      <button
+                        key={habit.id}
+                        type="button"
+                        onClick={() => handleToggleChainHabit(habit.id)}
+                        className={`flex items-center gap-2 p-2 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                          isInChain
+                            ? 'border-[#ff5a1f] bg-[#ff5a1f]/10 text-[#ff5a1f] font-bold shadow-xs'
+                            : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 hover:border-[#ff5a1f]/40 text-[#15130f] dark:text-[#fbf8f1]'
+                        }`}
+                      >
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: habit.color_theme || '#ff5a1f' }}
+                        />
+                        <span className="truncate flex-1">{habit.title}</span>
+                        {isInChain ? (
+                          <span className="w-4 h-4 rounded-full bg-[#ff5a1f] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {chainIndex + 1}
+                          </span>
+                        ) : (
+                          <Plus className="w-3.5 h-3.5 text-[#15130f]/30 dark:text-[#fbf8f1]/30 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
 
@@ -502,27 +601,41 @@ export function HabitStackingModal({
           <div className="p-3 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-lg shrink-0">{DAYFLOW_META[timeOfDay].icon}</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] uppercase tracking-wider font-bold text-[#15130f]/50 dark:text-[#fbf8f1]/50">
                   {DAYFLOW_META[timeOfDay].label}
                 </p>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate">
-                  {triggerType === 'habit' && parentHabits.length > 0 ? (
-                    <>
-                      <span className="text-[#15130f]/60 dark:text-[#fbf8f1]/60 truncate">
-                        After {formatParentHabitTitles(parentHabits.map((p) => p.title))}
-                      </span>
-                      <ArrowRight className="w-3 h-3 text-[#ff5a1f] shrink-0" />
-                    </>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] overflow-x-auto scrollbar-none py-0.5">
+                  {triggerType === 'habit' && chainHabitIds.length > 0 ? (
+                    chainHabitIds.map((id, idx) => {
+                      const h = habits.find((item) => item.id === id);
+                      if (!h) return null;
+                      return (
+                        <React.Fragment key={id}>
+                          {idx > 0 && <ArrowRight className="w-3 h-3 text-[#ff5a1f] shrink-0" />}
+                          <span
+                            className={`whitespace-nowrap ${
+                              idx === chainHabitIds.length - 1
+                                ? 'text-[#ff5a1f] font-bold'
+                                : 'text-[#15130f]/75 dark:text-[#fbf8f1]/75'
+                            }`}
+                          >
+                            {h.title}
+                          </span>
+                        </React.Fragment>
+                      );
+                    })
                   ) : triggerType === 'custom' && customCue.trim() ? (
                     <>
                       <span className="text-[#15130f]/60 dark:text-[#fbf8f1]/60 truncate">
                         After {customCue.trim()}
                       </span>
                       <ArrowRight className="w-3 h-3 text-[#ff5a1f] shrink-0" />
+                      <span className="text-[#ff5a1f] font-bold truncate">{selectedHabit?.title}</span>
                     </>
-                  ) : null}
-                  <span className="text-[#ff5a1f] font-bold truncate">{selectedHabit?.title}</span>
+                  ) : (
+                    <span className="text-[#ff5a1f] font-bold truncate">{selectedHabit?.title}</span>
+                  )}
                 </div>
               </div>
             </div>

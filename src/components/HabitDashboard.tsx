@@ -83,6 +83,7 @@ import {
   updateHabitCadenceAction,
   toggleStreakFreezeAction,
   updateHabitStackingAction,
+  saveHabitChainAction,
 } from '@/app/actions/habits';
 import {
   createChallengeAction,
@@ -372,6 +373,63 @@ export function HabitDashboard({
     [isGuestMode]
   );
 
+  const handleSaveHabitChain = useCallback(
+    async (chainHabitIds: string[], tod: TimeOfDay): Promise<boolean> => {
+      if (chainHabitIds.length === 0) return false;
+
+      // Optimistic client update for all habits in the sequential chain (A -> B -> C -> ...)
+      setHabits((prev) => {
+        const idMap = new Map<string, HabitWithLogs>();
+        prev.forEach((h) => idMap.set(h.id, h));
+
+        return prev.map((h) => {
+          const chainIndex = chainHabitIds.indexOf(h.id);
+          if (chainIndex === -1) return h;
+
+          const isRoot = chainIndex === 0;
+          const parentId = isRoot ? null : chainHabitIds[chainIndex - 1];
+          const parentHabit = parentId ? idMap.get(parentId) : undefined;
+
+          return {
+            ...h,
+            time_of_day: tod,
+            stack_trigger_type: isRoot ? 'none' : 'habit',
+            stack_parent_habit_id: parentId,
+            stack_parent_habit_ids: parentId ? [parentId] : [],
+            stack_order: chainIndex,
+            stack: {
+              timeOfDay: tod,
+              triggerType: isRoot ? 'none' : 'habit',
+              parentHabitId: parentId,
+              parentHabitIds: parentId ? [parentId] : [],
+              parentHabitTitle: parentHabit?.title,
+              parentHabitTitles: parentHabit?.title ? [parentHabit.title] : [],
+              customCue: isRoot ? (h.stack_custom_cue || '') : '',
+              order: chainIndex,
+            },
+          };
+        });
+      });
+
+      if (isGuestMode) {
+        return true;
+      }
+
+      try {
+        const res = await saveHabitChainAction(chainHabitIds, tod);
+        if (res.error) {
+          toast.error(res.error);
+          return false;
+        }
+        return true;
+      } catch {
+        toast.error('Failed to sync routine chain with cloud');
+        return false;
+      }
+    },
+    [isGuestMode]
+  );
+
   // Challenge state (guests never persist or see fake challenge history)
   const [challenge, setChallenge] = useState<Challenge | null>(isGuestMode ? null : initialChallenge);
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>(
@@ -545,6 +603,21 @@ export function HabitDashboard({
     if (userFirstName && userFirstName.trim()) return userFirstName.trim();
     return null;
   }, [initialCustomName, userFirstName]);
+
+  // Board Title: Generate personalized board name like "ABC'S TRACKER"
+  const boardTitle = useMemo(() => {
+    const name = personalizedName;
+    if (!name) return 'HABIT TRACKER';
+
+    const upper = name.toUpperCase();
+    if (upper.endsWith("'S") || upper.endsWith("'S")) {
+      return `${upper} TRACKER`;
+    }
+    if (upper.endsWith('S')) {
+      return `${upper}' TRACKER`;
+    }
+    return `${upper}'S TRACKER`;
+  }, [personalizedName]);
 
   const greetingTime = useMemo(() => {
     const hour = new Date().getHours();
@@ -1645,10 +1718,10 @@ export function HabitDashboard({
         }}
       >
         <div className="flex flex-col gap-2 xl:gap-3.5 shrink-0">
-          {/* Brand Logo: Habit Tracker (Prominent & bold) */}
+          {/* Brand Logo: Personalized Board Title (e.g., "ABC'S TRACKER") */}
           <div className="flex items-center justify-between px-1 shrink-0">
             <h1 className="font-clash font-bold text-[22px] min-[1280px]:text-[23px] xl:text-[24px] tracking-[-0.03em] text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
-              Habit Tracker<span className="text-[#ff5a1f]">.</span>
+              {boardTitle}<span className="text-[#ff5a1f]">.</span>
             </h1>
 
             {/* Quick Dark Mode Icon Toggle */}
@@ -1815,7 +1888,7 @@ export function HabitDashboard({
       {/* ============================================================== */}
       <header className="lg:hidden flex items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-3.5 bg-[#f2ecdf] dark:bg-[#11100d] border-b border-[#15130f]/10 dark:border-[#fbf8f1]/10 sticky top-0 z-30 transition-colors">
         <h1 className="font-clash font-bold text-xl sm:text-[22px] tracking-tight text-[#15130f] dark:text-[#fbf8f1] select-none flex items-center">
-          Habit Tracker<span className="text-[#ff5a1f]">.</span>
+          {boardTitle}<span className="text-[#ff5a1f]">.</span>
         </h1>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -3539,6 +3612,7 @@ export function HabitDashboard({
           habits={habits}
           isGuestMode={isGuestMode}
           onUpdateHabitStack={handleUpdateHabitStack}
+          onSaveHabitChain={handleSaveHabitChain}
           initialHabitId={stackingInitialHabitId}
           initialShowGuide={stackingInitialShowGuide}
         />

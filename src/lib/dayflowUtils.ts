@@ -88,18 +88,16 @@ export function getHabitTimeOfDay(habit: HabitWithLogs): TimeOfDay {
 
 export function formatParentHabitTitles(titles: string[]): string {
   if (titles.length === 0) return '';
-  if (titles.length === 1) return titles[0];
-  if (titles.length === 2) return `${titles[0]} & ${titles[1]}`;
-  return `${titles.slice(0, -1).join(', ')} & ${titles[titles.length - 1]}`;
+  return titles.join(' → ');
 }
 
 /**
- * Formats a clean stacking trigger descriptor (e.g. "↳ After Morning Coffee" or "↳ After Meditation")
+ * Formats a clean sequential stacking chain (e.g. "A → B → C" or "↳ After Morning Coffee")
  */
 export function getHabitStackTriggerText(
   habit: HabitWithLogs,
   allHabits: HabitWithLogs[] = []
-): { hasTrigger: boolean; text: string; parentTitle?: string } {
+): { hasTrigger: boolean; text: string; parentTitle?: string; chainTitles?: string[] } {
   const triggerType = habit.stack_trigger_type || habit.stack?.triggerType || 'none';
 
   if (triggerType === 'custom') {
@@ -113,26 +111,38 @@ export function getHabitStackTriggerText(
   }
 
   if (triggerType === 'habit') {
-    const parentIds: string[] =
-      habit.stack_parent_habit_ids && habit.stack_parent_habit_ids.length > 0
-        ? habit.stack_parent_habit_ids
-        : habit.stack?.parentHabitIds && habit.stack.parentHabitIds.length > 0
-        ? habit.stack.parentHabitIds
-        : (habit.stack_parent_habit_id || habit.stack?.parentHabitId)
-        ? [habit.stack_parent_habit_id || habit.stack?.parentHabitId!]
-        : [];
+    const parentId =
+      (habit.stack_parent_habit_ids && habit.stack_parent_habit_ids[0]) ||
+      habit.stack_parent_habit_id ||
+      habit.stack?.parentHabitId;
 
-    if (parentIds.length > 0) {
-      const parentTitles = parentIds
-        .map((pid) => allHabits.find((h) => h.id === pid)?.title)
-        .filter(Boolean) as string[];
+    if (parentId) {
+      // Trace chain upwards to construct the full sequence A -> B -> C up to this habit
+      const chain: string[] = [habit.title];
+      let currentParentId: string | null = parentId;
+      const visited = new Set<string>([habit.id]);
 
-      if (parentTitles.length > 0) {
-        const combinedTitle = formatParentHabitTitles(parentTitles);
+      while (currentParentId && !visited.has(currentParentId)) {
+        visited.add(currentParentId);
+        const parent = allHabits.find((h) => h.id === currentParentId);
+        if (parent) {
+          chain.unshift(parent.title);
+          currentParentId =
+            (parent.stack_parent_habit_ids && parent.stack_parent_habit_ids[0]) ||
+            parent.stack_parent_habit_id ||
+            parent.stack?.parentHabitId ||
+            null;
+        } else {
+          break;
+        }
+      }
+
+      if (chain.length > 1) {
         return {
           hasTrigger: true,
-          text: `After ${combinedTitle}`,
-          parentTitle: combinedTitle,
+          text: chain.join(' → '),
+          parentTitle: chain[chain.length - 2],
+          chainTitles: chain,
         };
       }
     }
@@ -196,19 +206,26 @@ export function groupAndOrderHabitsByDayflow(
     // Sort top-level habits by stack_order or creation
     topLevel.sort((a, b) => (a.stack_order ?? 0) - (b.stack_order ?? 0));
 
-    // Flatten tree: insert children directly after their parent
+    // Flatten tree recursively: sequence multi-step chains A -> B -> C -> D in exact order
     const ordered: HabitWithLogs[] = [];
-    topLevel.forEach((parent) => {
-      ordered.push(parent);
-      const children = childrenByParentId[parent.id] || [];
+    const visited = new Set<string>();
+
+    const appendHabitAndChildren = (h: HabitWithLogs) => {
+      if (visited.has(h.id)) return;
+      visited.add(h.id);
+      ordered.push(h);
+
+      const children = childrenByParentId[h.id] || [];
       children.sort((a, b) => (a.stack_order ?? 0) - (b.stack_order ?? 0));
-      ordered.push(...children);
-    });
+      children.forEach(appendHabitAndChildren);
+    };
+
+    topLevel.forEach(appendHabitAndChildren);
 
     // Append any orphaned children safely
-    Object.keys(childrenByParentId).forEach((parentId) => {
-      if (!topLevel.some((h) => h.id === parentId)) {
-        ordered.push(...childrenByParentId[parentId]);
+    bucket.forEach((h) => {
+      if (!visited.has(h.id)) {
+        appendHabitAndChildren(h);
       }
     });
 

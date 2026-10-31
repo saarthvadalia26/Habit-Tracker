@@ -463,6 +463,100 @@ export async function updateHabitStackingAction(
 }
 
 /**
+ * Saves an ordered routine chain (A -> B -> C -> ...) for a specific Dayflow ritual.
+ * Sets the first habit as the routine anchor, and links each subsequent habit to its predecessor.
+ */
+export async function saveHabitChainAction(
+  chainHabitIds: string[],
+  timeOfDay: string
+): Promise<ActionResponse<{ success: boolean; chainCount: number }>> {
+  try {
+    if (!Array.isArray(chainHabitIds) || chainHabitIds.length === 0) {
+      return { data: null, error: 'At least one habit must be provided for a routine chain.' };
+    }
+
+    if (!isValidTimeOfDay(timeOfDay)) {
+      return { data: null, error: 'Invalid time of day.' };
+    }
+
+    // Validate all IDs are valid UUIDs and unique
+    const uniqueIds = Array.from(new Set(chainHabitIds));
+    for (const id of uniqueIds) {
+      if (!isUuid(id)) {
+        return { data: null, error: 'Invalid habit ID in chain.' };
+      }
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { data: null, error: 'Authentication required.' };
+    }
+
+    // Verify ownership of all habits in the chain
+    const { data: userHabits, error: verifyError } = await supabase
+      .from('habits')
+      .select('id')
+      .in('id', uniqueIds)
+      .eq('user_id', user.id);
+
+    if (verifyError || !userHabits || userHabits.length !== uniqueIds.length) {
+      return { data: null, error: 'One or more habits do not belong to your account.' };
+    }
+
+    // Sequential chain linking:
+    // Index 0: root of the chain (trigger_type: none, parent: null, order: 0)
+    // Index i > 0: chained after index i - 1 (trigger_type: habit, parent: chainHabitIds[i - 1], order: i)
+    const updates = uniqueIds.map((id, index) => {
+      const isRoot = index === 0;
+      const parentId = isRoot ? null : uniqueIds[index - 1];
+      return supabase
+        .from('habits')
+        .update({
+          time_of_day: timeOfDay,
+          stack_trigger_type: isRoot ? 'none' : 'habit',
+          stack_parent_habit_id: parentId,
+          stack_parent_habit_ids: parentId ? [parentId] : [],
+          stack_order: index,
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+    });
+
+    const results = await Promise.all(updates);
+    const hasError = results.some((r) => r.error);
+
+    if (hasError) {
+      // Fallback update without stack_parent_habit_ids column if remote DB is older schema
+      const fallbackUpdates = uniqueIds.map((id, index) => {
+        const isRoot = index === 0;
+        const parentId = isRoot ? null : uniqueIds[index - 1];
+        return supabase
+          .from('habits')
+          .update({
+            time_of_day: timeOfDay,
+            stack_trigger_type: isRoot ? 'none' : 'habit',
+            stack_parent_habit_id: parentId,
+            stack_order: index,
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      });
+      await Promise.all(fallbackUpdates);
+    }
+
+    revalidatePath('/');
+    return { data: { success: true, chainCount: uniqueIds.length }, error: null };
+  } catch {
+    return { data: null, error: 'Failed to save routine chain.' };
+  }
+}
+
+/**
  * Reorders habits within a Dayflow ritual for the current user
  */
 export async function reorderHabitsAction(
