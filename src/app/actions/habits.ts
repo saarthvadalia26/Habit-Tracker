@@ -863,62 +863,63 @@ export async function deleteHabitAction(
       };
     }
 
-    // 1. Unlink any and all habits referencing this habit (handles both stack_parent_habit_id and stack_parent_habit_ids)
+    // Step 1: Unlink ANY child habit that references habitId as its anchor/parent.
+    // We run individual, simple updates so optional or missing columns cannot crash this step.
     try {
-      // Step 1a: Unlink habits where stack_parent_habit_id === habitId
-      const { error: unlinkParentErr } = await supabase
+      await supabase
         .from('habits')
-        .update({
-          stack_parent_habit_id: null,
-          stack_trigger_type: 'none',
-        })
+        .update({ stack_parent_habit_id: null })
         .eq('stack_parent_habit_id', habitId)
         .eq('user_id', user.id);
+    } catch (e) {
+      console.warn('[deleteHabitAction] Step 1 stack_parent_habit_id nullify warning:', e);
+    }
 
-      if (unlinkParentErr) {
-        console.warn('[deleteHabitAction] unlinkParentErr:', unlinkParentErr);
-      }
+    try {
+      await supabase
+        .from('habits')
+        .update({ stack_trigger_type: 'none' })
+        .eq('stack_parent_habit_id', habitId)
+        .eq('user_id', user.id);
+    } catch {
+      // Ignore if trigger_type column not present
+    }
 
-      // Step 1b: Fetch all habits to clean up multi-anchor arrays & sever any references
+    // Step 2: Clean up array-based multi-anchor parent references (if column exists)
+    try {
       const { data: userHabits } = await supabase
         .from('habits')
-        .select('id, stack_parent_habit_id, stack_parent_habit_ids')
+        .select('id, stack_parent_habit_ids')
         .eq('user_id', user.id);
 
-      if (userHabits && userHabits.length > 0) {
+      if (userHabits && Array.isArray(userHabits)) {
         for (const h of userHabits) {
-          // If this habit references habitId in its array
           if (Array.isArray(h.stack_parent_habit_ids) && h.stack_parent_habit_ids.includes(habitId)) {
-            const nextParentIds = h.stack_parent_habit_ids.filter((id: string) => id !== habitId);
-            const nextPrimary = nextParentIds[0] || null;
+            const nextArr = h.stack_parent_habit_ids.filter((id: string) => id !== habitId);
             await supabase
               .from('habits')
-              .update({
-                stack_parent_habit_id: nextPrimary,
-                stack_parent_habit_ids: nextParentIds,
-                stack_trigger_type: nextPrimary ? 'habit' : 'none',
-              })
+              .update({ stack_parent_habit_ids: nextArr })
               .eq('id', h.id)
               .eq('user_id', user.id);
           }
         }
       }
+    } catch {
+      // Optional column on older schema
+    }
 
-      // Step 1c: Sever the deleted habit's own outgoing parent foreign key reference before deletion
+    // Step 3: Sever the deleted habit's OWN OUTGOING parent reference
+    try {
       await supabase
         .from('habits')
-        .update({
-          stack_parent_habit_id: null,
-          stack_parent_habit_ids: [],
-          stack_trigger_type: 'none',
-        })
+        .update({ stack_parent_habit_id: null })
         .eq('id', habitId)
         .eq('user_id', user.id);
     } catch (e) {
-      console.warn('[deleteHabitAction] Could not unlink habit dependencies before delete:', e);
+      console.warn('[deleteHabitAction] Step 3 self stack_parent_habit_id nullify warning:', e);
     }
 
-    // 2. Remove habitId from any challenge habit_ids array
+    // Step 4: Remove habitId from any challenge habit_ids array
     try {
       const { data: challenges } = await supabase
         .from('challenges')
@@ -938,25 +939,29 @@ export async function deleteHabitAction(
         }
       }
     } catch (e) {
-      console.warn('[deleteHabitAction] Could not clean challenge habit_ids before delete:', e);
+      console.warn('[deleteHabitAction] Could not clean challenge habit_ids:', e);
     }
 
-    // 3. Proactively clean up habit logs and streak freezes (in case cascade is missing on remote DB)
+    // Step 5: Proactively clean up habit logs and streak freezes before deleting habit
     try {
       await supabase
         .from('habit_logs')
         .delete()
         .eq('habit_id', habitId);
+    } catch (e) {
+      console.warn('[deleteHabitAction] Could not delete habit logs:', e);
+    }
 
+    try {
       await supabase
         .from('streak_freezes')
         .delete()
         .eq('habit_id', habitId);
     } catch (e) {
-      console.warn('[deleteHabitAction] Could not clean habit logs or streak freezes before delete:', e);
+      console.warn('[deleteHabitAction] Could not delete streak freezes:', e);
     }
 
-    // 4. Delete the habit record
+    // Step 6: Delete the habit record itself
     const { error: deleteError } = await supabase
       .from('habits')
       .delete()
