@@ -206,6 +206,28 @@ export function CreateChallengeModal({
                 </div>
               )}
 
+              {/* Start Date Picker */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60 mb-2">
+                  Start Date
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    min={formatDateToISO(new Date())}
+                    className="w-full px-3 py-2.5 rounded-2xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] cursor-pointer"
+                  />
+                  <p className="text-[10px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 mt-1.5 ml-1">
+                    {startDate === formatDateToISO(new Date())
+                      ? '🚀 Starting today'
+                      : `📅 Starting ${new Date(startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    }
+                  </p>
+                </div>
+              </div>
+
               {/* Included Habits */}
               <div>
                 <div className="flex items-center justify-between mb-2">
