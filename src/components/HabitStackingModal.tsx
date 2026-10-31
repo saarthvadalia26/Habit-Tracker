@@ -17,6 +17,7 @@ import {
   ChevronRight,
   RotateCcw,
   HelpCircle,
+  Unlink2,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import {
@@ -133,6 +134,39 @@ export function HabitStackingModal({
       );
     }
   }, [selectedHabit, isOpen, habits]);
+
+  const hasExistingTrigger =
+    Boolean(selectedHabit?.stack_parent_habit_id) ||
+    Boolean(selectedHabit?.stack_parent_habit_ids && selectedHabit.stack_parent_habit_ids.length > 0) ||
+    Boolean(selectedHabit?.stack_custom_cue && selectedHabit.stack_custom_cue.trim()) ||
+    (Boolean(selectedHabit?.stack_trigger_type) && selectedHabit?.stack_trigger_type !== 'none');
+
+  const handleUnlink = async () => {
+    if (!selectedHabit) return;
+    setIsSaving(true);
+    try {
+      setTriggerType('none');
+      setChainHabitIds([selectedHabit.id]);
+      setCustomCue('');
+      const ok = await onUpdateHabitStack(
+        selectedHabit.id,
+        timeOfDay,
+        'none',
+        null,
+        ''
+      );
+      if (ok) {
+        toast.success('Routine unlinked! Habit is now standalone.', {
+          description: `${selectedHabit.title} will execute independently.`,
+        });
+        onClose();
+      }
+    } catch {
+      toast.error('Failed to unlink habit routine');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -648,23 +682,39 @@ export function HabitStackingModal({
           </div>
 
           {/* Action buttons (Pinned Footer) */}
-          <div className="p-4 sm:p-5 pt-3 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0 flex items-center justify-end gap-2 bg-[#fbf8f1] dark:bg-[#1c1a16]">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="px-4 py-2 rounded-full text-xs font-semibold border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-5 py-2 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isSaving ? 'Saving...' : 'Apply Routine'}
-            </button>
+          <div className="p-4 sm:p-5 pt-3 border-t border-[#15130f]/8 dark:border-[#fbf8f1]/8 shrink-0 flex items-center justify-between gap-2 bg-[#fbf8f1] dark:bg-[#1c1a16]">
+            {hasExistingTrigger ? (
+              <button
+                type="button"
+                onClick={handleUnlink}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 border border-rose-500/25 transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+                title="Remove anchor and make this habit standalone"
+              >
+                <Unlink2 className="w-3.5 h-3.5" />
+                <span>Unlink Routine</span>
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-full text-xs font-semibold border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-5 py-2 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Apply Routine'}
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

@@ -1481,10 +1481,18 @@ export function HabitDashboard({
               </p>
             </div>
             {stackCue && (
-              <div className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-[11.5px] font-medium text-[#ff5a1f] dark:text-[#ff7847] truncate select-none">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenStackingModal(habit.id);
+                }}
+                className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-[11.5px] font-medium text-[#ff5a1f] dark:text-[#ff7847] hover:underline truncate select-none cursor-pointer text-left"
+                title="Click to edit or unlink routine"
+              >
                 <Link2 className="w-3 h-3 shrink-0 rotate-45 opacity-80" />
                 <span className="truncate">{stackCue}</span>
-              </div>
+              </button>
             )}
           </div>
         </div>
