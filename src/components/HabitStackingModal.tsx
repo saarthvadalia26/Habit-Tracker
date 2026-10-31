@@ -169,14 +169,9 @@ export function HabitStackingModal({
               <div className="w-9 h-9 rounded-2xl bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/20 text-[#ff5a1f] flex items-center justify-center shrink-0">
                 <Layers className="w-4.5 h-4.5" />
               </div>
-              <div>
-                <h3 className="font-clash font-semibold text-lg sm:text-xl tracking-tight leading-tight">
-                  Habit Stacking & Dayflows
-                </h3>
-                <p className="text-[11px] text-[#15130f]/55 dark:text-[#fbf8f1]/55">
-                  Drop 4 • Group atomic habits into compounding daily rituals
-                </p>
-              </div>
+              <h3 className="font-clash font-semibold text-lg sm:text-xl tracking-tight leading-tight">
+                Habit Stacking & Dayflows
+              </h3>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
