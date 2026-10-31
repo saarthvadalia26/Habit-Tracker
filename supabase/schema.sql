@@ -11,6 +11,32 @@ CREATE TABLE IF NOT EXISTS public.habits (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Drop 5: Add numeric goal tracking fields to habits table
+ALTER TABLE public.habits
+    ADD COLUMN IF NOT EXISTS goal_type TEXT NOT NULL DEFAULT 'binary'
+    CONSTRAINT check_goal_type CHECK (goal_type IN ('binary', 'numeric', 'duration'));
+
+ALTER TABLE public.habits
+    ADD COLUMN IF NOT EXISTS target_value INT;
+
+ALTER TABLE public.habits
+    ADD COLUMN IF NOT EXISTS target_unit TEXT;
+
+-- Add constraint to ensure numeric goals have target values
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_numeric_goal_has_target'
+    ) THEN
+        ALTER TABLE public.habits
+            ADD CONSTRAINT check_numeric_goal_has_target
+            CHECK (
+                (goal_type = 'binary' AND target_value IS NULL AND target_unit IS NULL) OR
+                (goal_type IN ('numeric', 'duration') AND target_value IS NOT NULL AND target_unit IS NOT NULL)
+            );
+    END IF;
+END $$;
+
 -- 2. Create habit_logs table
 CREATE TABLE IF NOT EXISTS public.habit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -21,6 +47,13 @@ CREATE TABLE IF NOT EXISTS public.habit_logs (
     -- Ensure only 1 log entry exists per habit per date
     CONSTRAINT unique_habit_date UNIQUE (habit_id, date)
 );
+
+-- Drop 5: Add numeric value tracking to habit_logs
+ALTER TABLE public.habit_logs
+    ADD COLUMN IF NOT EXISTS numeric_value INT;
+
+-- Drop 5: Add comments for clarity
+COMMENT ON COLUMN public.habit_logs.numeric_value IS 'Drop 5: Stores numeric progress for quantitative goals (e.g., 2500ml water, 25 pages read)';
 
 -- 3. Create challenges table (for 75-Day, 90-Day, 30-Day, and custom challenges)
 CREATE TABLE IF NOT EXISTS public.challenges (
