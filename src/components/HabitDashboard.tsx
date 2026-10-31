@@ -644,7 +644,7 @@ export function HabitDashboard({
     if (habits.length === 0) return 0;
     let max = 0;
     habits.forEach((h) => {
-      const s = calculateContinuousStreak(h.logs || {});
+      const s = calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence);
       const explicitStreak = h.currentStreak || 0;
       const effective = Math.max(s, explicitStreak);
       if (effective > max) max = effective;
@@ -1235,8 +1235,12 @@ export function HabitDashboard({
   // Compute total available shields across all habits
   const totalAvailableShields = useMemo(() => {
     return habits.reduce((acc, h) => {
+      const streak =
+        typeof h.currentStreak === 'number' && h.currentStreak > 0
+          ? h.currentStreak
+          : calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence);
       const frozenCount = h.frozenLogs ? Object.values(h.frozenLogs).filter(Boolean).length : 0;
-      const stats = computeHabitShieldBank(h.currentStreak || 0, frozenCount);
+      const stats = computeHabitShieldBank(streak, frozenCount);
       return acc + stats.available;
     }, 0);
   }, [habits]);
@@ -1390,7 +1394,10 @@ export function HabitDashboard({
   // Render single habit card (used across default view and Dayflow ritual groupings)
   const renderHabitCard = (habit: HabitWithLogs) => {
     const isDone = Boolean(habit.logs?.[todayStr]);
-    const currentStreak = calculateContinuousStreak(habit.logs || {});
+    const currentStreak =
+      typeof habit.currentStreak === 'number' && habit.currentStreak > 0
+        ? habit.currentStreak
+        : calculateContinuousStreak(habit.logs || {}, habit.frozenLogs || {}, habit.cadence);
 
     let displayTitle = habit.title;
     let displaySubtitle = habit.subtitle || 'Daily routine';

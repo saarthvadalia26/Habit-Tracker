@@ -26,6 +26,7 @@ import {
   isHabitRestDay,
   isHabitScheduledForDay,
   computeHabitShieldBank,
+  calculateCadenceStreak,
   getActiveDaysCountInMonth,
 } from '@/lib/cadenceUtils';
 import { formatDateToISO } from '@/lib/dateUtils';
@@ -124,14 +125,26 @@ export function StreakArmorModal({
     }
   };
 
+  // Calculate accurate cadence streak for the selected habit
+  const currentStreak = useMemo(() => {
+    if (!selectedHabit) return 0;
+    if (typeof selectedHabit.currentStreak === 'number' && selectedHabit.currentStreak > 0) {
+      return selectedHabit.currentStreak;
+    }
+    return calculateCadenceStreak(
+      selectedHabit.logs || {},
+      selectedHabit.frozenLogs || {},
+      selectedHabit.cadence
+    ).currentStreak;
+  }, [selectedHabit]);
+
   // Compute shields available across the selected habit
   const shieldStats = useMemo(() => {
-    const currentStreak = selectedHabit?.currentStreak || 0;
     const frozenCount = selectedHabit?.frozenLogs
       ? Object.values(selectedHabit.frozenLogs).filter(Boolean).length
       : 0;
     return computeHabitShieldBank(currentStreak, frozenCount);
-  }, [selectedHabit]);
+  }, [selectedHabit, currentStreak]);
 
   // All active frozen dates across habits or for the selected habit
   const activeFreezes = useMemo(() => {
@@ -443,6 +456,9 @@ export function StreakArmorModal({
                     <p className="text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 max-w-sm">
                       Base 2 shields + 1 earned for every 7 days of active unbroken streak (max 5).
                     </p>
+                    <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                      Current streak: {currentStreak} days • {shieldStats.earned} of {shieldStats.maxCapacity} shields unlocked {shieldStats.earned < shieldStats.maxCapacity ? `(${7 - (currentStreak % 7)} days until next shield)` : '(Max shields reached)'}
+                    </p>
                   </div>
 
                   {/* Visual Shields Row */}
@@ -458,7 +474,7 @@ export function StreakArmorModal({
                               ? `Shield ${i + 1}: Ready to protect`
                               : isUsed
                               ? `Shield ${i + 1}: Active on frozen date`
-                              : `Shield ${i + 1}: Locked (Requires ${(i + 1 - 2) * 7}d streak)`
+                              : `Shield ${i + 1}: Locked (Requires ${(i + 1 - 2) * 7}d streak - currently ${currentStreak}d)`
                           }
                           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                             isReady

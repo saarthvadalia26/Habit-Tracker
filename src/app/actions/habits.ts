@@ -135,6 +135,18 @@ export async function getHabitsWithLogsAction(
         order: habit.stack_order ?? 0,
       };
 
+      const habitCadence = {
+        type: cadenceType,
+        daysOfWeek: cadenceDays,
+        frequencyPerWeek: targetFrequency,
+      };
+      const habitLogs = logsByHabit[habit.id] || {};
+      const habitFrozenLogs = frozenLogsByHabit[habit.id] || {};
+      const streakResult = calculateCadenceStreak(habitLogs, habitFrozenLogs, habitCadence);
+      const currentStreak = streakResult.currentStreak;
+      const frozenCount = Object.values(habitFrozenLogs).filter(Boolean).length;
+      const shieldStats = computeHabitShieldBank(currentStreak, frozenCount);
+
       return {
         ...habit,
         cadence_type: cadenceType,
@@ -146,14 +158,13 @@ export async function getHabitsWithLogsAction(
         stack_parent_habit_ids: parentIds,
         stack_custom_cue: habit.stack_custom_cue ?? '',
         stack_order: habit.stack_order ?? 0,
-        cadence: {
-          type: cadenceType,
-          daysOfWeek: cadenceDays,
-          frequencyPerWeek: targetFrequency,
-        },
+        cadence: habitCadence,
         stack,
-        logs: logsByHabit[habit.id] || {},
-        frozenLogs: frozenLogsByHabit[habit.id] || {},
+        logs: habitLogs,
+        frozenLogs: habitFrozenLogs,
+        currentStreak,
+        availableShields: shieldStats.available,
+        usedShields: shieldStats.used,
       };
     });
 
