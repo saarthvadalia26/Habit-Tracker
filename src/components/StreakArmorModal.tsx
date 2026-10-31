@@ -456,9 +456,25 @@ export function StreakArmorModal({
                     <p className="text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 max-w-sm">
                       Base 2 shields + 1 earned for every 7 days of active unbroken streak (max 5).
                     </p>
-                    <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                      Current streak: {currentStreak} days • {shieldStats.earned} of {shieldStats.maxCapacity} shields unlocked {shieldStats.earned < shieldStats.maxCapacity ? `(${7 - (currentStreak % 7)} days until next shield)` : '(Max shields reached)'}
-                    </p>
+                    {(() => {
+                      const nextShieldNumber = shieldStats.earned + 1;
+                      const daysNeeded = (nextShieldNumber - 2) * 7;
+                      const daysRemaining = Math.max(1, daysNeeded - currentStreak);
+                      let nextShieldText = '';
+                      if (shieldStats.earned >= shieldStats.maxCapacity) {
+                        nextShieldText = '(Max 5 shields unlocked)';
+                      } else if (currentStreak === 0) {
+                        nextShieldText = '(Reach a 7-day streak to unlock Shield 3)';
+                      } else {
+                        nextShieldText = `(${daysRemaining} more streak ${daysRemaining === 1 ? 'day' : 'days'} to unlock Shield ${nextShieldNumber})`;
+                      }
+
+                      return (
+                        <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                          Current streak: {currentStreak} {currentStreak === 1 ? 'day' : 'days'} • {shieldStats.earned} of {shieldStats.maxCapacity} shields unlocked {nextShieldText}
+                        </p>
+                      );
+                    })()}
                   </div>
 
                   {/* Visual Shields Row */}
@@ -466,25 +482,37 @@ export function StreakArmorModal({
                     {Array.from({ length: shieldStats.maxCapacity }).map((_, i) => {
                       const isReady = i < shieldStats.available;
                       const isUsed = i >= shieldStats.available && i < shieldStats.earned;
+                      const reqDays = i < 2 ? 0 : (i + 1 - 2) * 7;
+                      const milestoneLabel = i < 2 ? 'Base' : `${reqDays}d`;
                       return (
-                        <div
-                          key={i}
-                          title={
-                            isReady
-                              ? `Shield ${i + 1}: Ready to protect`
-                              : isUsed
-                              ? `Shield ${i + 1}: Active on frozen date`
-                              : `Shield ${i + 1}: Locked (Requires ${(i + 1 - 2) * 7}d streak - currently ${currentStreak}d)`
-                          }
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                            isReady
-                              ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-sm animate-pulse'
-                              : isUsed
-                              ? 'bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-[#15130f]/40 dark:text-[#fbf8f1]/40 border border-[#15130f]/15'
-                              : 'bg-transparent border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f]/20 dark:text-[#fbf8f1]/20'
-                          }`}
-                        >
-                          <Shield className="w-5 h-5 fill-current" />
+                        <div key={i} className="flex flex-col items-center gap-1">
+                          <div
+                            title={
+                              isReady
+                                ? `Shield ${i + 1}: Ready to protect`
+                                : isUsed
+                                ? `Shield ${i + 1}: Active on frozen date`
+                                : `Shield ${i + 1}: Locked (Requires ${reqDays}d unbroken streak • currently ${currentStreak}d)`
+                            }
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                              isReady
+                                ? 'bg-amber-500/20 text-amber-500 border border-amber-500/40 shadow-sm animate-pulse'
+                                : isUsed
+                                ? 'bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-[#15130f]/40 dark:text-[#fbf8f1]/40 border border-[#15130f]/15'
+                                : 'bg-transparent border border-dashed border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f]/20 dark:text-[#fbf8f1]/20'
+                            }`}
+                          >
+                            <Shield className="w-5 h-5 fill-current" />
+                          </div>
+                          <span
+                            className={`text-[9.5px] font-semibold tracking-tight ${
+                              isReady || isUsed
+                                ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                : 'text-[#15130f]/40 dark:text-[#fbf8f1]/40'
+                            }`}
+                          >
+                            {milestoneLabel}
+                          </span>
                         </div>
                       );
                     })}
