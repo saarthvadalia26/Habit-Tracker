@@ -21,6 +21,7 @@ export type Database = {
           time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
           stack_trigger_type?: 'none' | 'habit' | 'custom';
           stack_parent_habit_id?: string | null;
+          stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
           created_at: string;
@@ -36,6 +37,7 @@ export type Database = {
           time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
           stack_trigger_type?: 'none' | 'habit' | 'custom';
           stack_parent_habit_id?: string | null;
+          stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
           created_at?: string;
@@ -51,6 +53,7 @@ export type Database = {
           time_of_day?: 'morning' | 'afternoon' | 'evening' | 'anytime';
           stack_trigger_type?: 'none' | 'habit' | 'custom';
           stack_parent_habit_id?: string | null;
+          stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
           created_at?: string;
@@ -207,7 +210,9 @@ export interface HabitStackConfig {
   timeOfDay: TimeOfDay;
   triggerType: StackTriggerType;
   parentHabitId?: string | null;
+  parentHabitIds?: string[];
   parentHabitTitle?: string;
+  parentHabitTitles?: string[];
   customCue?: string;
   order: number;
 }
@@ -220,6 +225,7 @@ export type Habit = Database['public']['Tables']['habits']['Row'] & {
   time_of_day?: TimeOfDay;
   stack_trigger_type?: StackTriggerType;
   stack_parent_habit_id?: string | null;
+  stack_parent_habit_ids?: string[];
   stack_custom_cue?: string;
   stack_order?: number;
 };
@@ -231,6 +237,7 @@ export type HabitInsert = Database['public']['Tables']['habits']['Insert'] & {
   time_of_day?: TimeOfDay;
   stack_trigger_type?: StackTriggerType;
   stack_parent_habit_id?: string | null;
+  stack_parent_habit_ids?: string[];
   stack_custom_cue?: string;
   stack_order?: number;
 };

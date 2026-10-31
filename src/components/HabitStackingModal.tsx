@@ -23,6 +23,7 @@ import {
   DAYFLOW_ORDER,
   getHabitTimeOfDay,
   getHabitStackTriggerText,
+  formatParentHabitTitles,
 } from '@/lib/dayflowUtils';
 import { toast } from 'sonner';
 
@@ -37,7 +38,7 @@ interface HabitStackingModalProps {
     habitId: string,
     timeOfDay: TimeOfDay,
     triggerType: StackTriggerType,
-    parentHabitId?: string | null,
+    parentHabitIds?: string[] | string | null,
     customCue?: string
   ) => Promise<boolean>;
 }
@@ -59,7 +60,7 @@ export function HabitStackingModal({
 
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('anytime');
   const [triggerType, setTriggerType] = useState<StackTriggerType>('none');
-  const [parentHabitId, setParentHabitId] = useState<string>('');
+  const [parentHabitIds, setParentHabitIds] = useState<string[]>([]);
   const [customCue, setCustomCue] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [showFormulaGuide, setShowFormulaGuide] = useState(false);
@@ -94,9 +95,15 @@ export function HabitStackingModal({
     if (selectedHabit) {
       setTimeOfDay(getHabitTimeOfDay(selectedHabit));
       setTriggerType(selectedHabit.stack_trigger_type || selectedHabit.stack?.triggerType || 'none');
-      setParentHabitId(
-        selectedHabit.stack_parent_habit_id || selectedHabit.stack?.parentHabitId || ''
-      );
+      const initialIds: string[] =
+        selectedHabit.stack_parent_habit_ids && selectedHabit.stack_parent_habit_ids.length > 0
+          ? selectedHabit.stack_parent_habit_ids
+          : selectedHabit.stack?.parentHabitIds && selectedHabit.stack.parentHabitIds.length > 0
+          ? selectedHabit.stack.parentHabitIds
+          : (selectedHabit.stack_parent_habit_id || selectedHabit.stack?.parentHabitId)
+          ? [selectedHabit.stack_parent_habit_id || selectedHabit.stack?.parentHabitId!]
+          : [];
+      setParentHabitIds(initialIds);
       setCustomCue(
         (selectedHabit.stack_custom_cue || selectedHabit.stack?.customCue || '').trim()
       );
@@ -108,7 +115,13 @@ export function HabitStackingModal({
   // Available candidate habits for chaining (cannot chain to self)
   const candidateParents = habits.filter((h) => h.id !== selectedHabit?.id);
 
-  const parentHabit = candidateParents.find((h) => h.id === parentHabitId);
+  const handleToggleParentHabit = (id: string) => {
+    setParentHabitIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
+
+  const parentHabits = candidateParents.filter((h) => parentHabitIds.includes(h.id));
 
   const handleSave = async () => {
     if (!selectedHabit) return;
@@ -120,8 +133,8 @@ export function HabitStackingModal({
       return;
     }
 
-    if (triggerType === 'habit' && !parentHabitId) {
-      toast.error('Select an anchor habit to chain this routine to.');
+    if (triggerType === 'habit' && parentHabitIds.length === 0) {
+      toast.error('Select at least one anchor habit to chain this routine to.');
       return;
     }
 
@@ -136,7 +149,7 @@ export function HabitStackingModal({
         selectedHabit.id,
         timeOfDay,
         triggerType,
-        triggerType === 'habit' ? parentHabitId : null,
+        triggerType === 'habit' ? parentHabitIds : null,
         triggerType === 'custom' ? customCue.trim() : ''
       );
 
@@ -411,16 +424,23 @@ export function HabitStackingModal({
               })}
             </div>
 
-            {/* Sub-config: Chain to an existing habit */}
+            {/* Sub-config: Chain to existing habit(s) */}
             {triggerType === 'habit' && (
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-1.5 mt-1"
               >
-                <label className="text-[10.5px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60">
-                  Select Anchor Habit:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10.5px] font-semibold text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    Select Anchor Habit(s):
+                  </label>
+                  {parentHabitIds.length > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f]">
+                      {parentHabitIds.length} selected
+                    </span>
+                  )}
+                </div>
                 {candidateParents.length === 0 ? (
                   <p className="text-xs text-[#15130f]/50 dark:text-[#fbf8f1]/50 italic p-2 bg-[#f2ecdf] dark:bg-[#11100d] rounded-xl">
                     Create at least two habits to chain them together.
@@ -428,23 +448,26 @@ export function HabitStackingModal({
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto p-0.5 scrollbar-thin">
                     {candidateParents.map((parent) => {
-                      const isSelected = parent.id === parentHabitId;
+                      const isSelected = parentHabitIds.includes(parent.id);
                       return (
                         <button
                           key={parent.id}
                           type="button"
-                          onClick={() => setParentHabitId(parent.id)}
+                          onClick={() => handleToggleParentHabit(parent.id)}
                           className={`flex items-center gap-2 p-2 rounded-xl border text-left text-xs transition-all cursor-pointer ${
                             isSelected
-                              ? 'border-[#ff5a1f] bg-[#ff5a1f]/10 text-[#ff5a1f] font-bold'
-                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 hover:border-[#ff5a1f]/40'
+                              ? 'border-[#ff5a1f] bg-[#ff5a1f]/10 text-[#ff5a1f] font-bold shadow-xs'
+                              : 'border-[#15130f]/10 dark:border-[#fbf8f1]/10 bg-[#f2ecdf]/60 dark:bg-[#11100d]/60 hover:border-[#ff5a1f]/40 text-[#15130f] dark:text-[#fbf8f1]'
                           }`}
                         >
                           <div
                             className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: parent.color_theme || '#ff5a1f' }}
                           />
-                          <span className="truncate">{parent.title}</span>
+                          <span className="truncate flex-1">{parent.title}</span>
+                          {isSelected && (
+                            <Check className="w-3.5 h-3.5 stroke-[3] text-[#ff5a1f] shrink-0" />
+                          )}
                         </button>
                       );
                     })}
@@ -484,10 +507,10 @@ export function HabitStackingModal({
                   {DAYFLOW_META[timeOfDay].label}
                 </p>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] truncate">
-                  {triggerType === 'habit' && parentHabit ? (
+                  {triggerType === 'habit' && parentHabits.length > 0 ? (
                     <>
                       <span className="text-[#15130f]/60 dark:text-[#fbf8f1]/60 truncate">
-                        After {parentHabit.title}
+                        After {formatParentHabitTitles(parentHabits.map((p) => p.title))}
                       </span>
                       <ArrowRight className="w-3 h-3 text-[#ff5a1f] shrink-0" />
                     </>

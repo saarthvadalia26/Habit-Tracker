@@ -308,25 +308,38 @@ export function HabitDashboard({
       habitId: string,
       tod: TimeOfDay,
       trigType: StackTriggerType,
-      parentId?: string | null,
+      parentId?: string[] | string | null,
       cue?: string
     ): Promise<boolean> => {
+      const parentIdsArray = Array.isArray(parentId)
+        ? parentId
+        : parentId
+        ? [parentId]
+        : [];
+      const primaryParentId = parentIdsArray[0] || null;
+
       // Optimistic client update
       setHabits((prev) =>
         prev.map((h) => {
           if (h.id !== habitId) return h;
-          const parent = prev.find((p) => p.id === parentId);
+          const parentHabits = prev.filter((p) => parentIdsArray.includes(p.id));
+          const parentTitles = parentHabits.map((p) => p.title);
+          const parent = parentHabits[0];
+
           return {
             ...h,
             time_of_day: tod,
             stack_trigger_type: trigType,
-            stack_parent_habit_id: parentId ?? null,
+            stack_parent_habit_id: primaryParentId,
+            stack_parent_habit_ids: parentIdsArray,
             stack_custom_cue: cue ?? '',
             stack: {
               timeOfDay: tod,
               triggerType: trigType,
-              parentHabitId: parentId ?? null,
+              parentHabitId: primaryParentId,
+              parentHabitIds: parentIdsArray,
               parentHabitTitle: parent?.title,
+              parentHabitTitles: parentTitles,
               customCue: cue ?? '',
               order: h.stack_order ?? 0,
             },
@@ -343,7 +356,7 @@ export function HabitDashboard({
           habitId,
           tod,
           trigType,
-          parentId,
+          parentIdsArray,
           cue
         );
         if (res.error) {

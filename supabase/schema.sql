@@ -433,3 +433,9 @@ ALTER TABLE public.habits
 CREATE INDEX IF NOT EXISTS idx_habits_time_of_day ON public.habits(user_id, time_of_day);
 CREATE INDEX IF NOT EXISTS idx_habits_stack_parent ON public.habits(stack_parent_habit_id);
 
+-- Drop 4.1: Multi-anchor habit stacking support
+ALTER TABLE public.habits 
+    ADD COLUMN IF NOT EXISTS stack_parent_habit_ids UUID[] NOT NULL DEFAULT '{}';
+
+CREATE INDEX IF NOT EXISTS idx_habits_stack_parent_ids ON public.habits USING GIN (stack_parent_habit_ids);
+

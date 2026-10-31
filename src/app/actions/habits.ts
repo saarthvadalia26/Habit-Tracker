@@ -114,12 +114,23 @@ export async function getHabitsWithLogsAction(
 
       const tod = (habit.time_of_day as TimeOfDay) || 'anytime';
       const triggerType = (habit.stack_trigger_type as StackTriggerType) || 'none';
-      const parentHabit = habits.find((h) => h.id === habit.stack_parent_habit_id);
+      const parentIds: string[] =
+        Array.isArray(habit.stack_parent_habit_ids) && habit.stack_parent_habit_ids.length > 0
+          ? habit.stack_parent_habit_ids
+          : habit.stack_parent_habit_id
+          ? [habit.stack_parent_habit_id]
+          : [];
+      const parentHabits = habits.filter((h) => parentIds.includes(h.id));
+      const parentHabit = parentHabits[0];
+      const parentTitles = parentHabits.map((p) => p.title);
+
       const stack: HabitStackConfig = {
         timeOfDay: tod,
         triggerType,
         parentHabitId: habit.stack_parent_habit_id ?? null,
+        parentHabitIds: parentIds,
         parentHabitTitle: parentHabit?.title,
+        parentHabitTitles: parentTitles,
         customCue: habit.stack_custom_cue ?? '',
         order: habit.stack_order ?? 0,
       };
@@ -132,6 +143,7 @@ export async function getHabitsWithLogsAction(
         time_of_day: tod,
         stack_trigger_type: triggerType,
         stack_parent_habit_id: habit.stack_parent_habit_id ?? null,
+        stack_parent_habit_ids: parentIds,
         stack_custom_cue: habit.stack_custom_cue ?? '',
         stack_order: habit.stack_order ?? 0,
         cadence: {
@@ -207,6 +219,7 @@ export async function createHabitAction(
       time_of_day: validTimeOfDay,
       stack_trigger_type: validTriggerType,
       stack_parent_habit_id: validParentId,
+      stack_parent_habit_ids: validParentId ? [validParentId] : [],
       stack_custom_cue: validCustomCue,
       stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
     };
@@ -338,7 +351,7 @@ export async function updateHabitStackingAction(
   habitId: string,
   timeOfDay: string,
   stackTriggerType: string = 'none',
-  stackParentHabitId?: string | null,
+  stackParentHabitIds?: string[] | string | null,
   stackCustomCue?: string,
   stackOrder: number = 0
 ): Promise<ActionResponse<{ habitId: string; timeOfDay: string; triggerType: string }>> {
@@ -352,13 +365,22 @@ export async function updateHabitStackingAction(
     }
 
     const validTriggerType = isValidStackTriggerType(stackTriggerType) ? stackTriggerType : 'none';
-    let validParentId: string | null = null;
+    const rawParentIds: string[] = Array.isArray(stackParentHabitIds)
+      ? stackParentHabitIds
+      : stackParentHabitIds
+        ? [stackParentHabitIds]
+        : [];
+
+    let validParentIds: string[] = [];
 
     if (validTriggerType === 'habit') {
-      if (!stackParentHabitId || !isUuid(stackParentHabitId) || stackParentHabitId === habitId) {
-        return { data: null, error: 'Invalid parent habit selected for chaining.' };
+      const filtered = rawParentIds.filter(
+        (id) => typeof id === 'string' && isUuid(id) && id !== habitId
+      );
+      validParentIds = Array.from(new Set(filtered));
+      if (validParentIds.length === 0) {
+        return { data: null, error: 'At least one valid parent habit must be selected for chaining.' };
       }
-      validParentId = stackParentHabitId;
     }
 
     const validCustomCue = cleanStackCue(stackCustomCue, 80);
@@ -385,26 +407,29 @@ export async function updateHabitStackingAction(
       return { data: null, error: 'Habit not found or unauthorized.' };
     }
 
-    // If parent habit specified, verify it also belongs to this user
-    if (validParentId) {
-      const { data: parentHabit } = await supabase
+    // If parent habits specified, verify all belong to this user
+    if (validParentIds.length > 0) {
+      const { data: parentHabits } = await supabase
         .from('habits')
         .select('id')
-        .eq('id', validParentId)
-        .eq('user_id', user.id)
-        .single();
+        .in('id', validParentIds)
+        .eq('user_id', user.id);
 
-      if (!parentHabit) {
-        return { data: null, error: 'Selected parent habit does not belong to your account.' };
+      if (!parentHabits || parentHabits.length !== validParentIds.length) {
+        return { data: null, error: 'One or more selected parent habits do not belong to your account.' };
       }
     }
 
+    const primaryParentId = validParentIds[0] || null;
+
+    // First attempt to update with stack_parent_habit_ids array and primary stack_parent_habit_id
     const { error } = await supabase
       .from('habits')
       .update({
         time_of_day: timeOfDay,
         stack_trigger_type: validTriggerType,
-        stack_parent_habit_id: validParentId,
+        stack_parent_habit_id: primaryParentId,
+        stack_parent_habit_ids: validParentIds,
         stack_custom_cue: validCustomCue,
         stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
       })
@@ -412,7 +437,22 @@ export async function updateHabitStackingAction(
       .eq('user_id', user.id);
 
     if (error) {
-      return { data: null, error: 'Unable to update Dayflow stacking settings.' };
+      // Graceful fallback if stack_parent_habit_ids column has not been added to remote DB yet
+      const fallbackResult = await supabase
+        .from('habits')
+        .update({
+          time_of_day: timeOfDay,
+          stack_trigger_type: validTriggerType,
+          stack_parent_habit_id: primaryParentId,
+          stack_custom_cue: validCustomCue,
+          stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
+        })
+        .eq('id', habitId)
+        .eq('user_id', user.id);
+
+      if (fallbackResult.error) {
+        return { data: null, error: 'Unable to update Dayflow stacking settings.' };
+      }
     }
 
     revalidatePath('/');

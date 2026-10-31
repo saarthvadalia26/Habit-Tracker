@@ -86,6 +86,13 @@ export function getHabitTimeOfDay(habit: HabitWithLogs): TimeOfDay {
   return 'anytime';
 }
 
+export function formatParentHabitTitles(titles: string[]): string {
+  if (titles.length === 0) return '';
+  if (titles.length === 1) return titles[0];
+  if (titles.length === 2) return `${titles[0]} & ${titles[1]}`;
+  return `${titles.slice(0, -1).join(', ')} & ${titles[titles.length - 1]}`;
+}
+
 /**
  * Formats a clean stacking trigger descriptor (e.g. "↳ After Morning Coffee" or "↳ After Meditation")
  */
@@ -106,15 +113,28 @@ export function getHabitStackTriggerText(
   }
 
   if (triggerType === 'habit') {
-    const parentId = habit.stack_parent_habit_id || habit.stack?.parentHabitId;
-    if (parentId) {
-      const parent = allHabits.find((h) => h.id === parentId);
-      const parentTitle = parent?.title || habit.stack?.parentHabitTitle || 'Routine';
-      return {
-        hasTrigger: true,
-        text: `After ${parentTitle}`,
-        parentTitle,
-      };
+    const parentIds: string[] =
+      habit.stack_parent_habit_ids && habit.stack_parent_habit_ids.length > 0
+        ? habit.stack_parent_habit_ids
+        : habit.stack?.parentHabitIds && habit.stack.parentHabitIds.length > 0
+        ? habit.stack.parentHabitIds
+        : (habit.stack_parent_habit_id || habit.stack?.parentHabitId)
+        ? [habit.stack_parent_habit_id || habit.stack?.parentHabitId!]
+        : [];
+
+    if (parentIds.length > 0) {
+      const parentTitles = parentIds
+        .map((pid) => allHabits.find((h) => h.id === pid)?.title)
+        .filter(Boolean) as string[];
+
+      if (parentTitles.length > 0) {
+        const combinedTitle = formatParentHabitTitles(parentTitles);
+        return {
+          hasTrigger: true,
+          text: `After ${combinedTitle}`,
+          parentTitle: combinedTitle,
+        };
+      }
     }
   }
 
@@ -148,17 +168,26 @@ export function groupAndOrderHabitsByDayflow(
     const childrenByParentId: Record<string, HabitWithLogs[]> = {};
 
     bucket.forEach((h) => {
+      const parentIds: string[] =
+        h.stack_parent_habit_ids && h.stack_parent_habit_ids.length > 0
+          ? h.stack_parent_habit_ids
+          : h.stack?.parentHabitIds && h.stack.parentHabitIds.length > 0
+          ? h.stack.parentHabitIds
+          : (h.stack_parent_habit_id || h.stack?.parentHabitId)
+          ? [h.stack_parent_habit_id || h.stack?.parentHabitId!]
+          : [];
+
       const isChild =
         (h.stack_trigger_type === 'habit' || h.stack?.triggerType === 'habit') &&
-        Boolean(h.stack_parent_habit_id || h.stack?.parentHabitId);
+        parentIds.length > 0;
 
-      const parentId = h.stack_parent_habit_id || h.stack?.parentHabitId;
+      const primaryParentId = parentIds.find((pid) => bucket.some((other) => other.id === pid));
 
-      if (isChild && parentId && bucket.some((other) => other.id === parentId)) {
-        if (!childrenByParentId[parentId]) {
-          childrenByParentId[parentId] = [];
+      if (isChild && primaryParentId) {
+        if (!childrenByParentId[primaryParentId]) {
+          childrenByParentId[primaryParentId] = [];
         }
-        childrenByParentId[parentId].push(h);
+        childrenByParentId[primaryParentId].push(h);
       } else {
         topLevel.push(h);
       }
