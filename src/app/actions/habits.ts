@@ -836,7 +836,7 @@ export async function deleteHabitAction(
 ): Promise<ActionResponse<{ id: string }>> {
   try {
     if (!isUuid(habitId)) {
-      return { data: null, error: 'Invalid habit.' };
+      return { data: null, error: 'Invalid habit ID.' };
     }
 
     const supabase = await createClient();
@@ -852,19 +852,74 @@ export async function deleteHabitAction(
       };
     }
 
-    const { error } = await supabase
+    // 1. Unlink any other habits where this habit is an anchor/parent (prevents Postgres FK 23503 violation)
+    try {
+      await supabase
+        .from('habits')
+        .update({
+          stack_parent_habit_id: null,
+          stack_trigger_type: 'none',
+        })
+        .eq('stack_parent_habit_id', habitId)
+        .eq('user_id', user.id);
+    } catch (e) {
+      console.warn('Could not unlink stack_parent_habit_id before delete:', e);
+    }
+
+    // 2. Remove habitId from any challenge habit_ids array
+    try {
+      const { data: challenges } = await supabase
+        .from('challenges')
+        .select('id, habit_ids')
+        .eq('user_id', user.id);
+
+      if (challenges && challenges.length > 0) {
+        for (const c of challenges) {
+          if (Array.isArray(c.habit_ids) && c.habit_ids.includes(habitId)) {
+            const nextIds = c.habit_ids.filter((id) => id !== habitId);
+            await supabase
+              .from('challenges')
+              .update({ habit_ids: nextIds })
+              .eq('id', c.id)
+              .eq('user_id', user.id);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not clean challenge habit_ids before delete:', e);
+    }
+
+    // 3. Proactively clean up habit logs and streak freezes (in case cascade is missing on remote DB)
+    try {
+      await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('habit_id', habitId);
+
+      await supabase
+        .from('streak_freezes')
+        .delete()
+        .eq('habit_id', habitId);
+    } catch (e) {
+      console.warn('Could not clean habit logs or streak freezes before delete:', e);
+    }
+
+    // 4. Delete the habit record
+    const { error: deleteError } = await supabase
       .from('habits')
       .delete()
       .eq('id', habitId)
       .eq('user_id', user.id);
 
-    if (error) {
-      return { data: null, error: 'Unable to delete this habit.' };
+    if (deleteError) {
+      console.error('[deleteHabitAction error]', deleteError);
+      return { data: null, error: deleteError.message || 'Unable to delete this habit.' };
     }
 
     revalidatePath('/');
     return { data: { id: habitId }, error: null };
-  } catch {
-    return { data: null, error: 'Unable to delete this habit.' };
+  } catch (err) {
+    console.error('[deleteHabitAction exception]', err);
+    return { data: null, error: err instanceof Error ? err.message : 'Unable to delete this habit.' };
   }
 }

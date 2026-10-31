@@ -1111,20 +1111,17 @@ export function HabitDashboard({
     }
   };
 
-  // Delete Habit (Guest Guarded)
+  // Delete Habit
   const handleDeleteHabit = async (habitId: string) => {
-    if (isGuestMode) {
-      toast.info('Sign in required', {
-        description: 'Guest users cannot modify habits. Please sign in or create an account.',
-      });
-      setIsAuthModalOpen(true);
-      return;
-    }
-
     const habit = habits.find((h) => h.id === habitId);
     setHabits((prev) => prev.filter((h) => h.id !== habitId));
     setOpenMenuHabitId(null);
     setDeletingHabitId(null);
+
+    if (isGuestMode) {
+      toast.info('Habit removed', { description: habit?.title });
+      return;
+    }
 
     try {
       const res = await deleteHabitAction(habitId);
