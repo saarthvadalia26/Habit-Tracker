@@ -84,6 +84,7 @@ import {
   toggleStreakFreezeAction,
   updateHabitStackingAction,
   saveHabitChainAction,
+  logNumericHabitAction,
 } from '@/app/actions/habits';
 import {
   createChallengeAction,
@@ -111,9 +112,12 @@ import { UpcomingUpdateModal } from '@/components/UpcomingUpdateModal';
 import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
 import { StreakArmorAnnouncementToast } from '@/components/StreakArmorAnnouncementToast';
 import { DayflowAnnouncementToast } from '@/components/DayflowAnnouncementToast';
-import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked } from '@/config/releases';
+import { NumericGoalsAnnouncementToast } from '@/components/NumericGoalsAnnouncementToast';
+import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked, isDrop5Unlocked } from '@/config/releases';
+import { UNIT_TEMPLATES } from '@/lib/goalTemplates';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
+import { DeleteHabitModal } from '@/components/DeleteHabitModal';
 import { useTheme } from '@/context/ThemeContext';
 import { toast, Toaster } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -445,7 +449,7 @@ export function HabitDashboard({
     setMonthlyNotes((prev) => ({ ...prev, [`${y}_${m}`]: text }));
   }, []);
 
-  // Habit creation form state
+  // Habit creation form state (Drop 5: numeric goals)
   const [newTitle, setNewTitle] = useState('');
   const [newSubtitle, setNewSubtitle] = useState('');
   const [newTargetTime, setNewTargetTime] = useState('');
@@ -454,9 +458,14 @@ export function HabitDashboard({
   const [newTriggerType, setNewTriggerType] = useState<StackTriggerType>('none');
   const [newParentHabitId, setNewParentHabitId] = useState<string>('');
   const [newCustomCue, setNewCustomCue] = useState<string>('');
+  const [newGoalType, setNewGoalType] = useState<'binary' | 'numeric' | 'duration'>('binary');
+  const [newTargetUnit, setNewTargetUnit] = useState<string>('');
+  const [newTargetValue, setNewTargetValue] = useState<number>(0);
   const [isCreating, setIsCreating] = useState(false);
   const [openMenuHabitId, setOpenMenuHabitId] = useState<string | null>(null);
   const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null);
+  const [habitPendingDelete, setHabitPendingDelete] = useState<HabitWithLogs | null>(null);
+  const [isDeletingHabit, setIsDeletingHabit] = useState(false);
 
   // Calendar matrix view state
   const currentDate = new Date();
@@ -466,12 +475,14 @@ export function HabitDashboard({
   const [heatmapYear, setHeatmapYear] = useState<number>(currentDate.getFullYear());
   const [drop1Unlocked, setDrop1Unlocked] = useState(false);
   const [drop2Unlocked, setDrop2Unlocked] = useState(false);
+  const [drop5Unlocked, setDrop5Unlocked] = useState(false);
 
   useEffect(() => {
     setDrop1Unlocked(isDrop1Unlocked());
     setDrop2Unlocked(isDrop2Unlocked());
     setDrop3Unlocked(isDrop3Unlocked());
     setDrop4Unlocked(isDrop4Unlocked());
+    setDrop5Unlocked(isDrop5Unlocked());
   }, []);
 
   // Permanently lock desktop sidebar to viewport: prevent wheel/touch scroll propagation
@@ -1057,6 +1068,11 @@ export function HabitDashboard({
       const parentId = newTriggerType === 'habit' && newParentHabitId ? newParentHabitId : null;
       const customCue = newTriggerType === 'custom' ? newCustomCue.trim() : '';
 
+      // Drop 5: only pass goal params when numeric/duration is selected
+      const goalType = drop5Unlocked && newGoalType !== 'binary' ? newGoalType : 'binary';
+      const goalTargetValue = goalType !== 'binary' && newTargetValue > 0 ? newTargetValue : undefined;
+      const goalTargetUnit = goalType !== 'binary' && newTargetUnit.trim() ? newTargetUnit.trim() : undefined;
+
       const res = await createHabitAction(
         compoundTitle,
         '#ff5a1f',
@@ -1066,7 +1082,11 @@ export function HabitDashboard({
         newTimeOfDay,
         newTriggerType,
         parentId,
-        customCue
+        customCue,
+        0,
+        goalType,
+        goalTargetValue,
+        goalTargetUnit
       );
       if (res.error) {
         toast.error('Could not create habit', { description: res.error });
@@ -1082,6 +1102,9 @@ export function HabitDashboard({
           stack_trigger_type: newTriggerType,
           stack_parent_habit_id: parentId,
           stack_custom_cue: customCue,
+          goal_type: goalType,
+          target_value: goalTargetValue,
+          target_unit: goalTargetUnit,
           stack: {
             timeOfDay: newTimeOfDay,
             triggerType: newTriggerType,
@@ -1091,6 +1114,7 @@ export function HabitDashboard({
             order: 0,
           },
           logs: { [todayStr]: false },
+          numericLogs: {},
           currentStreak: 0,
         };
         setHabits((prev) => [created, ...prev]);
@@ -1102,6 +1126,9 @@ export function HabitDashboard({
         setNewTriggerType('none');
         setNewParentHabitId('');
         setNewCustomCue('');
+        setNewGoalType('binary');
+        setNewTargetValue(0);
+        setNewTargetUnit('');
         toast.success('Habit created!', { description: `${titleVal} added to your tracker.` });
       }
     } catch {
@@ -1111,9 +1138,58 @@ export function HabitDashboard({
     }
   };
 
-  // Delete Habit
-  const handleDeleteHabit = async (habitId: string) => {
-    const habit = habits.find((h) => h.id === habitId);
+  // Drop 5: Log numeric value for a habit on a specific date
+  const handleLogNumericHabit = useCallback(
+    async (habitId: string, newValue: number) => {
+      if (isGuestMode) {
+        // Optimistic update only for guest mode
+        setHabits((prev) =>
+          prev.map((h) =>
+            h.id === habitId
+              ? { ...h, numericLogs: { ...(h.numericLogs ?? {}), [todayStr]: newValue } }
+              : h
+          )
+        );
+        return;
+      }
+
+      // Optimistic update
+      setHabits((prev) =>
+        prev.map((h) =>
+          h.id === habitId
+            ? { ...h, numericLogs: { ...(h.numericLogs ?? {}), [todayStr]: newValue } }
+            : h
+        )
+      );
+
+      try {
+        const res = await logNumericHabitAction(habitId, todayStr, newValue);
+        if (res?.error) {
+          toast.error(res.error);
+          // Revert on error
+          setHabits((prev) =>
+            prev.map((h) => {
+              if (h.id !== habitId) return h;
+              const reverted = { ...(h.numericLogs ?? {}) };
+              delete reverted[todayStr];
+              return { ...h, numericLogs: reverted };
+            })
+          );
+        }
+      } catch {
+        toast.error('Sync error', { description: 'Could not sync numeric value to server.' });
+      }
+    },
+    [isGuestMode, todayStr]
+  );
+
+  // Delete Habit: Completely rewired with dedicated confirmation modal & cascade resilience
+  const handleConfirmDeleteHabit = async () => {
+    if (!habitPendingDelete) return;
+    const habitId = habitPendingDelete.id;
+    const habit = habitPendingDelete;
+    setIsDeletingHabit(true);
+
     // Optimistically remove habit AND unlink any local child habits that referenced it
     setHabits((prev) =>
       prev
@@ -1131,8 +1207,8 @@ export function HabitDashboard({
             (id) => id !== habitId
           );
           const nextParentId = remainingParentIds[0] || null;
-
           const currentTod = (h.time_of_day as TimeOfDay) || h.stack?.timeOfDay || 'anytime';
+
           return {
             ...h,
             time_of_day: currentTod,
@@ -1152,11 +1228,11 @@ export function HabitDashboard({
           };
         })
     );
-    setOpenMenuHabitId(null);
-    setDeletingHabitId(null);
 
     if (isGuestMode) {
-      toast.info('Habit removed', { description: habit?.title });
+      setIsDeletingHabit(false);
+      setHabitPendingDelete(null);
+      toast.info('Habit deleted', { description: habit.title });
       return;
     }
 
@@ -1164,13 +1240,25 @@ export function HabitDashboard({
       const res = await deleteHabitAction(habitId);
       if (res?.error) {
         toast.error(res.error, { duration: 6000 });
-        if (habit) setHabits((prev) => [habit, ...prev]);
-        return;
+        setHabits((prev) => [habit, ...prev]);
+      } else {
+        toast.success('Habit deleted', { description: habit.title });
+        setHabitPendingDelete(null);
       }
-      toast.info('Habit removed', { description: habit?.title });
-    } catch {
+    } catch (err) {
+      console.error('[handleConfirmDeleteHabit error]', err);
       toast.error('Failed to delete habit');
-      if (habit) setHabits((prev) => [habit, ...prev]);
+      setHabits((prev) => [habit, ...prev]);
+    } finally {
+      setIsDeletingHabit(false);
+    }
+  };
+
+  const handleDeleteHabit = (habitId: string) => {
+    const h = habits.find((item) => item.id === habitId);
+    if (h) {
+      setOpenMenuHabitId(null);
+      setHabitPendingDelete(h);
     }
   };
 
@@ -1566,41 +1654,7 @@ export function HabitDashboard({
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-full mt-2 w-52 p-1.5 rounded-2xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 shadow-2xl z-50 text-[#15130f] dark:text-[#fbf8f1]"
                 >
-                  {deletingHabitId === habit.id ? (
-                    <div className="p-2 space-y-2 select-none">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                        <span>Delete habit?</span>
-                      </div>
-                      <p className="text-[11.5px] text-[#15130f]/60 dark:text-[#fbf8f1]/60 leading-tight">
-                        Permanently remove &quot;{displayTitle}&quot; and all streak history.
-                      </p>
-                      <div className="flex items-center gap-1.5 pt-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingHabitId(null);
-                          }}
-                          className="flex-1 py-1 px-2 rounded-lg text-xs font-medium border border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5 transition-colors cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteHabit(habit.id);
-                            setDeletingHabitId(null);
-                          }}
-                          className="flex-1 py-1 px-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors cursor-pointer shadow-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-0.5">
+                  <div className="space-y-0.5">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1697,7 +1751,8 @@ export function HabitDashboard({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeletingHabitId(habit.id);
+                          setOpenMenuHabitId(null);
+                          setHabitPendingDelete(habit);
                         }}
                         className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                       >
@@ -1705,7 +1760,6 @@ export function HabitDashboard({
                         <span>Delete habit</span>
                       </button>
                     </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1738,6 +1792,11 @@ export function HabitDashboard({
       {/* Drop 4 Announcement Toast (First visit after Oct 31) */}
       <DayflowAnnouncementToast
         onOpenStudio={(showGuide) => handleOpenStackingModal(undefined, showGuide ?? true)}
+      />
+
+      {/* Drop 5 Announcement Toast (First visit after Nov 7) */}
+      <NumericGoalsAnnouncementToast
+        onOpenRoadmap={() => setIsRoadmapOpen(true)}
       />
 
       {/* ============================================================== */}
@@ -3482,6 +3541,114 @@ export function HabitDashboard({
                   </div>
                 )}
 
+                {/* Drop 5: Numeric Goal Type Selector */}
+                {drop5Unlocked && (
+                  <div className="flex flex-col gap-2.5 pt-1 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                        Goal Type
+                      </label>
+                      <span className="text-[10px] text-violet-500 font-semibold">Drop 5 🎯</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(
+                        [
+                          { id: 'binary', label: 'Done / Not done', emoji: '✓' },
+                          { id: 'numeric', label: 'Count / Volume', emoji: '#' },
+                          { id: 'duration', label: 'Time Duration', emoji: '⏱' },
+                        ] as const
+                      ).map((gt) => (
+                        <button
+                          key={gt.id}
+                          type="button"
+                          onClick={() => {
+                            setNewGoalType(gt.id);
+                            if (gt.id === 'binary') {
+                              setNewTargetValue(0);
+                              setNewTargetUnit('');
+                            }
+                          }}
+                          className={`py-2 px-1 rounded-xl text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
+                            newGoalType === gt.id
+                              ? 'bg-violet-600 text-white border-transparent shadow-sm'
+                              : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-violet-400/40'
+                          }`}
+                        >
+                          <span className="text-base leading-none">{gt.emoji}</span>
+                          <span className="text-[10px] leading-tight text-center">{gt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Numeric/Duration target config */}
+                    {newGoalType !== 'binary' && (
+                      <div className="flex gap-2">
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                            Daily target
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder={newGoalType === 'duration' ? 'e.g. 30' : 'e.g. 3000'}
+                            value={newTargetValue || ''}
+                            onChange={(e) => setNewTargetValue(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-violet-500 transition-colors"
+                          />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-[#15130f]/50 dark:text-[#fbf8f1]/50">
+                            Unit
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder={newGoalType === 'duration' ? 'mins' : 'ml, pages…'}
+                              value={newTargetUnit}
+                              onChange={(e) => setNewTargetUnit(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-violet-500 transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Unit quick-picks from templates */}
+                    {newGoalType !== 'binary' && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {UNIT_TEMPLATES.filter(
+                          (t) =>
+                            newGoalType === 'duration'
+                              ? t.unit === 'mins' || t.unit === 'hours'
+                              : t.unit !== 'mins' && t.unit !== 'hours'
+                        )
+                          .slice(0, 6)
+                          .map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => {
+                                setNewTargetValue(t.defaultTarget);
+                                setNewTargetUnit(t.unit);
+                              }}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
+                                newTargetUnit === t.unit && newTargetValue === t.defaultTarget
+                                  ? 'bg-violet-600 text-white border-transparent'
+                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:border-violet-400/40'
+                              }`}
+                            >
+                              <span>{t.icon}</span>
+                              <span>
+                                {t.defaultTarget} {t.unit}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={isCreating}
@@ -3597,6 +3764,17 @@ export function HabitDashboard({
           isSigningOut={isSigningOut}
         />
       )}
+
+      {/* Delete Habit Confirmation Modal */}
+      <DeleteHabitModal
+        isOpen={Boolean(habitPendingDelete)}
+        habit={habitPendingDelete}
+        isDeleting={isDeletingHabit}
+        onClose={() => {
+          if (!isDeletingHabit) setHabitPendingDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteHabit}
+      />
 
       {/* Delete Account Modal */}
       {isDeleteModalOpen && (

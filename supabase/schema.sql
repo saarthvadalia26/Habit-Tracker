@@ -486,3 +486,80 @@ ALTER TABLE public.habits
 
 CREATE INDEX IF NOT EXISTS idx_habits_stack_parent_ids ON public.habits USING GIN (stack_parent_habit_ids);
 
+
+
+-- ==============================================================================
+-- 15. Safe Atomic Habit Deletion RPC Function
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.delete_habit_safely(habit_to_delete UUID)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    curr_user UUID;
+BEGIN
+    curr_user := auth.uid();
+    IF curr_user IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    -- Verify habit ownership
+    IF NOT EXISTS (
+        SELECT 1 FROM public.habits
+        WHERE id = habit_to_delete AND user_id = curr_user
+    ) THEN
+        RAISE EXCEPTION 'Habit not found or unauthorized';
+    END IF;
+
+    -- 1. Unlink any habits pointing to this habit as their parent
+    UPDATE public.habits
+    SET stack_parent_habit_id = NULL
+    WHERE stack_parent_habit_id = habit_to_delete;
+
+    -- 2. Clean up multi-anchor array references
+    BEGIN
+        UPDATE public.habits
+        SET stack_parent_habit_ids = array_remove(stack_parent_habit_ids, habit_to_delete)
+        WHERE habit_to_delete = ANY(stack_parent_habit_ids);
+    EXCEPTION WHEN undefined_column THEN
+        NULL;
+    END;
+
+    -- 3. Sever the deleted habit's own outgoing parent pointer
+    UPDATE public.habits
+    SET stack_parent_habit_id = NULL
+    WHERE id = habit_to_delete;
+
+    -- 4. Clean up any challenges referencing this habit
+    BEGIN
+        UPDATE public.challenges
+        SET habit_ids = array_remove(habit_ids, habit_to_delete)
+        WHERE habit_to_delete = ANY(habit_ids);
+    EXCEPTION WHEN undefined_column OR undefined_table THEN
+        NULL;
+    END;
+
+    -- 5. Delete streak freezes
+    BEGIN
+        DELETE FROM public.streak_freezes
+        WHERE habit_id = habit_to_delete;
+    EXCEPTION WHEN undefined_table THEN
+        NULL;
+    END;
+
+    -- 6. Delete habit logs
+    DELETE FROM public.habit_logs
+    WHERE habit_id = habit_to_delete;
+
+    -- 7. Delete the habit record
+    DELETE FROM public.habits
+    WHERE id = habit_to_delete AND user_id = curr_user;
+
+    RETURN true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.delete_habit_safely(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.delete_habit_safely(UUID) TO authenticated;

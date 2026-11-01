@@ -187,7 +187,11 @@ export async function createHabitAction(
   stackTriggerType: string = 'none',
   stackParentHabitId?: string | null,
   stackCustomCue?: string,
-  stackOrder: number = 0
+  stackOrder: number = 0,
+  // Drop 5: Numeric Goals parameters
+  goalType: 'binary' | 'numeric' | 'duration' = 'binary',
+  targetValue?: number,
+  targetUnit?: string
 ): Promise<ActionResponse<Habit>> {
   try {
     const trimmedTitle = cleanText(title, 60);
@@ -219,6 +223,11 @@ export async function createHabitAction(
     const validParentId = stackParentHabitId && isUuid(stackParentHabitId) ? stackParentHabitId : null;
     const validCustomCue = cleanStackCue(stackCustomCue, 80);
 
+    // Drop 5: Validate numeric goal fields
+    const validGoalType = ['binary', 'numeric', 'duration'].includes(goalType) ? goalType : 'binary';
+    const validTargetValue = targetValue !== undefined && !isNaN(Number(targetValue)) ? Number(targetValue) : undefined;
+    const validTargetUnit = targetUnit !== undefined && targetUnit.trim() !== '' ? targetUnit.trim() : undefined;
+
     // Try inserting with full Drop 3 & Drop 4 columns; fallback gracefully if remote schema is older
     const payload: any = {
       user_id: user.id,
@@ -233,6 +242,10 @@ export async function createHabitAction(
       stack_parent_habit_ids: validParentId ? [validParentId] : [],
       stack_custom_cue: validCustomCue,
       stack_order: typeof stackOrder === 'number' ? stackOrder : 0,
+      // Drop 5: Numeric Goals fields
+      goal_type: validGoalType,
+      target_value: validTargetValue,
+      target_unit: validTargetUnit,
     };
 
     let { data, error } = await supabase
@@ -842,6 +855,84 @@ export async function toggleHabitLogAction(
 /**
  * Deletes a habit and all associated logs (cascades automatically via FK)
  */
+/**
+ * Logs a numeric value for a habit on a specific date.
+ * For numeric goal types, this stores the actual progress (numeric_value) and
+ * sets is_completed = true when numeric_value >= target_value.
+ */
+export async function logNumericHabitAction(
+  habitId: string,
+  date: string,
+  numericValue: number
+): Promise<ActionResponse<HabitLog>> {
+  try {
+    if (!isUuid(habitId) || !isValidDate(date) || typeof numericValue !== 'number') {
+      return { data: null, error: 'Invalid habit log.' };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        data: null,
+        error: 'Authentication required. Please log in to log habits.',
+      };
+    }
+
+    // Business Rules: same as toggleHabitLogAction (future-proof if needed)
+    const [y, m, d] = date.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(y, m - 1, d));
+
+    const { data: serverTimeData } = await supabase.rpc('get_current_timestamp' as any);
+    const serverNow = serverTimeData ? new Date(serverTimeData) : new Date();
+    const todayUTC = new Date(Date.UTC(
+      serverNow.getUTCFullYear(),
+      serverNow.getUTCMonth(),
+      serverNow.getUTCDate()
+    ));
+
+    const diffDays = Math.round((todayUTC.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < -1) {
+      return { data: null, error: 'Cannot log habits for future dates. Please wait until the day arrives.' };
+    }
+
+    if (diffDays > 3) {
+      return { data: null, error: '72-hour edit window expired: Habit logs older than 3 days cannot be modified.' };
+    }
+
+    const { data, error } = await supabase
+      .from('habit_logs')
+      .upsert(
+        {
+          habit_id: habitId,
+          date,
+          is_completed: true,
+          numeric_value: Math.max(0, Math.round(numericValue)),
+        },
+        { onConflict: 'habit_id, date' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, error: 'Unable to update this habit.' };
+    }
+
+    revalidatePath('/');
+    return { data, error: null };
+  } catch {
+    return { data: null, error: 'Unable to update this habit.' };
+  }
+}
+
+/**
+ * Deletes a habit and all associated logs (cascades automatically via FK)
+ */
 export async function deleteHabitAction(
   habitId: string
 ): Promise<ActionResponse<{ id: string }>> {
@@ -863,29 +954,59 @@ export async function deleteHabitAction(
       };
     }
 
-    // Step 1: Unlink ANY child habit that references habitId as its anchor/parent.
-    // We run individual, simple updates so optional or missing columns cannot crash this step.
+    // 0. Verify habit ownership
+    const { data: habitRecord, error: fetchHabitErr } = await supabase
+      .from('habits')
+      .select('id, user_id')
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (fetchHabitErr || !habitRecord) {
+      return { data: null, error: 'Habit not found or unauthorized.' };
+    }
+
+    // Attempt 1: Try atomic RPC if installed on database
+    try {
+      const { data: rpcSuccess, error: rpcErr } = await supabase.rpc('delete_habit_safely' as any, {
+        habit_to_delete: habitId,
+      });
+
+      if (!rpcErr && rpcSuccess) {
+        revalidatePath('/');
+        return { data: { id: habitId }, error: null };
+      }
+    } catch {
+      // RPC not installed yet on remote DB, continue to fallback pipeline
+    }
+
+    // Attempt 2: Thorough direct SQL pipeline
+    // Step 1: Nullify stack_parent_habit_id on all child habits
+    try {
+      await supabase
+        .from('habits')
+        .update({ stack_parent_habit_id: null, stack_trigger_type: 'none' })
+        .eq('stack_parent_habit_id', habitId)
+        .eq('user_id', user.id);
+    } catch {
+      try {
+        await supabase
+          .from('habits')
+          .update({ stack_parent_habit_id: null })
+          .eq('stack_parent_habit_id', habitId)
+          .eq('user_id', user.id);
+      } catch {}
+    }
+
+    // Step 2: Also nullify without user_id restriction in case of FK link
     try {
       await supabase
         .from('habits')
         .update({ stack_parent_habit_id: null })
-        .eq('stack_parent_habit_id', habitId)
-        .eq('user_id', user.id);
-    } catch (e) {
-      console.warn('[deleteHabitAction] Step 1 stack_parent_habit_id nullify warning:', e);
-    }
+        .eq('stack_parent_habit_id', habitId);
+    } catch {}
 
-    try {
-      await supabase
-        .from('habits')
-        .update({ stack_trigger_type: 'none' })
-        .eq('stack_parent_habit_id', habitId)
-        .eq('user_id', user.id);
-    } catch {
-      // Ignore if trigger_type column not present
-    }
-
-    // Step 2: Clean up array-based multi-anchor parent references (if column exists)
+    // Step 3: Clean up multi-anchor arrays (stack_parent_habit_ids)
     try {
       const { data: userHabits } = await supabase
         .from('habits')
@@ -904,22 +1025,26 @@ export async function deleteHabitAction(
           }
         }
       }
-    } catch {
-      // Optional column on older schema
-    }
+    } catch {}
 
-    // Step 3: Sever the deleted habit's OWN OUTGOING parent reference
+    // Step 4: Sever deleted habit's OWN outgoing parent pointer
     try {
       await supabase
         .from('habits')
-        .update({ stack_parent_habit_id: null })
+        .update({ stack_parent_habit_id: null, stack_trigger_type: 'none' })
         .eq('id', habitId)
         .eq('user_id', user.id);
-    } catch (e) {
-      console.warn('[deleteHabitAction] Step 3 self stack_parent_habit_id nullify warning:', e);
+    } catch {
+      try {
+        await supabase
+          .from('habits')
+          .update({ stack_parent_habit_id: null })
+          .eq('id', habitId)
+          .eq('user_id', user.id);
+      } catch {}
     }
 
-    // Step 4: Remove habitId from any challenge habit_ids array
+    // Step 5: Clean up challenges
     try {
       const { data: challenges } = await supabase
         .from('challenges')
@@ -942,26 +1067,23 @@ export async function deleteHabitAction(
       console.warn('[deleteHabitAction] Could not clean challenge habit_ids:', e);
     }
 
-    // Step 5: Proactively clean up habit logs and streak freezes before deleting habit
-    try {
-      await supabase
-        .from('habit_logs')
-        .delete()
-        .eq('habit_id', habitId);
-    } catch (e) {
-      console.warn('[deleteHabitAction] Could not delete habit logs:', e);
-    }
-
+    // Step 6: Delete streak freezes
     try {
       await supabase
         .from('streak_freezes')
         .delete()
         .eq('habit_id', habitId);
-    } catch (e) {
-      console.warn('[deleteHabitAction] Could not delete streak freezes:', e);
-    }
+    } catch {}
 
-    // Step 6: Delete the habit record itself
+    // Step 7: Delete habit logs
+    try {
+      await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('habit_id', habitId);
+    } catch {}
+
+    // Step 8: Finally delete the habit record
     const { error: deleteError } = await supabase
       .from('habits')
       .delete()
@@ -974,7 +1096,7 @@ export async function deleteHabitAction(
         data: null,
         error: deleteError.message
           ? `${deleteError.message} (${deleteError.code || 'DELETE_FAILED'})`
-          : 'Unable to delete this habit.',
+          : 'Unable to delete this habit from database.',
       };
     }
 

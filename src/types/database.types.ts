@@ -24,6 +24,10 @@ export type Database = {
           stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
+          // Drop 5: Numeric Goals
+          goal_type?: 'binary' | 'numeric' | 'duration';
+          target_value?: number;
+          target_unit?: string;
           created_at: string;
         };
         Insert: {
@@ -40,6 +44,10 @@ export type Database = {
           stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
+          // Drop 5: Numeric Goals
+          goal_type?: 'binary' | 'numeric' | 'duration';
+          target_value?: number;
+          target_unit?: string;
           created_at?: string;
         };
         Update: {
@@ -56,6 +64,10 @@ export type Database = {
           stack_parent_habit_ids?: string[];
           stack_custom_cue?: string;
           stack_order?: number;
+          // Drop 5: Numeric Goals
+          goal_type?: 'binary' | 'numeric' | 'duration';
+          target_value?: number;
+          target_unit?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -100,6 +112,7 @@ export type Database = {
           date: string;
           is_completed: boolean;
           is_frozen: boolean;
+          numeric_value?: number;
           created_at: string;
         };
         Insert: {
@@ -108,6 +121,7 @@ export type Database = {
           date: string;
           is_completed?: boolean;
           is_frozen?: boolean;
+          numeric_value?: number;
           created_at?: string;
         };
         Update: {
@@ -116,6 +130,7 @@ export type Database = {
           date?: string;
           is_completed?: boolean;
           is_frozen?: boolean;
+          numeric_value?: number;
           created_at?: string;
         };
         Relationships: [
@@ -228,6 +243,10 @@ export type Habit = Database['public']['Tables']['habits']['Row'] & {
   stack_parent_habit_ids?: string[];
   stack_custom_cue?: string;
   stack_order?: number;
+  // Drop 5: Numeric Goals
+  goal_type?: 'binary' | 'numeric' | 'duration';
+  target_value?: number;
+  target_unit?: string;
 };
 export type HabitInsert = Database['public']['Tables']['habits']['Insert'] & {
   cadence_type?: string;
@@ -240,12 +259,18 @@ export type HabitInsert = Database['public']['Tables']['habits']['Insert'] & {
   stack_parent_habit_ids?: string[];
   stack_custom_cue?: string;
   stack_order?: number;
+  // Drop 5: Numeric Goals
+  goal_type?: 'binary' | 'numeric' | 'duration';
+  target_value?: number;
+  target_unit?: string;
 };
 export type HabitLog = Database['public']['Tables']['habit_logs']['Row'] & {
   is_frozen?: boolean;
+  numeric_value?: number;
 };
 export type HabitLogInsert = Database['public']['Tables']['habit_logs']['Insert'] & {
   is_frozen?: boolean;
+  numeric_value?: number;
 };
 export type ChallengeRow = Database['public']['Tables']['challenges']['Row'];
 export type ChallengeInsert = Database['public']['Tables']['challenges']['Insert'];
@@ -253,6 +278,8 @@ export type ChallengeInsert = Database['public']['Tables']['challenges']['Insert
 export interface HabitWithLogs extends Habit {
   logs: Record<string, boolean>; // date (YYYY-MM-DD) -> is_completed
   frozenLogs?: Record<string, boolean>; // date (YYYY-MM-DD) -> is_frozen by Streak Armor
+  // Drop 5: Numeric goals - date (YYYY-MM-DD) -> logged numeric value
+  numericLogs?: Record<string, number>;
   cadence?: {
     type: 'everyday' | 'weekdays' | 'weekends' | 'custom' | 'frequency';
     daysOfWeek?: number[];
