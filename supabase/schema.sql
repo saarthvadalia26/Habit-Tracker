@@ -456,7 +456,7 @@ ALTER TABLE public.habits
     ADD COLUMN IF NOT EXISTS stack_parent_habit_id UUID REFERENCES public.habits(id) ON DELETE SET NULL;
 
 -- Guarantee ON DELETE SET NULL foreign key constraint (fixes cases where column was added without ON DELETE SET NULL)
-DO $
+DO $$
 BEGIN
     ALTER TABLE public.habits DROP CONSTRAINT IF EXISTS habits_stack_parent_habit_id_fkey;
     ALTER TABLE public.habits 
@@ -467,7 +467,7 @@ BEGIN
 EXCEPTION
     WHEN OTHERS THEN
         NULL;
-END $;
+END $$;
 
 ALTER TABLE public.habits 
     ADD COLUMN IF NOT EXISTS stack_custom_cue TEXT DEFAULT ''
