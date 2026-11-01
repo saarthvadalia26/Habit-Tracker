@@ -54,6 +54,8 @@ import {
   Shield,
   Sunrise,
   Link2,
+  Hash,
+  Clock,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
@@ -113,8 +115,9 @@ import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
 import { StreakArmorAnnouncementToast } from '@/components/StreakArmorAnnouncementToast';
 import { DayflowAnnouncementToast } from '@/components/DayflowAnnouncementToast';
 import { NumericGoalsAnnouncementToast } from '@/components/NumericGoalsAnnouncementToast';
+import { NumericGoalInputCompact } from '@/components/NumericGoalInput';
 import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked, isDrop5Unlocked } from '@/config/releases';
-import { UNIT_TEMPLATES } from '@/lib/goalTemplates';
+import { UNIT_TEMPLATES, deriveQuickPresets, deriveStepForUnit } from '@/lib/goalTemplates';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
 import { DeleteHabitModal } from '@/components/DeleteHabitModal';
@@ -1140,39 +1143,64 @@ export function HabitDashboard({
 
   // Drop 5: Log numeric value for a habit on a specific date
   const handleLogNumericHabit = useCallback(
-    async (habitId: string, newValue: number) => {
+    async (habitId: string, newValue: number, dateKey: string = todayStr) => {
+      const targetHabit = habits.find((h) => h.id === habitId);
+      const numericTargetValue = targetHabit?.target_value ?? undefined;
+      const isCompleted = typeof numericTargetValue === 'number' && numericTargetValue > 0
+        ? newValue >= numericTargetValue
+        : newValue > 0;
+
       if (isGuestMode) {
         // Optimistic update only for guest mode
         setHabits((prev) =>
-          prev.map((h) =>
-            h.id === habitId
-              ? { ...h, numericLogs: { ...(h.numericLogs ?? {}), [todayStr]: newValue } }
-              : h
-          )
+          prev.map((h) => {
+            if (h.id !== habitId) return h;
+            const updatedLogs = { ...h.logs, [dateKey]: isCompleted };
+            const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence);
+            return {
+              ...h,
+              logs: updatedLogs,
+              currentStreak: updatedStreak,
+              numericLogs: { ...(h.numericLogs ?? {}), [dateKey]: newValue },
+            };
+          })
         );
         return;
       }
 
+      const prevNumericLogs = targetHabit?.numericLogs;
+      const prevLogs = targetHabit?.logs;
+      const prevStreak = targetHabit?.currentStreak;
+
       // Optimistic update
       setHabits((prev) =>
-        prev.map((h) =>
-          h.id === habitId
-            ? { ...h, numericLogs: { ...(h.numericLogs ?? {}), [todayStr]: newValue } }
-            : h
-        )
+        prev.map((h) => {
+          if (h.id !== habitId) return h;
+          const updatedLogs = { ...h.logs, [dateKey]: isCompleted };
+          const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence);
+          return {
+            ...h,
+            logs: updatedLogs,
+            currentStreak: updatedStreak,
+            numericLogs: { ...(h.numericLogs ?? {}), [dateKey]: newValue },
+          };
+        })
       );
 
       try {
-        const res = await logNumericHabitAction(habitId, todayStr, newValue);
+        const res = await logNumericHabitAction(habitId, dateKey, newValue, numericTargetValue);
         if (res?.error) {
           toast.error(res.error);
           // Revert on error
           setHabits((prev) =>
             prev.map((h) => {
               if (h.id !== habitId) return h;
-              const reverted = { ...(h.numericLogs ?? {}) };
-              delete reverted[todayStr];
-              return { ...h, numericLogs: reverted };
+              return {
+                ...h,
+                logs: prevLogs ?? h.logs,
+                currentStreak: prevStreak ?? h.currentStreak,
+                numericLogs: prevNumericLogs ?? h.numericLogs,
+              };
             })
           );
         }
@@ -1180,7 +1208,7 @@ export function HabitDashboard({
         toast.error('Sync error', { description: 'Could not sync numeric value to server.' });
       }
     },
-    [isGuestMode, todayStr]
+    [isGuestMode, todayStr, habits]
   );
 
   // Delete Habit: Completely rewired with dedicated confirmation modal & cascade resilience
@@ -1479,6 +1507,11 @@ export function HabitDashboard({
   // Days in month calculation for the full monthly table
   const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
+  // Drop 5: Determine if a habit renders the numeric stepper instead of binary check
+  const isNumericGoalFor = (h: HabitWithLogs): boolean => {
+    return h.goal_type === 'numeric' || h.goal_type === 'duration';
+  };
+
   // Render single habit card (used across default view and Dayflow ritual groupings)
   const renderHabitCard = (habit: HabitWithLogs) => {
     const isDone = Boolean(habit.logs?.[todayStr]);
@@ -1498,6 +1531,15 @@ export function HabitDashboard({
     const triggerInfo = drop4Unlocked ? getHabitStackTriggerText(habit, habits) : null;
     const stackCue = triggerInfo?.hasTrigger ? triggerInfo.text : null;
     const habitTod = getHabitTimeOfDay(habit);
+
+    // Drop 5: Numeric goal helpers — when goal_type is numeric/duration, the
+    // binary check button is replaced with an in-cell +/- stepper.
+    const isNumericGoal = habit.goal_type === 'numeric' || habit.goal_type === 'duration';
+    const numericTargetValue = habit.target_value ?? 0;
+    const numericTargetUnit = habit.target_unit ?? '';
+    const numericCurrent = habit.numericLogs?.[todayStr] ?? 0;
+    const numericQuickPresets = deriveQuickPresets(numericTargetValue);
+    const numericStep = deriveStepForUnit(numericTargetUnit, undefined);
 
     return (
       <motion.div
@@ -1604,24 +1646,39 @@ export function HabitDashboard({
             </div>
           )}
 
-          {/* Check Button */}
-          <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={(e) => handleToggleHabit(habit.id, e)}
-            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-              isDone
-                ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
-                : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
-            }`}
-            title={isDone ? 'Mark as todo' : 'Mark as done'}
-          >
-            <Check
-              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
-                isDone ? 'scale-100' : 'scale-75'
-              }`}
+          {/* Check Button / Numeric Stepper (Drop 5) */}
+          {isNumericGoal && drop5Unlocked ? (
+            <NumericGoalInputCompact
+              habitId={habit.id}
+              habitTitle={habit.title}
+              currentValue={numericCurrent}
+              targetValue={numericTargetValue}
+              unit={numericTargetUnit}
+              quickPresets={numericQuickPresets}
+              step={numericStep}
+              color={habit.color_theme || '#ff5a1f'}
+              onUpdate={(hid, newValue) => handleLogNumericHabit(hid, newValue)}
+              isDisabled={false}
             />
-          </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={(e) => handleToggleHabit(habit.id, e)}
+              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                isDone
+                  ? 'bg-[#ff5a1f] border-[1.5px] border-[#ff5a1f] text-white shadow-sm'
+                  : 'bg-transparent border-[1.5px] border-[#15130f] dark:border-[#fbf8f1] hover:border-[#ff5a1f] text-transparent hover:text-[#ff5a1f]/30'
+              }`}
+              title={isDone ? 'Mark as todo' : 'Mark as done'}
+            >
+              <Check
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3] transition-transform ${
+                  isDone ? 'scale-100' : 'scale-75'
+                }`}
+              />
+            </motion.button>
+          )}
 
           {/* Habit Context Actions */}
           <div className="relative" data-habit-menu>
@@ -2825,25 +2882,41 @@ export function HabitDashboard({
 
                           return (
                             <td key={i} className="p-1 text-center">
-                              <button
-                                onClick={(e) => {
-                                  if (isFrozen) {
-                                    handleOpenArmorModal(h.id, 'armor');
-                                  } else {
-                                    handleToggleHabit(h.id, e, dateKey);
-                                  }
-                                }}
-                                className={cellButtonClasses}
-                                title={titleText}
-                              >
-                                {isDone ? (
-                                  <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />
-                                ) : isFrozen ? (
-                                  <Shield className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
-                                ) : isRest ? (
-                                  <Coffee className="w-2.5 h-2.5 text-sky-500/70 shrink-0" />
-                                ) : null}
-                              </button>
+                              {/* Drop 5: Numeric stepper cell for numeric/duration habits */}
+                              {isNumericGoalFor(h) && drop5Unlocked && !isFrozen && !isFuture && !isExpired ? (
+                                <NumericGoalInputCompact
+                                  habitId={h.id}
+                                  habitTitle={h.title}
+                                  currentValue={h.numericLogs?.[dateKey] ?? 0}
+                                  targetValue={h.target_value ?? 0}
+                                  unit={h.target_unit ?? ''}
+                                  quickPresets={deriveQuickPresets(h.target_value ?? 0)}
+                                  step={deriveStepForUnit(h.target_unit ?? '', undefined)}
+                                  color={h.color_theme || '#ff5a1f'}
+                                  onUpdate={(hid, newValue) => handleLogNumericHabit(hid, newValue, dateKey)}
+                                  isDisabled={!isEditable}
+                                />
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    if (isFrozen) {
+                                      handleOpenArmorModal(h.id, 'armor');
+                                    } else {
+                                      handleToggleHabit(h.id, e, dateKey);
+                                    }
+                                  }}
+                                  className={cellButtonClasses}
+                                  title={titleText}
+                                >
+                                  {isDone ? (
+                                    <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />
+                                  ) : isFrozen ? (
+                                    <Shield className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+                                  ) : isRest ? (
+                                    <Coffee className="w-2.5 h-2.5 text-sky-500/70 shrink-0" />
+                                  ) : null}
+                                </button>
+                              )}
                             </td>
                           );
                         })}
@@ -3548,37 +3621,41 @@ export function HabitDashboard({
                       <label className="text-[10.5px] font-semibold uppercase tracking-wider text-[#15130f]/60 dark:text-[#fbf8f1]/60">
                         Goal Type
                       </label>
-                      <span className="text-[10px] text-violet-500 font-semibold">Drop 5 🎯</span>
+
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5">
                       {(
                         [
-                          { id: 'binary', label: 'Done / Not done', emoji: '✓' },
-                          { id: 'numeric', label: 'Count / Volume', emoji: '#' },
-                          { id: 'duration', label: 'Time Duration', emoji: '⏱' },
+                          { id: 'binary', label: 'Done / Not done', icon: Check },
+                          { id: 'numeric', label: 'Count / Volume', icon: Hash },
+                          { id: 'duration', label: 'Time Duration', icon: Clock },
                         ] as const
-                      ).map((gt) => (
-                        <button
-                          key={gt.id}
-                          type="button"
-                          onClick={() => {
-                            setNewGoalType(gt.id);
-                            if (gt.id === 'binary') {
-                              setNewTargetValue(0);
-                              setNewTargetUnit('');
-                            }
-                          }}
-                          className={`py-2 px-1 rounded-xl text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
-                            newGoalType === gt.id
-                              ? 'bg-violet-600 text-white border-transparent shadow-sm'
-                              : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-violet-400/40'
-                          }`}
-                        >
-                          <span className="text-base leading-none">{gt.emoji}</span>
-                          <span className="text-[10px] leading-tight text-center">{gt.label}</span>
-                        </button>
-                      ))}
+                      ).map((gt) => {
+                        const Icon = gt.icon;
+                        const isSelected = newGoalType === gt.id;
+                        return (
+                          <button
+                            key={gt.id}
+                            type="button"
+                            onClick={() => {
+                              setNewGoalType(gt.id);
+                              if (gt.id === 'binary') {
+                                setNewTargetValue(0);
+                                setNewTargetUnit('');
+                              }
+                            }}
+                            className={`py-2 px-1 rounded-xl text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                              isSelected
+                                ? 'bg-[#ff5a1f] text-white border-transparent shadow-sm'
+                                : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:border-[#ff5a1f]/40'
+                            }`}
+                          >
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-[#15130f]/70 dark:text-[#fbf8f1]/70'}`} />
+                            <span className="text-[10px] leading-tight text-center">{gt.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Numeric/Duration target config */}
@@ -3594,7 +3671,7 @@ export function HabitDashboard({
                             placeholder={newGoalType === 'duration' ? 'e.g. 30' : 'e.g. 3000'}
                             value={newTargetValue || ''}
                             onChange={(e) => setNewTargetValue(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-violet-500 transition-colors"
+                            className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
                           />
                         </div>
                         <div className="flex-1 flex flex-col gap-1">
@@ -3607,7 +3684,7 @@ export function HabitDashboard({
                               placeholder={newGoalType === 'duration' ? 'mins' : 'ml, pages…'}
                               value={newTargetUnit}
                               onChange={(e) => setNewTargetUnit(e.target.value)}
-                              className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-violet-500 transition-colors"
+                              className="w-full px-3 py-2 rounded-xl bg-[#f2ecdf] dark:bg-[#11100d] border border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-xs font-medium focus:outline-none focus:border-[#ff5a1f] transition-colors"
                             />
                           </div>
                         </div>
@@ -3634,8 +3711,8 @@ export function HabitDashboard({
                               }}
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
                                 newTargetUnit === t.unit && newTargetValue === t.defaultTarget
-                                  ? 'bg-violet-600 text-white border-transparent'
-                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:border-violet-400/40'
+                                  ? 'bg-[#ff5a1f] text-white border-transparent'
+                                  : 'bg-[#f2ecdf] dark:bg-[#11100d] border-[#15130f]/10 dark:border-[#fbf8f1]/10 text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:border-[#ff5a1f]/40'
                               }`}
                             >
                               <span>{t.icon}</span>

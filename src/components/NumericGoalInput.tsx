@@ -26,7 +26,7 @@ export function NumericGoalInput({
   unit,
   quickPresets,
   step,
-  color = '#6366F1',
+  color = '#ff5a1f',
   onUpdate,
   isDisabled = false,
 }: NumericGoalInputProps) {
@@ -251,7 +251,7 @@ export function NumericGoalInputCompact({
   unit,
   quickPresets,
   step,
-  color = '#6366F1',
+  color = '#ff5a1f',
   onUpdate,
   isDisabled = false,
 }: NumericGoalInputProps) {

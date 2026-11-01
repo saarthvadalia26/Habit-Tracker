@@ -275,6 +275,60 @@ export function getTemplateById(id: string): UnitTemplate | undefined {
 }
 
 /**
+ * Get templates for numeric or duration goal types by matching unit string.
+ * Returns an array of matching UnitTemplates (first match wins for display).
+ */
+export function getNumericUnitTemplates(unit?: string): UnitTemplate[] {
+  if (!unit) return [];
+  return UNIT_TEMPLATES.filter((t) => t.unit === unit);
+}
+
+/**
+ * Derive quick preset list from a target value: returns same value and common
+ * fractional breakpoints (e.g. 25, 50, 75, 100, etc.) — capped at targetValue.
+ */
+export function deriveQuickPresets(targetValue: number): number[] {
+  if (!Number.isFinite(targetValue) || targetValue <= 0) return [1];
+  const presets = new Set<number>();
+  for (let v = Math.max(1, Math.round(targetValue / 4)); v >= 1; v--) {
+    presets.add(v);
+    presets.add(Math.max(1, Math.round(v / 3)));
+    presets.add(Math.max(1, Math.round(v / 2)));
+    if (presets.size >= 8) break; // keep compact
+  }
+  return Array.from(presets).sort((a, b) => a - b);
+}
+
+/**
+ * Compute step from unit template + target value; defaults to 1 for durations
+ * with no explicit step template entry.
+ */
+export function deriveStepForUnit(unit: string | undefined, templateId: string | undefined): number {
+  if (templateId && getTemplateById(templateId)) {
+    const tpl = getTemplateById(templateId);
+    return tpl?.step ?? 1;
+  }
+  // Duration units without a dedicated step template default to 5 minutes
+  if (unit === 'mins' || unit === 'minutes') return 5;
+  return 1;
+}
+
+/**
+ * Return the best-fit quick preset template id for the target value — used to
+ * populate the "Quick Picks" selector in the compact stepper.
+ */
+export function getBestFitPresetId(targetValue: number): string | undefined {
+  if (!Number.isFinite(targetValue) || targetValue <= 0) return undefined;
+  const presets = deriveQuickPresets(targetValue);
+  const tpls = UNIT_TEMPLATES.filter((t) => t.quickPresets.length > 0);
+  for (const p of presets) {
+    const matched = tpls.find((t) => t.quickPresets.includes(p));
+    if (matched) return matched.id;
+  }
+  return undefined;
+}
+
+/**
  * Get templates by category
  */
 export function getTemplatesByCategory(category: string): UnitTemplate[] {

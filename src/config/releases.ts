@@ -22,7 +22,7 @@ export const V2_RELEASE_INFO = {
   subtitle: '6 weekly staged drops designed to systematically refine your discipline.',
   currentDrop: 4,
   totalDrops: 6,
-  nextDropDate: '31st October 2026',
+  nextDropDate: '7th November 2026',
 };
 
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
@@ -274,15 +274,11 @@ export function getDrop4DaysRemaining(): number {
 
 /**
  * Checks whether Drop 5 (Target & Numeric Goals) is unlocked.
- * - Always unlocked on localhost (NODE_ENV === 'development')
- * - Unlocked if ?preview=true, ?drop5=true, ?numeric=true, ?goals=true, ?target=true, or ?beta=true query param is present
- * - Automatically unlocks on production when reaching Nov 7, 2026 00:00
+ * - Strictly locked until 7th November 2026 across both development and production
+ * - Previewable with ?preview=true, ?drop5=true, ?numeric=true, ?goals=true, ?target=true, or ?beta=true query param
+ * - Automatically unlocks on reaching Nov 7, 2026 00:00
  */
 export function isDrop5Unlocked(): boolean {
-  if (process.env.NODE_ENV === 'development') {
-    return true;
-  }
-
   if (typeof window !== 'undefined') {
     try {
       const search = window.location.search;
@@ -385,8 +381,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 4',
     targetDate: '31st October 2026',
     releaseDate: '2026-10-31T00:00:00',
-    status: 'up_next',
-    statusBadge: 'SPOTLIGHT • RELEASING OCT 31',
+    status: 'in_development',
+    statusBadge: 'RELEASED • OCT 31',
     category: '⚡ ROUTINES',
     tagline: 'Group atomic habits into seamless morning, afternoon, and evening rituals.',
     description:
@@ -407,8 +403,8 @@ export const V2_DROPS: V2Drop[] = [
     versionBadge: 'v2.0 • DROP 5',
     targetDate: '7th November 2026',
     releaseDate: '2026-11-07T00:00:00',
-    status: 'planned',
-    statusBadge: 'RELEASING NOV 7',
+    status: 'up_next',
+    statusBadge: 'SPOTLIGHT • RELEASING NOV 7',
     category: '🎯 QUANTITATIVE METRICS',
     tagline: 'Track measurable milestones beyond binary checkmarks.',
     description:
@@ -422,8 +418,8 @@ export const V2_DROPS: V2Drop[] = [
       'Color-coded progress indicators (red < 50%, yellow 50-99%, green 100%+)',
       'Basic analytics: average daily value, best day, total volume over periods',
     ],
-    accentGradient: 'from-violet-500/20 via-indigo-500/10 to-transparent',
-    borderAccent: 'border-violet-500/30 dark:border-violet-500/40',
+    accentGradient: 'from-[#ff5a1f]/20 via-amber-500/10 to-transparent',
+    borderAccent: 'border-[#ff5a1f]/30 dark:border-[#ff5a1f]/40',
   },
   {
     id: 'offline-sync',

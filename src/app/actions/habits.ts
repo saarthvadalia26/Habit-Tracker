@@ -863,7 +863,8 @@ export async function toggleHabitLogAction(
 export async function logNumericHabitAction(
   habitId: string,
   date: string,
-  numericValue: number
+  numericValue: number,
+  targetValue?: number
 ): Promise<ActionResponse<HabitLog>> {
   try {
     if (!isUuid(habitId) || !isValidDate(date) || typeof numericValue !== 'number') {
@@ -911,7 +912,9 @@ export async function logNumericHabitAction(
         {
           habit_id: habitId,
           date,
-          is_completed: true,
+          is_completed: typeof targetValue === 'number' && targetValue > 0
+            ? Math.max(0, Math.round(numericValue)) >= targetValue
+            : Math.max(0, Math.round(numericValue)) > 0,
           numeric_value: Math.max(0, Math.round(numericValue)),
         },
         { onConflict: 'habit_id, date' }
