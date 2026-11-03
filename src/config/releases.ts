@@ -279,23 +279,7 @@ export function getDrop4DaysRemaining(): number {
  * - Automatically unlocks on reaching Nov 7, 2026 00:00
  */
 export function isDrop5Unlocked(): boolean {
-  if (typeof window !== 'undefined') {
-    try {
-      const search = window.location.search;
-      if (
-        search.includes('preview=true') ||
-        search.includes('drop5=true') ||
-        search.includes('numeric=true') ||
-        search.includes('goals=true') ||
-        search.includes('target=true') ||
-        search.includes('beta=true')
-      ) {
-        return true;
-      }
-    } catch {}
-  }
-
-  return isDropReleased(V2_DROPS[4]);
+  return true;
 }
 
 /**

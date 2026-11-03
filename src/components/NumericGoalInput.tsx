@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, Target, TrendingUp } from 'lucide-react';
 import { calculateProgress, getProgressColor, formatValue } from '@/lib/goalTemplates';
@@ -241,7 +241,8 @@ export function NumericGoalInput({
 }
 
 /**
- * Compact horizontal variant for table cells
+ * Compact horizontal variant for habit cards and table cells
+ * Allows stepping via +/- buttons as well as direct keyboard entry by clicking the value
  */
 export function NumericGoalInputCompact({
   habitId,
@@ -257,26 +258,69 @@ export function NumericGoalInputCompact({
 }: NumericGoalInputProps) {
   const [value, setValue] = useState(initialValue);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(String(initialValue));
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setValue(initialValue);
-  }, [initialValue]);
+    if (!isEditing) {
+      setEditValue(String(initialValue));
+    }
+  }, [initialValue, isEditing]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   const progress = calculateProgress(value, targetValue);
   const progressColor = getProgressColor(progress);
 
-  const handleIncrement = async () => {
+  const handleIncrement = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isDisabled || isUpdating) return;
     const newValue = value + step;
     setValue(newValue);
+    setEditValue(String(newValue));
     await updateValue(newValue);
   };
 
-  const handleDecrement = async () => {
+  const handleDecrement = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isDisabled || isUpdating) return;
     const newValue = Math.max(0, value - step);
     setValue(newValue);
+    setEditValue(String(newValue));
     await updateValue(newValue);
+  };
+
+  const handleCommit = async () => {
+    if (!isEditing) return;
+    setIsEditing(false);
+    const trimmed = editValue.trim();
+    if (trimmed === '') {
+      setEditValue(String(value));
+      return;
+    }
+    const parsed = Math.round(parseFloat(trimmed));
+    if (isNaN(parsed) || parsed < 0) {
+      setEditValue(String(value));
+      return;
+    }
+    const clamped = Math.min(parsed, 999999);
+    if (clamped !== value) {
+      setValue(clamped);
+      setEditValue(String(clamped));
+      await updateValue(clamped);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditValue(String(value));
   };
 
   const updateValue = async (newValue: number) => {
@@ -286,45 +330,106 @@ export function NumericGoalInputCompact({
     } catch (error) {
       console.error('Failed to update numeric goal:', error);
       setValue(initialValue);
+      setEditValue(String(initialValue));
     } finally {
       setIsUpdating(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-[#f2ecdf] dark:bg-[#11100d] rounded-lg border border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="flex items-center gap-1.5 px-2 py-1.5 bg-[#f2ecdf] dark:bg-[#11100d] rounded-lg border border-[#15130f]/10 dark:border-[#fbf8f1]/10"
+    >
       {/* Decrement */}
       <button
+        type="button"
         onClick={handleDecrement}
         disabled={isDisabled || isUpdating || value === 0}
-        className="w-6 h-6 rounded-md bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 hover:bg-[#15130f]/15 dark:hover:bg-[#fbf8f1]/15 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
+        className="w-6 h-6 rounded-md bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 hover:bg-[#15130f]/15 dark:hover:bg-[#fbf8f1]/15 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer shrink-0"
         title={`-${step}`}
       >
-        <Minus className="w-3 h-3" />
+        <Minus className="w-3 h-3 text-[#15130f] dark:text-[#fbf8f1]" />
       </button>
 
-      {/* Value Display */}
-      <div className="flex items-center gap-1 min-w-[60px] justify-center">
-        <span className="text-sm font-bold" style={{ color: progressColor }}>
-          {value}
-        </span>
-        <span className="text-[10px] text-[#15130f]/40 dark:text-[#fbf8f1]/40">
+      {/* Value Display & Keyboard Manual Input */}
+      <div className="flex items-center gap-1 min-w-[56px] justify-center">
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            min="0"
+            max="999999"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onFocus={(e) => e.target.select()}
+            onBlur={handleCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                inputRef.current?.blur();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+              }
+            }}
+            disabled={isDisabled || isUpdating}
+            className="w-12 h-6 text-center text-xs font-bold rounded-md bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#ff5a1f] text-[#15130f] dark:text-[#fbf8f1] outline-none shadow-xs px-0.5 py-0 focus:ring-1 focus:ring-[#ff5a1f]"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isDisabled && !isUpdating) {
+                setIsEditing(true);
+                setEditValue(String(value));
+              }
+            }}
+            disabled={isDisabled || isUpdating}
+            title="Click to enter value manually"
+            className="group/val inline-flex items-center justify-center px-1 py-0.5 -mx-0.5 rounded cursor-text hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/10 hover:ring-1 hover:ring-[#ff5a1f]/30 transition-all select-none"
+          >
+            <span
+              className="text-sm font-bold transition-transform group-hover/val:scale-105"
+              style={{ color: progressColor }}
+            >
+              {value}
+            </span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isEditing && !isDisabled && !isUpdating) {
+              setIsEditing(true);
+              setEditValue(String(value));
+            }
+          }}
+          disabled={isDisabled || isUpdating}
+          title="Click to enter value manually"
+          className="text-[10px] text-[#15130f]/40 dark:text-[#fbf8f1]/40 hover:text-[#15130f]/70 dark:hover:text-[#fbf8f1]/70 transition-colors cursor-text select-none shrink-0"
+        >
           / {targetValue}
-        </span>
+        </button>
       </div>
 
       {/* Increment */}
       <button
+        type="button"
         onClick={handleIncrement}
         disabled={isDisabled || isUpdating}
-        className="w-6 h-6 rounded-md bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 hover:bg-[#15130f]/15 dark:hover:bg-[#fbf8f1]/15 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer"
+        className="w-6 h-6 rounded-md bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 hover:bg-[#15130f]/15 dark:hover:bg-[#fbf8f1]/15 disabled:opacity-40 flex items-center justify-center transition-colors cursor-pointer shrink-0"
         title={`+${step}`}
       >
-        <Plus className="w-3 h-3" />
+        <Plus className="w-3 h-3 text-[#15130f] dark:text-[#fbf8f1]" />
       </button>
 
       {/* Progress Bar */}
-      <div className="flex-1 h-1.5 bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 min-w-[20px] bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 rounded-full overflow-hidden">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: progressColor }}
@@ -335,7 +440,7 @@ export function NumericGoalInputCompact({
       </div>
 
       {/* Unit */}
-      <span className="text-[9px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 font-medium min-w-[32px]">
+      <span className="text-[9px] text-[#15130f]/50 dark:text-[#fbf8f1]/50 font-medium min-w-[24px] truncate">
         {unit}
       </span>
     </div>
