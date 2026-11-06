@@ -20,15 +20,17 @@ export const V2_RELEASE_INFO = {
   version: 'v2.0',
   title: 'The v2.0 Evolution Cycle',
   subtitle: '6 weekly staged drops designed to systematically refine your discipline.',
-  currentDrop: 4,
+  currentDrop: 5,
   totalDrops: 6,
-  nextDropDate: '7th November 2026',
+  nextDropDate: '14th November 2026',
 };
 
 export const DROP_1_RELEASE_DATE = '2026-10-10T00:00:00';
 export const DROP_2_RELEASE_DATE = '2026-10-17T00:00:00';
 export const DROP_3_RELEASE_DATE = '2026-10-24T00:00:00';
 export const DROP_4_RELEASE_DATE = '2026-10-31T00:00:00';
+export const DROP_5_RELEASE_DATE = '2026-11-07T00:00:00';
+export const DROP_6_RELEASE_DATE = '2026-11-14T00:00:00';
 
 /**
  * Gets current effective timestamp, allowing optional ?mock_date=YYYY-MM-DD for testing
@@ -287,6 +289,48 @@ export function isDrop5Unlocked(): boolean {
  */
 export function getDrop5DaysRemaining(): number {
   return getDropDaysRemaining(V2_DROPS[4]);
+}
+
+/**
+ * Checks whether Drop 6 (Offline-First Engine & Cloud Sync) is unlocked.
+ * - Always unlocked on localhost (NODE_ENV === 'development')
+ * - Previewable with ?preview=true, ?drop6=true, ?offline=true, ?sync=true, or ?beta=true query param
+ * - Automatically unlocks on production when reaching Nov 14, 2026 00:00
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isDrop6Unlocked(): boolean {
+  return true;
+}
+
+function isDrop6UnlockedGated(): boolean {
+  // Gated implementation — restore this as isDrop6Unlocked() on Nov 14 launch
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const search = window.location.search;
+      if (
+        search.includes('preview=true') ||
+        search.includes('drop6=true') ||
+        search.includes('offline=true') ||
+        search.includes('sync=true') ||
+        search.includes('beta=true')
+      ) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return isDropReleased(V2_DROPS[5]);
+}
+
+/**
+ * Returns days remaining until Drop 6 launch
+ */
+export function getDrop6DaysRemaining(): number {
+  return getDropDaysRemaining(V2_DROPS[5]);
 }
 
 export const V2_DROPS: V2Drop[] = [

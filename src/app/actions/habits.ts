@@ -89,12 +89,14 @@ export async function getHabitsWithLogsAction(
       return { data: null, error: 'Unable to load habit history.' };
     }
 
-    // 3. Group logs by habit_id -> Record<date, is_completed> and frozenLogs -> Record<date, boolean>
+    // 3. Group logs by habit_id -> Record<date, is_completed>, frozenLogs, and numericLogs
     const logsByHabit: Record<string, Record<string, boolean>> = {};
     const frozenLogsByHabit: Record<string, Record<string, boolean>> = {};
+    const numericLogsByHabit: Record<string, Record<string, number>> = {};
     habitIds.forEach((id) => {
       logsByHabit[id] = {};
       frozenLogsByHabit[id] = {};
+      numericLogsByHabit[id] = {};
     });
 
     (logs || []).forEach((log: HabitLog) => {
@@ -102,6 +104,9 @@ export async function getHabitsWithLogsAction(
         logsByHabit[log.habit_id][log.date] = log.is_completed;
         if (log.is_frozen) {
           frozenLogsByHabit[log.habit_id][log.date] = true;
+        }
+        if (log.numeric_value != null) {
+          numericLogsByHabit[log.habit_id][log.date] = log.numeric_value;
         }
       }
     });
@@ -142,6 +147,7 @@ export async function getHabitsWithLogsAction(
       };
       const habitLogs = logsByHabit[habit.id] || {};
       const habitFrozenLogs = frozenLogsByHabit[habit.id] || {};
+      const habitNumericLogs = numericLogsByHabit[habit.id] || {};
       const streakResult = calculateCadenceStreak(habitLogs, habitFrozenLogs, habitCadence);
       const currentStreak = streakResult.currentStreak;
       const frozenCount = Object.values(habitFrozenLogs).filter(Boolean).length;
@@ -162,6 +168,7 @@ export async function getHabitsWithLogsAction(
         stack,
         logs: habitLogs,
         frozenLogs: habitFrozenLogs,
+        numericLogs: Object.keys(habitNumericLogs).length > 0 ? habitNumericLogs : undefined,
         currentStreak,
         availableShields: shieldStats.available,
         usedShields: shieldStats.used,

@@ -115,8 +115,13 @@ import { UpcomingReleaseToast } from '@/components/UpcomingReleaseToast';
 import { StreakArmorAnnouncementToast } from '@/components/StreakArmorAnnouncementToast';
 import { DayflowAnnouncementToast } from '@/components/DayflowAnnouncementToast';
 import { NumericGoalsAnnouncementToast } from '@/components/NumericGoalsAnnouncementToast';
+import { OfflineSyncAnnouncementToast } from '@/components/OfflineSyncAnnouncementToast';
+import { OfflineStatusBar } from '@/components/OfflineStatusBar';
 import { NumericGoalInputCompact } from '@/components/NumericGoalInput';
-import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked, isDrop5Unlocked } from '@/config/releases';
+import { isDrop1Unlocked, isDrop2Unlocked, isDrop3Unlocked, isDrop4Unlocked, isDrop5Unlocked, isDrop6Unlocked } from '@/config/releases';
+import { useOfflineStatus } from '@/hooks/useOfflineStatus';
+import { startSyncOnReconnect, drainQueue } from '@/lib/syncEngine';
+import { addPendingOp, hydrateLocalHabits } from '@/lib/idb';
 import { UNIT_TEMPLATES, deriveQuickPresets, deriveStepForUnit } from '@/lib/goalTemplates';
 import { SignOutModal } from '@/components/SignOutModal';
 import { DeleteAccountModal } from '@/components/DeleteAccountModal';
@@ -226,6 +231,13 @@ export function HabitDashboard({
 }: HabitTrackerDashboardProps) {
   const { isDark, toggleTheme } = useTheme();
   const [habits, setHabits] = useState<HabitWithLogs[]>(initialHabits);
+  const { isOnline, syncStatus, pendingOpsCount } = useOfflineStatus({
+    onSyncComplete: (syncedCount) => {
+      if (syncedCount > 0) {
+        toast.success(`Synced ${syncedCount} offline ${syncedCount === 1 ? 'change' : 'changes'}`);
+      }
+    },
+  });
   const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'goals' | 'journal' | 'settings'>('today');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -310,6 +322,40 @@ export function HabitDashboard({
     setStackingInitialShowGuide(showGuide);
     setIsStackingModalOpen(true);
   }, []);
+
+  // =============================================================
+  // Drop 6: Offline sync initialization
+  // =============================================================
+  useEffect(() => {
+    if (isGuestMode) return; // Guest mode doesn't use the sync engine
+
+    // Start listening for reconnect events and drain the queue
+    const cleanupSync = startSyncOnReconnect({
+      onSyncComplete: () => {
+        // UI is already updated via useOfflineStatus hook callbacks
+      },
+      onError: (error) => {
+        toast.error('Sync failed', {
+          description: error.message,
+          duration: 5000,
+        });
+      },
+    });
+
+    // Hydrate local IDB with current habits array
+    hydrateLocalHabits(habits as any).catch(() => {
+      // Silently ignore IDB hydration errors - app works without it
+    });
+
+    // Try to drain any leftover queue from previous session
+    if (navigator.onLine) {
+      drainQueue().catch(() => {
+        // Will retry on next 'online' event
+      });
+    }
+
+    return cleanupSync;
+  }, [isGuestMode]);
 
   const handleUpdateHabitStack = useCallback(
     async (
@@ -1036,6 +1082,20 @@ export function HabitDashboard({
       } catch {}
     }
 
+    // Drop 6: Offline-first path — queue the op and try to sync immediately
+    if (!navigator.onLine) {
+      await addPendingOp({
+        type: 'toggle',
+        habitId,
+        date: targetDate,
+        payload: { isCompleted: nextState },
+        createdAt: Date.now(),
+        retryCount: 0,
+      });
+      return;
+    }
+
+    // Online path — call server action directly
     try {
       const res = await toggleHabitLogAction(habitId, targetDate, nextState);
       if (res?.error) {
@@ -1187,6 +1247,20 @@ export function HabitDashboard({
         })
       );
 
+      // Drop 6: Offline-first path
+      if (!navigator.onLine) {
+        await addPendingOp({
+          type: 'numeric_log',
+          habitId,
+          date: dateKey,
+          payload: { numericValue: newValue, targetValue: numericTargetValue },
+          createdAt: Date.now(),
+          retryCount: 0,
+        });
+        return;
+      }
+
+      // Online path
       try {
         const res = await logNumericHabitAction(habitId, dateKey, newValue, numericTargetValue);
         if (res?.error) {
@@ -1854,6 +1928,18 @@ export function HabitDashboard({
       {/* Drop 5 Announcement Toast (First visit after Nov 7) */}
       <NumericGoalsAnnouncementToast
         onOpenRoadmap={() => setIsRoadmapOpen(true)}
+      />
+
+      {/* Drop 6 Announcement Toast (First visit after Nov 14) */}
+      <OfflineSyncAnnouncementToast
+        onOpenRoadmap={() => setIsRoadmapOpen(true)}
+      />
+
+      {/* Drop 6: Offline status banner */}
+      <OfflineStatusBar
+        isOnline={isOnline}
+        syncStatus={syncStatus}
+        pendingOpsCount={pendingOpsCount}
       />
 
       {/* ============================================================== */}

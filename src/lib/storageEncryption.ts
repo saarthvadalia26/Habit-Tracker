@@ -40,27 +40,26 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
 
 /**
  * Get or create a user-specific encryption key
- * Stores a derived key identifier in sessionStorage (cleared on browser close)
+ * Stores a derived key identifier in localStorage (persists across sessions)
  */
-async function getUserKey(): Promise<CryptoKey> {
-  // Check if we have a key in this session
-  let keyId = sessionStorage.getItem('_ht_key_id');
-
+function getKeyId(): string {
+  let keyId = localStorage.getItem('_ht_key_id');
   if (!keyId) {
-    // Generate a new key ID for this session
     keyId = crypto.randomUUID();
-    sessionStorage.setItem('_ht_key_id', keyId);
+    localStorage.setItem('_ht_key_id', keyId);
   }
+  return keyId;
+}
 
-  // Use the key ID as the password (in production, use proper user session token)
-  const salt = new Uint8Array(SALT_LENGTH);
-  crypto.getRandomValues(salt);
-
+function getUserKey(salt: Uint8Array): Promise<CryptoKey> {
+  const keyId = getKeyId();
   return deriveKey(keyId, salt);
 }
 
 /**
  * Encrypt data for localStorage
+ * Format: base64( salt [16] || iv [12] || ciphertext )
+ * The salt is stored in the payload so decryptData can derive the same key.
  * @param data - Data to encrypt (will be JSON stringified)
  * @returns Encrypted string or null if encryption fails
  */
@@ -70,7 +69,9 @@ export async function encryptData(data: unknown): Promise<string | null> {
     const jsonString = JSON.stringify(data);
     const dataBuffer = encoder.encode(jsonString);
 
-    const key = await getUserKey();
+    const salt = new Uint8Array(SALT_LENGTH);
+    crypto.getRandomValues(salt);
+    const key = await getUserKey(salt);
     const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
 
     const encryptedBuffer = await crypto.subtle.encrypt(
@@ -79,10 +80,12 @@ export async function encryptData(data: unknown): Promise<string | null> {
       dataBuffer
     );
 
-    // Combine IV and encrypted data
-    const combined = new Uint8Array(iv.length + encryptedBuffer.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(encryptedBuffer), iv.length);
+    // Combine salt + IV + encrypted data
+    const totalLength = salt.length + iv.length + encryptedBuffer.byteLength;
+    const combined = new Uint8Array(totalLength);
+    combined.set(salt, 0);
+    combined.set(iv, SALT_LENGTH);
+    combined.set(new Uint8Array(encryptedBuffer), SALT_LENGTH + iv.length);
 
     // Convert to base64 for storage
     return btoa(String.fromCharCode(...combined));
@@ -94,6 +97,7 @@ export async function encryptData(data: unknown): Promise<string | null> {
 
 /**
  * Decrypt data from localStorage
+ * Expects format: base64( salt [16] || iv [12] || ciphertext )
  * @param encryptedString - Encrypted base64 string
  * @returns Decrypted data or null if decryption fails
  */
@@ -102,11 +106,12 @@ export async function decryptData<T = unknown>(encryptedString: string): Promise
     // Decode from base64
     const combined = Uint8Array.from(atob(encryptedString), c => c.charCodeAt(0));
 
-    // Extract IV and encrypted data
-    const iv = combined.slice(0, IV_LENGTH);
-    const encryptedData = combined.slice(IV_LENGTH);
+    // Extract salt, IV, and encrypted data from the stored payload
+    const salt = combined.slice(0, SALT_LENGTH);
+    const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+    const encryptedData = combined.slice(SALT_LENGTH + IV_LENGTH);
 
-    const key = await getUserKey();
+    const key = await getUserKey(salt);
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: ENCRYPTION_ALGORITHM, iv },
@@ -158,7 +163,7 @@ export function clearSecureStorage(keys?: string[]): void {
   } else {
     localStorage.clear();
   }
-  sessionStorage.removeItem('_ht_key_id');
+  localStorage.removeItem('_ht_key_id');
 }
 
 /**
