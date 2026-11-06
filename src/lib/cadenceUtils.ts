@@ -179,20 +179,79 @@ export function calculateCadenceStreak(
  */
 export function computeHabitShieldBank(
   currentStreak: number = 0,
-  usedCount: number = 0
+  usedCount: number = 0,
+  bestStreak: number = 0
 ): HabitShieldStats {
   const baseShields = 2;
-  const milestoneBonus = Math.floor(Math.max(0, currentStreak) / 7);
+  // Shields stay earned once unlocked — derive milestones from the best
+  // streak ever achieved, not the current streak, so breaking a streak
+  // no longer wipes earned shields.
+  const best = Math.max(
+    0,
+    Number.isFinite(currentStreak) ? currentStreak : 0,
+    Number.isFinite(bestStreak) ? bestStreak : 0
+  );
+  const safeUsed = Number.isFinite(usedCount) ? Math.max(0, usedCount) : 0;
+  const milestoneBonus = Math.floor(best / 7);
   const maxCapacity = 5;
   const earned = Math.min(maxCapacity, baseShields + milestoneBonus);
-  const available = Math.max(0, earned - usedCount);
+  const available = Math.max(0, earned - safeUsed);
 
   return {
     available,
     maxCapacity,
     earned,
-    used: usedCount,
+    used: safeUsed,
   };
+}
+
+/**
+ * Computes the best (longest) streak ever achieved from full log history.
+ * Walks forward through sorted dates, counting continuous satisfied days
+ * (completed, frozen, or scheduled rest). This is the persistent value
+ * that keeps earned shields unlocked after the current streak breaks.
+ */
+export function calculateBestStreak(
+  logs: Record<string, boolean> = {},
+  frozenLogs: Record<string, boolean> = {},
+  cadence?: CadenceConfig,
+  createdAt?: string
+): number {
+  const dates = new Set<string>([...Object.keys(logs || {}), ...Object.keys(frozenLogs || {})]);
+  if (dates.size === 0) return 0;
+
+  const sorted = [...dates].sort((a, b) => a.localeCompare(b));
+  let best = 0;
+  let run = 0;
+
+  // Walk the calendar from the earliest activity (or habit creation) to today,
+  // so rest days inside a run count toward the streak.
+  let cursor = new Date(`${sorted[0]}T00:00:00`);
+  if (createdAt) {
+    const created = new Date(createdAt);
+    if (!Number.isNaN(created.getTime()) && created < cursor) {
+      cursor = new Date(created.getFullYear(), created.getMonth(), created.getDate());
+    }
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let guard = 0;
+  while (cursor <= today && guard < 3650) {
+    guard++;
+    const dateStr = formatDateToISO(cursor);
+    const satisfied =
+      Boolean(logs[dateStr]) || Boolean(frozenLogs[dateStr]) || isHabitRestDay(cadence, new Date(cursor));
+    if (satisfied) {
+      run++;
+      if (run > best) best = run;
+    } else {
+      run = 0;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return best;
 }
 
 /**

@@ -15,7 +15,7 @@ import {
   isValidStackTriggerType,
   cleanStackCue,
 } from '@/lib/validation';
-import { calculateCadenceStreak, computeHabitShieldBank } from '@/lib/cadenceUtils';
+import { calculateBestStreak, calculateCadenceStreak, computeHabitShieldBank } from '@/lib/cadenceUtils';
 
 export interface ActionResponse<T> {
   data: T | null;
@@ -150,8 +150,9 @@ export async function getHabitsWithLogsAction(
       const habitNumericLogs = numericLogsByHabit[habit.id] || {};
       const streakResult = calculateCadenceStreak(habitLogs, habitFrozenLogs, habitCadence);
       const currentStreak = streakResult.currentStreak;
+      const bestStreak = calculateBestStreak(habitLogs, habitFrozenLogs, habitCadence, habit.created_at);
       const frozenCount = Object.values(habitFrozenLogs).filter(Boolean).length;
-      const shieldStats = computeHabitShieldBank(currentStreak, frozenCount);
+      const shieldStats = computeHabitShieldBank(currentStreak, frozenCount, bestStreak);
 
       return {
         ...habit,
@@ -170,6 +171,7 @@ export async function getHabitsWithLogsAction(
         frozenLogs: habitFrozenLogs,
         numericLogs: Object.keys(habitNumericLogs).length > 0 ? habitNumericLogs : undefined,
         currentStreak,
+        bestStreak,
         availableShields: shieldStats.available,
         usedShields: shieldStats.used,
       };
@@ -719,8 +721,9 @@ export async function toggleStreakFreezeAction(
           : undefined;
 
         const streakResult = calculateCadenceStreak(logsMap, frozenMap, habitCadence);
+        const bestStreak = calculateBestStreak(logsMap, frozenMap, habitCadence, habit.created_at);
         const usedCount = Object.values(frozenMap).filter(Boolean).length;
-        const shieldStats = computeHabitShieldBank(streakResult.currentStreak, usedCount);
+        const shieldStats = computeHabitShieldBank(streakResult.currentStreak, usedCount, bestStreak);
 
         if (shieldStats.available <= 0) {
           return {

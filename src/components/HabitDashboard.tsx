@@ -67,6 +67,7 @@ import {
   isHabitRestDay,
   isHabitScheduledForDay,
   computeHabitShieldBank,
+  calculateBestStreak,
 } from '@/lib/cadenceUtils';
 import {
   DAYFLOW_META,
@@ -1422,15 +1423,20 @@ export function HabitDashboard({
     [isGuestMode]
   );
 
-  // Compute total available shields across all habits
+  // Compute total available shields across all habits.
+  // Best streak keeps earned shields unlocked after the current streak breaks.
   const totalAvailableShields = useMemo(() => {
     return habits.reduce((acc, h) => {
       const streak =
         typeof h.currentStreak === 'number' && h.currentStreak > 0
           ? h.currentStreak
           : calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence);
+      const best =
+        typeof h.bestStreak === 'number' && h.bestStreak > 0
+          ? Math.max(h.bestStreak, streak)
+          : calculateBestStreak(h.logs || {}, h.frozenLogs || {}, h.cadence, (h as { created_at?: string }).created_at);
       const frozenCount = h.frozenLogs ? Object.values(h.frozenLogs).filter(Boolean).length : 0;
-      const stats = computeHabitShieldBank(streak, frozenCount);
+      const stats = computeHabitShieldBank(streak, frozenCount, best);
       return acc + stats.available;
     }, 0);
   }, [habits]);

@@ -289,6 +289,7 @@ export interface HabitWithLogs extends Habit {
   availableShields?: number;
   usedShields?: number;
   currentStreak?: number;
+  bestStreak?: number;
   completionRate?: number;
   subtitle?: string;
   icon?: string;

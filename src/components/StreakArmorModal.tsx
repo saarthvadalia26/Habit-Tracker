@@ -26,6 +26,7 @@ import {
   isHabitRestDay,
   isHabitScheduledForDay,
   computeHabitShieldBank,
+  calculateBestStreak,
   calculateCadenceStreak,
   getActiveDaysCountInMonth,
 } from '@/lib/cadenceUtils';
@@ -138,13 +139,28 @@ export function StreakArmorModal({
     ).currentStreak;
   }, [selectedHabit]);
 
-  // Compute shields available across the selected habit
+  // Compute shields available across the selected habit.
+  // Best streak (derived from full log history) keeps earned shields
+  // unlocked even after the current streak breaks.
+  const bestStreak = useMemo(() => {
+    if (!selectedHabit) return 0;
+    if (typeof selectedHabit.bestStreak === 'number' && selectedHabit.bestStreak > 0) {
+      return Math.max(selectedHabit.bestStreak, currentStreak);
+    }
+    return calculateBestStreak(
+      selectedHabit.logs || {},
+      selectedHabit.frozenLogs || {},
+      selectedHabit.cadence,
+      (selectedHabit as { created_at?: string }).created_at
+    );
+  }, [selectedHabit, currentStreak]);
+
   const shieldStats = useMemo(() => {
     const frozenCount = selectedHabit?.frozenLogs
       ? Object.values(selectedHabit.frozenLogs).filter(Boolean).length
       : 0;
-    return computeHabitShieldBank(currentStreak, frozenCount);
-  }, [selectedHabit, currentStreak]);
+    return computeHabitShieldBank(currentStreak, frozenCount, bestStreak);
+  }, [selectedHabit, currentStreak, bestStreak]);
 
   // All active frozen dates across habits or for the selected habit
   const activeFreezes = useMemo(() => {
@@ -412,7 +428,7 @@ export function StreakArmorModal({
                           <span>1. Shield Bank</span>
                         </div>
                         <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
-                          Start with 2 base shields. Earn <strong>+1 shield</strong> for every 7 days of continuous streak (up to 5 max capacity).
+                          Start with 2 base shields. Earn <strong>+1 shield</strong> for every 7 days of continuous streak (up to 5 max). Earned shields stay yours forever — even if your streak breaks.
                         </p>
                       </div>
 
@@ -454,16 +470,18 @@ export function StreakArmorModal({
                       </h4>
                     </div>
                     <p className="text-xs text-[#15130f]/65 dark:text-[#fbf8f1]/65 max-w-sm">
-                      Base 2 shields + 1 earned for every 7 days of active unbroken streak (max 5).
+                      Base 2 shields + 1 earned for every 7 days of unbroken streak (max 5). Earned shields are permanent.
                     </p>
                     {(() => {
+                      // Next shield milestone is based on best streak, not current,
+                      // so a broken streak shows remaining days to the next milestone.
                       const nextShieldNumber = shieldStats.earned + 1;
                       const daysNeeded = (nextShieldNumber - 2) * 7;
-                      const daysRemaining = Math.max(1, daysNeeded - currentStreak);
+                      const daysRemaining = Math.max(1, daysNeeded - bestStreak);
                       let nextShieldText = '';
                       if (shieldStats.earned >= shieldStats.maxCapacity) {
                         nextShieldText = '(Max 5 shields unlocked)';
-                      } else if (currentStreak === 0) {
+                      } else if (bestStreak === 0) {
                         nextShieldText = '(Reach a 7-day streak to unlock Shield 3)';
                       } else {
                         nextShieldText = `(${daysRemaining} more streak ${daysRemaining === 1 ? 'day' : 'days'} to unlock Shield ${nextShieldNumber})`;
@@ -471,7 +489,7 @@ export function StreakArmorModal({
 
                       return (
                         <p className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                          Current streak: {currentStreak} {currentStreak === 1 ? 'day' : 'days'} • {shieldStats.earned} of {shieldStats.maxCapacity} shields unlocked {nextShieldText}
+                          Current streak: {currentStreak} {currentStreak === 1 ? 'day' : 'days'} • Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'} • {shieldStats.earned} of {shieldStats.maxCapacity} shields unlocked {nextShieldText}
                         </p>
                       );
                     })()}
@@ -492,7 +510,7 @@ export function StreakArmorModal({
                                 ? `Shield ${i + 1}: Ready to protect`
                                 : isUsed
                                 ? `Shield ${i + 1}: Active on frozen date`
-                                : `Shield ${i + 1}: Locked (Requires ${reqDays}d unbroken streak • currently ${currentStreak}d)`
+                                : `Shield ${i + 1}: Locked (Requires ${reqDays}d unbroken streak • best ${bestStreak}d)`
                             }
                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                               isReady
