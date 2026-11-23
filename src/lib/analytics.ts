@@ -49,21 +49,23 @@ import {
   getActiveDaysCountInMonth,
   isHabitScheduledForDay,
 } from '@/lib/cadenceUtils';
-import { CadenceConfig } from '@/types/cadence.types';
+import { CadenceConfig, VacationPeriod } from '@/types/cadence.types';
 
 /**
  * Calculates continuous streak backwards starting from today across month/year boundaries,
- * taking into account Streak Armor freezes and scheduled Rest Cadence days.
+ * taking into account Streak Armor freezes, scheduled Rest Cadence days, and active Vacations.
  */
 export function calculateContinuousStreak(
   logs: Record<string, boolean>,
   frozenLogs: Record<string, boolean> = {},
-  cadence?: CadenceConfig
+  cadence?: CadenceConfig,
+  vacations?: VacationPeriod[],
+  habitId?: string
 ): number {
   if ((!logs || Object.keys(logs).length === 0) && (!frozenLogs || Object.keys(frozenLogs).length === 0)) {
     return 0;
   }
-  return calculateCadenceStreak(logs, frozenLogs, cadence).currentStreak;
+  return calculateCadenceStreak(logs, frozenLogs, cadence, vacations, habitId).currentStreak;
 }
 
 export function computeMonthlyAnalytics(

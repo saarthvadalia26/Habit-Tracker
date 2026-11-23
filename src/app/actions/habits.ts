@@ -16,6 +16,7 @@ import {
   cleanStackCue,
 } from '@/lib/validation';
 import { calculateBestStreak, calculateCadenceStreak, computeHabitShieldBank } from '@/lib/cadenceUtils';
+import { VacationPeriod } from '@/types/cadence.types';
 
 export interface ActionResponse<T> {
   data: T | null;
@@ -67,6 +68,27 @@ export async function getHabitsWithLogsAction(
     if (!habits || habits.length === 0) {
       return { data: [], error: null };
     }
+
+    // 1b. Fetch vacations belonging to user (protects streaks without consuming shields)
+    let vacationPeriods: VacationPeriod[] = [];
+    try {
+      const { data: userVacations } = await supabase
+        .from('vacations')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (userVacations) {
+        vacationPeriods = userVacations.map((v: any) => ({
+          id: v.id,
+          userId: v.user_id,
+          title: v.title,
+          startDate: v.start_date,
+          endDate: v.end_date,
+          habitIds: v.habit_ids || [],
+          createdAt: v.created_at,
+        }));
+      }
+    } catch {}
 
     // 2. Fetch logs for habits (allow up to 5,000 rows to avoid PostgREST default 1,000 truncation)
     const habitIds = habits.map((h) => h.id);
@@ -148,9 +170,9 @@ export async function getHabitsWithLogsAction(
       const habitLogs = logsByHabit[habit.id] || {};
       const habitFrozenLogs = frozenLogsByHabit[habit.id] || {};
       const habitNumericLogs = numericLogsByHabit[habit.id] || {};
-      const streakResult = calculateCadenceStreak(habitLogs, habitFrozenLogs, habitCadence);
+      const streakResult = calculateCadenceStreak(habitLogs, habitFrozenLogs, habitCadence, vacationPeriods, habit.id);
       const currentStreak = streakResult.currentStreak;
-      const bestStreak = calculateBestStreak(habitLogs, habitFrozenLogs, habitCadence, habit.created_at);
+      const bestStreak = calculateBestStreak(habitLogs, habitFrozenLogs, habitCadence, habit.created_at, vacationPeriods, habit.id);
       const frozenCount = Object.values(habitFrozenLogs).filter(Boolean).length;
       const shieldStats = computeHabitShieldBank(currentStreak, frozenCount, bestStreak);
 

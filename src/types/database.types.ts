@@ -199,6 +199,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      vacations: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          start_date: string;
+          end_date: string;
+          habit_ids: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          start_date: string;
+          end_date: string;
+          habit_ids?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          start_date?: string;
+          end_date?: string;
+          habit_ids?: string[];
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

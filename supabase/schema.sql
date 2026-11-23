@@ -563,3 +563,43 @@ $$;
 
 REVOKE ALL ON FUNCTION public.delete_habit_safely(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.delete_habit_safely(UUID) TO authenticated;
+
+-- ==============================================================================
+-- Vacation Mode & Streak Pause (Protects streaks without consuming shields)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.vacations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL CONSTRAINT check_vacation_title CHECK (char_length(trim(title)) > 0 AND char_length(title) <= 100),
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    habit_ids UUID[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT check_vacation_dates CHECK (end_date >= start_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vacations_user_id ON public.vacations(user_id);
+CREATE INDEX IF NOT EXISTS idx_vacations_dates ON public.vacations(user_id, start_date, end_date);
+ALTER TABLE public.vacations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own vacations" ON public.vacations;
+CREATE POLICY "Users can view their own vacations"
+    ON public.vacations FOR SELECT
+    USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can create their own vacations" ON public.vacations;
+CREATE POLICY "Users can create their own vacations"
+    ON public.vacations FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own vacations" ON public.vacations;
+CREATE POLICY "Users can update their own vacations"
+    ON public.vacations FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own vacations" ON public.vacations;
+CREATE POLICY "Users can delete their own vacations"
+    ON public.vacations FOR DELETE
+    USING (auth.uid() = user_id);
+

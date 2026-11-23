@@ -16,6 +16,7 @@ import {
   Flame,
   Info,
   HelpCircle,
+  Plane,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -39,6 +40,7 @@ interface StreakArmorModalProps {
   isGuestMode?: boolean;
   onUpdateHabitCadence: (habitId: string, cadence: CadenceConfig) => void;
   onToggleStreakFreeze: (habitId: string, dateStr: string, isFrozen: boolean, reason?: string) => void;
+  onOpenVacation?: () => void;
   initialHabitId?: string;
   initialTab?: 'armor' | 'cadence';
   initialShowGuide?: boolean;
@@ -70,6 +72,7 @@ export function StreakArmorModal({
   isGuestMode = false,
   onUpdateHabitCadence,
   onToggleStreakFreeze,
+  onOpenVacation,
   initialHabitId,
   initialTab = 'armor',
   initialShowGuide = false,
@@ -389,6 +392,21 @@ export function StreakArmorModal({
                 <Coffee className="w-4 h-4 shrink-0" />
                 <span>Rest Cadence</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenVacation?.();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#15130f] dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5"
+              >
+                <Plane className="w-4 h-4 shrink-0 text-emerald-500" />
+                <span>Vacation Mode</span>
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                  New ✈️
+                </span>
+              </button>
             </div>
           </div>
 
@@ -421,7 +439,7 @@ export function StreakArmorModal({
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                       <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
                         <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-xs">
                           <Shield className="w-3.5 h-3.5 fill-current" />
@@ -449,6 +467,16 @@ export function StreakArmorModal({
                         </div>
                         <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
                           Tailor habits for real life (e.g. Weekdays, 3x/week). Off-days count as rest and preserve streaks with <strong>zero shields required</strong>.
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
+                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                          <Plane className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>4. Vacation Mode</span>
+                        </div>
+                        <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
+                          Going away for 7–30 days? Vacation mode freezes streaks in place without consuming a single shield from your bank.
                         </p>
                       </div>
                     </div>
@@ -676,6 +704,32 @@ export function StreakArmorModal({
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Vacation Mode Banner */}
+                <div className="rounded-2xl p-4 bg-linear-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <Plane className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1]">
+                        Taking an extended trip or holiday?
+                      </p>
+                      <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65">
+                        Vacation Mode freezes your streaks for up to 30 days without consuming any shields from your bank.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenVacation?.();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  >
+                    <Plane className="w-3.5 h-3.5" />
+                    <span>Open Vacation Mode</span>
+                  </button>
                 </div>
               </div>
             )}

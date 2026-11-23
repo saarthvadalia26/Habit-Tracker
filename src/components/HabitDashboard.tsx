@@ -56,10 +56,11 @@ import {
   Link2,
   Hash,
   Clock,
+  Plane,
 } from 'lucide-react';
 import { HabitWithLogs, TimeOfDay, StackTriggerType } from '@/types/database.types';
 import { Challenge } from '@/types/challenge.types';
-import { CadenceConfig } from '@/types/cadence.types';
+import { CadenceConfig, VacationPeriod } from '@/types/cadence.types';
 import { formatDateToISO, getTodayDateString, isLeapYear } from '@/lib/dateUtils';
 import { calculateContinuousStreak } from '@/lib/analytics';
 import {
@@ -68,6 +69,8 @@ import {
   isHabitScheduledForDay,
   computeHabitShieldBank,
   calculateBestStreak,
+  calculateCadenceStreak,
+  isDateInVacation,
 } from '@/lib/cadenceUtils';
 import {
   DAYFLOW_META,
@@ -96,6 +99,11 @@ import {
   deleteChallengeAction,
   clearPastChallengesAction,
 } from '@/app/actions/challenges';
+import {
+  getVacationsAction,
+  createVacationAction,
+  deleteVacationAction,
+} from '@/app/actions/vacations';
 
 const isUuid = (val: unknown): boolean =>
   typeof val === 'string' &&
@@ -108,6 +116,7 @@ import { ActiveChallengeModal } from '@/components/ActiveChallengeModal';
 import { MilestoneFlexCardModal } from '@/components/MilestoneFlexCardModal';
 import { StreakArmorModal } from '@/components/StreakArmorModal';
 import { HabitStackingModal } from '@/components/HabitStackingModal';
+import { VacationModal } from '@/components/VacationModal';
 import { NotesSection } from '@/components/NotesSection';
 import { YearHeatmapMatrix } from '@/components/YearHeatmapMatrix';
 import { ChallengeBanner } from '@/components/ChallengeBanner';
@@ -310,6 +319,163 @@ export function HabitDashboard({
   const [stackingInitialShowGuide, setStackingInitialShowGuide] = useState(false);
   const [drop4Unlocked, setDrop4Unlocked] = useState(false);
   const [dayflowFilter, setDayflowFilter] = useState<'all' | TimeOfDay>('all');
+
+  // Vacation Mode & Streak Pause state
+  const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
+  const [vacations, setVacations] = useState<VacationPeriod[]>([]);
+
+  // Fetch vacations on mount
+  useEffect(() => {
+    let isMounted = true;
+    if (isGuestMode) {
+      try {
+        const local = localStorage.getItem('habit_tracker_vacations');
+        if (local && isMounted) {
+          setVacations(JSON.parse(local));
+        }
+      } catch {}
+      return;
+    }
+
+    getVacationsAction().then((res) => {
+      if (isMounted && res.data) {
+        setVacations(res.data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isGuestMode]);
+
+  const handleCreateVacation = useCallback(
+    async (title: string, startDate: string, endDate: string, habitIds: string[] = []) => {
+      const tempId = isGuestMode ? `guest-${Date.now()}` : `temp-${Date.now()}`;
+      const newVacation: VacationPeriod = {
+        id: tempId,
+        title,
+        startDate,
+        endDate,
+        habitIds,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedVacations = [...vacations, newVacation];
+      setVacations(updatedVacations);
+
+      // Recalculate streaks across habits with updated vacations
+      setHabits((prevHabits) =>
+        prevHabits.map((h) => {
+          const streakRes = calculateCadenceStreak(
+            h.logs || {},
+            h.frozenLogs || {},
+            h.cadence,
+            updatedVacations,
+            h.id
+          );
+          const best = calculateBestStreak(
+            h.logs || {},
+            h.frozenLogs || {},
+            h.cadence,
+            (h as { created_at?: string }).created_at,
+            updatedVacations,
+            h.id
+          );
+          return {
+            ...h,
+            currentStreak: streakRes.currentStreak,
+            bestStreak: best,
+          };
+        })
+      );
+
+      if (isGuestMode) {
+        try {
+          localStorage.setItem('habit_tracker_vacations', JSON.stringify(updatedVacations));
+        } catch {}
+        toast.success('Vacation Mode Activated ✈️', {
+          description: `Streaks will remain protected from ${startDate} to ${endDate}.`,
+        });
+        return;
+      }
+
+      try {
+        const res = await createVacationAction(title, startDate, endDate, habitIds);
+        if (res.data) {
+          setVacations((prev) => prev.map((v) => (v.id === tempId ? res.data! : v)));
+          toast.success('Vacation Mode Activated ✈️', {
+            description: `Streaks will remain protected from ${startDate} to ${endDate}.`,
+          });
+        } else if (res.error) {
+          setVacations(vacations);
+          toast.error(res.error);
+        }
+      } catch {
+        setVacations(vacations);
+        toast.error('Failed to schedule vacation. Please try again.');
+      }
+    },
+    [vacations, isGuestMode]
+  );
+
+  const handleDeleteVacation = useCallback(
+    async (vacationId: string) => {
+      const updatedVacations = vacations.filter((v) => v.id !== vacationId);
+      setVacations(updatedVacations);
+
+      // Recalculate streaks across habits with updated vacations
+      setHabits((prevHabits) =>
+        prevHabits.map((h) => {
+          const streakRes = calculateCadenceStreak(
+            h.logs || {},
+            h.frozenLogs || {},
+            h.cadence,
+            updatedVacations,
+            h.id
+          );
+          const best = calculateBestStreak(
+            h.logs || {},
+            h.frozenLogs || {},
+            h.cadence,
+            (h as { created_at?: string }).created_at,
+            updatedVacations,
+            h.id
+          );
+          return {
+            ...h,
+            currentStreak: streakRes.currentStreak,
+            bestStreak: best,
+          };
+        })
+      );
+
+      if (isGuestMode) {
+        try {
+          localStorage.setItem('habit_tracker_vacations', JSON.stringify(updatedVacations));
+        } catch {}
+        toast.success('Vacation Removed', {
+          description: 'Normal habit schedule restored.',
+        });
+        return;
+      }
+
+      try {
+        const res = await deleteVacationAction(vacationId);
+        if (res.data) {
+          toast.success('Vacation Removed', {
+            description: 'Normal habit schedule restored.',
+          });
+        } else if (res.error) {
+          setVacations(vacations);
+          toast.error(res.error);
+        }
+      } catch {
+        setVacations(vacations);
+        toast.error('Failed to remove vacation.');
+      }
+    },
+    [vacations, isGuestMode]
+  );
 
   const handleOpenStackingModal = useCallback((habitId?: string, showGuide: boolean = false) => {
     if (!isDrop4Unlocked()) {
@@ -658,6 +824,11 @@ export function HabitDashboard({
 
   const todayStr = useMemo(() => getTodayDateString(), []);
 
+  // Active vacation currently running today
+  const activeVacationToday = useMemo(() => {
+    return isDateInVacation(todayStr, vacations);
+  }, [todayStr, vacations]);
+
   // Personalized Greeting: Only display personal name if user has customized one
   const personalizedName = useMemo(() => {
     if (initialCustomName && initialCustomName.trim()) return initialCustomName.trim();
@@ -705,13 +876,13 @@ export function HabitDashboard({
     if (habits.length === 0) return 0;
     let max = 0;
     habits.forEach((h) => {
-      const s = calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence);
+      const s = calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence, vacations, h.id);
       const explicitStreak = h.currentStreak || 0;
       const effective = Math.max(s, explicitStreak);
       if (effective > max) max = effective;
     });
     return max;
-  }, [habits]);
+  }, [habits, vacations]);
 
   // Compute Month-to-date (MTD) Completion Rate
   const { monthlyCompletionRate, monthlyCompletedChecks, monthlyPossibleChecks } = useMemo(() => {
@@ -1054,7 +1225,7 @@ export function HabitDashboard({
       prev.map((h) => {
         if (h.id === habitId) {
           const updatedLogs = { ...h.logs, [targetDate]: nextState };
-          const updatedStreak = calculateContinuousStreak(updatedLogs);
+          const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence, vacations, h.id);
           return {
             ...h,
             logs: updatedLogs,
@@ -1217,7 +1388,7 @@ export function HabitDashboard({
           prev.map((h) => {
             if (h.id !== habitId) return h;
             const updatedLogs = { ...h.logs, [dateKey]: isCompleted };
-            const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence);
+            const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence, vacations, h.id);
             return {
               ...h,
               logs: updatedLogs,
@@ -1238,7 +1409,7 @@ export function HabitDashboard({
         prev.map((h) => {
           if (h.id !== habitId) return h;
           const updatedLogs = { ...h.logs, [dateKey]: isCompleted };
-          const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence);
+          const updatedStreak = calculateContinuousStreak(updatedLogs, h.frozenLogs || {}, h.cadence, vacations, h.id);
           return {
             ...h,
             logs: updatedLogs,
@@ -1283,7 +1454,7 @@ export function HabitDashboard({
         toast.error('Sync error', { description: 'Could not sync numeric value to server.' });
       }
     },
-    [isGuestMode, todayStr, habits]
+    [isGuestMode, todayStr, habits, vacations]
   );
 
   // Delete Habit: Completely rewired with dedicated confirmation modal & cascade resilience
@@ -1430,16 +1601,16 @@ export function HabitDashboard({
       const streak =
         typeof h.currentStreak === 'number' && h.currentStreak > 0
           ? h.currentStreak
-          : calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence);
+          : calculateContinuousStreak(h.logs || {}, h.frozenLogs || {}, h.cadence, vacations, h.id);
       const best =
         typeof h.bestStreak === 'number' && h.bestStreak > 0
           ? Math.max(h.bestStreak, streak)
-          : calculateBestStreak(h.logs || {}, h.frozenLogs || {}, h.cadence, (h as { created_at?: string }).created_at);
+          : calculateBestStreak(h.logs || {}, h.frozenLogs || {}, h.cadence, (h as { created_at?: string }).created_at, vacations, h.id);
       const frozenCount = h.frozenLogs ? Object.values(h.frozenLogs).filter(Boolean).length : 0;
       const stats = computeHabitShieldBank(streak, frozenCount, best);
       return acc + stats.available;
     }, 0);
-  }, [habits]);
+  }, [habits, vacations]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -1598,7 +1769,7 @@ export function HabitDashboard({
     const currentStreak =
       typeof habit.currentStreak === 'number' && habit.currentStreak > 0
         ? habit.currentStreak
-        : calculateContinuousStreak(habit.logs || {}, habit.frozenLogs || {}, habit.cadence);
+        : calculateContinuousStreak(habit.logs || {}, habit.frozenLogs || {}, habit.cadence, vacations, habit.id);
 
     let displayTitle = habit.title;
     let displaySubtitle = habit.subtitle || 'Daily routine';
@@ -1670,6 +1841,12 @@ export function HabitDashboard({
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/25">
                   <Coffee className="w-2.5 h-2.5" />
                   <span>Rest Day</span>
+                </span>
+              )}
+              {!isDone && isDateInVacation(todayStr, vacations, habit.id).inVacation && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                  <Plane className="w-2.5 h-2.5" />
+                  <span>Vacation</span>
                 </span>
               )}
               {drop4Unlocked && habitTod !== 'anytime' && (
@@ -2026,6 +2203,22 @@ export function HabitDashboard({
                 v2.0
               </span>
             </button>
+
+            {/* Vacation Mode Nav Item */}
+            <button
+              onClick={() => setIsVacationModalOpen(true)}
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-[12px] xl:rounded-[14px] text-[14.5px] min-[1280px]:text-[15px] xl:text-[15.5px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/8 transition-all cursor-pointer group mt-0.5"
+            >
+              <div className="flex items-center gap-2.5 xl:gap-3 min-w-0">
+                <Plane className="w-[19px] h-[19px] xl:w-5 xl:h-5 text-emerald-500 shrink-0" />
+                <span className="truncate">Vacation Mode</span>
+              </div>
+              {activeVacationToday.inVacation && (
+                <span className="text-[10px] xl:text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                  Active
+                </span>
+              )}
+            </button>
           </nav>
         </div>
 
@@ -2264,6 +2457,26 @@ export function HabitDashboard({
                 </div>
                 <ChevronRight className="w-4 h-4" />
               </button>
+
+              <button
+                onClick={() => {
+                  setIsVacationModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-sm font-semibold transition-colors mt-0.5"
+              >
+                <div className="flex items-center gap-2">
+                  <Plane className="w-4 h-4" />
+                  <span>Vacation Mode & Streak Pause</span>
+                </div>
+                {activeVacationToday.inVacation ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                    Active
+                  </span>
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
             </motion.div>
           </>
         )}
@@ -2342,6 +2555,23 @@ export function HabitDashboard({
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
+                  onClick={() => setIsVacationModalOpen(true)}
+                  className={`inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 px-3 sm:px-3.5 rounded-full border font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer ${
+                    activeVacationToday.inVacation
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-[#fbf8f1] dark:bg-[#1c1a16] border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-emerald-500/40'
+                  }`}
+                  title="Vacation Mode & Streak Pause"
+                >
+                  <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
+                  <span className="leading-none hidden min-[400px]:inline">
+                    {activeVacationToday.inVacation ? 'On Vacation' : 'Vacation'}
+                  </span>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={handleOpenCreateModal}
                   className="hidden sm:inline-flex items-center justify-center gap-1.5 sm:gap-2 h-10 px-4 sm:px-5 rounded-full bg-[#ff5a1f] hover:bg-[#e04a12] text-[#fbf8f1] font-semibold text-xs sm:text-[14px] shadow-sm transition-all shrink-0 cursor-pointer"
                 >
@@ -2363,6 +2593,51 @@ export function HabitDashboard({
                   onAbandonChallenge={handleAbandonChallenge}
                 />
               </div>
+            )}
+
+            {/* Active Vacation Banner (if on vacation today) */}
+            {activeVacationToday.inVacation && activeVacationToday.vacation && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full rounded-2xl p-4 sm:p-5 bg-linear-to-r from-emerald-500/15 via-teal-500/10 to-transparent border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Plane className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-clash font-semibold text-sm sm:text-base text-[#15130f] dark:text-[#fbf8f1]">
+                        Vacation Mode Active: {activeVacationToday.vacation.title}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                        Streaks Protected 🛡️
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#15130f]/70 dark:text-[#fbf8f1]/70">
+                      {activeVacationToday.vacation.startDate} to {activeVacationToday.vacation.endDate} · 0 shields consumed. Enjoy your trip!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsVacationModalOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:border-emerald-500/40 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] transition-all cursor-pointer"
+                  >
+                    Manage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteVacation(activeVacationToday.vacation!.id)}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-semibold text-emerald-800 dark:text-emerald-200 transition-all cursor-pointer"
+                  >
+                    End Vacation Early
+                  </button>
+                </div>
+              </motion.div>
             )}
 
             {/* Stats Row (Responsive 2-col on mobile, 3-col on desktop) */}
@@ -2926,6 +3201,7 @@ export function HabitDashboard({
                           const isDone = Boolean(h.logs?.[dateKey]);
                           const isFrozen = Boolean(h.frozenLogs?.[dateKey]);
                           const isRest = isHabitRestDay(h.cadence, dateKey);
+                          const isVacation = isDateInVacation(dateKey, vacations, h.id).inVacation;
                           const isCellToday = dateKey === todayStr;
 
                           const cellDate = new Date(Date.UTC(selectedYear, selectedMonth, i + 1));
@@ -2941,6 +3217,8 @@ export function HabitDashboard({
                             titleText = `${h.title} on ${dateKey}: Sign in required to log habits`;
                           } else if (isFrozen) {
                             titleText = `${h.title} on ${dateKey}: Protected with Streak Armor (0 streak lost)`;
+                          } else if (!isDone && isVacation) {
+                            titleText = `${h.title} on ${dateKey}: Protected by Vacation Mode (Streak preserved). Tap to log bonus.`;
                           } else if (!isDone && isRest) {
                             titleText = `${h.title} on ${dateKey}: Scheduled Rest Day (Streak preserved). Tap to log bonus.`;
                           } else if (isFuture) {
@@ -2955,6 +3233,10 @@ export function HabitDashboard({
                               : 'bg-[#ff5a1f] text-white cursor-not-allowed shadow-xs';
                           } else if (isFrozen) {
                             cellButtonClasses += 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-sm hover:scale-110 cursor-pointer active:scale-95';
+                          } else if (isVacation) {
+                            cellButtonClasses += isEditable
+                              ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border border-dashed border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 cursor-pointer hover:scale-110 active:scale-95'
+                              : 'bg-emerald-500/5 border border-dashed border-emerald-500/25 text-emerald-600/50 cursor-not-allowed';
                           } else if (isRest) {
                             cellButtonClasses += isEditable
                               ? 'bg-sky-500/5 dark:bg-sky-500/10 border border-dashed border-sky-500/35 text-sky-500/70 hover:bg-sky-500/20 hover:border-sky-500/60 cursor-pointer hover:scale-110 active:scale-95'
@@ -3004,6 +3286,8 @@ export function HabitDashboard({
                                     <Check className="w-3.5 h-3.5 text-white stroke-[3.5] shrink-0" />
                                   ) : isFrozen ? (
                                     <Shield className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+                                  ) : isVacation ? (
+                                    <Plane className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                   ) : isRest ? (
                                     <Coffee className="w-2.5 h-2.5 text-sky-500/70 shrink-0" />
                                   ) : null}
@@ -3409,6 +3693,32 @@ export function HabitDashboard({
                 >
                   {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+              </div>
+
+              {/* Vacation Mode & Streak Pause */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-t border-[#15130f]/10 dark:border-[#fbf8f1]/10">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-sm text-[#15130f] dark:text-[#fbf8f1]">
+                      Vacation Mode & Streak Pause
+                    </h4>
+                    {activeVacationToday.inVacation && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                        Active Now ✈️
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#15130f]/60 dark:text-[#fbf8f1]/60">
+                    Pause streaks for holidays or travel without consuming your 5 shields
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsVacationModalOpen(true)}
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 text-[13px] font-semibold hover:bg-emerald-500 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plane className="w-3.5 h-3.5" />
+                  <span>Configure Vacation</span>
                 </button>
               </div>
 
@@ -3982,6 +4292,7 @@ export function HabitDashboard({
           isGuestMode={isGuestMode}
           onUpdateHabitCadence={handleUpdateHabitCadence}
           onToggleStreakFreeze={handleToggleStreakFreeze}
+          onOpenVacation={() => setIsVacationModalOpen(true)}
           initialHabitId={armorInitialHabitId}
           initialTab={armorInitialTab}
           initialShowGuide={armorInitialShowGuide}
@@ -3999,6 +4310,19 @@ export function HabitDashboard({
           onSaveHabitChain={handleSaveHabitChain}
           initialHabitId={stackingInitialHabitId}
           initialShowGuide={stackingInitialShowGuide}
+        />
+      )}
+
+      {/* Vacation Mode & Streak Pause Modal */}
+      {isVacationModalOpen && (
+        <VacationModal
+          isOpen={isVacationModalOpen}
+          onClose={() => setIsVacationModalOpen(false)}
+          habits={habits}
+          vacations={vacations}
+          onCreateVacation={handleCreateVacation}
+          onDeleteVacation={handleDeleteVacation}
+          isGuestMode={isGuestMode}
         />
       )}
     </div>

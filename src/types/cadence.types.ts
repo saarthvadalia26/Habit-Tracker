@@ -30,7 +30,20 @@ export interface HabitShieldStats {
 export interface CadenceStreakResult {
   currentStreak: number;
   restDaysProtected: number;
+  vacationDaysProtected: number;
   shieldsUsed: number;
   isTodayRest: boolean;
   isTodayFrozen: boolean;
+  isTodayVacation: boolean;
 }
+
+export interface VacationPeriod {
+  id: string;
+  userId?: string;
+  title: string;
+  startDate: string; // ISO date 'YYYY-MM-DD'
+  endDate: string; // ISO date 'YYYY-MM-DD'
+  habitIds?: string[]; // Empty/undefined means applies to all habits
+  createdAt?: string;
+}
+

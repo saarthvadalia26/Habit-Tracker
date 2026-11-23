@@ -1,4 +1,4 @@
-import { CadenceConfig, CadenceStreakResult, HabitShieldStats } from '@/types/cadence.types';
+import { CadenceConfig, CadenceStreakResult, HabitShieldStats, VacationPeriod } from '@/types/cadence.types';
 import { formatDateToISO } from '@/lib/dateUtils';
 
 export const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -91,10 +91,33 @@ export function getCadenceLabel(cadence?: CadenceConfig): string {
  * 2. Protected days frozen with Streak Armor (frozenLogs[date] === true)
  * 3. Guilt-free scheduled rest days (isHabitRestDay(cadence, date))
  */
+/**
+ * Checks if a specific date falls within any active vacation period for a given habit.
+ */
+export function isDateInVacation(
+  date: Date | string,
+  vacations?: VacationPeriod[],
+  habitId?: string
+): { inVacation: boolean; vacation?: VacationPeriod } {
+  if (!vacations || vacations.length === 0) return { inVacation: false };
+  const dateStr = typeof date === 'string' ? date : formatDateToISO(date);
+
+  for (const v of vacations) {
+    if (dateStr >= v.startDate && dateStr <= v.endDate) {
+      if (!v.habitIds || v.habitIds.length === 0 || (habitId && v.habitIds.includes(habitId))) {
+        return { inVacation: true, vacation: v };
+      }
+    }
+  }
+  return { inVacation: false };
+}
+
 export function calculateCadenceStreak(
   logs: Record<string, boolean> = {},
   frozenLogs: Record<string, boolean> = {},
-  cadence?: CadenceConfig
+  cadence?: CadenceConfig,
+  vacations?: VacationPeriod[],
+  habitId?: string
 ): CadenceStreakResult {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -107,9 +130,11 @@ export function calculateCadenceStreak(
   const isTodayDone = Boolean(logs[todayStr]);
   const isTodayFrozen = Boolean(frozenLogs[todayStr]);
   const isTodayRest = isHabitRestDay(cadence, today);
+  const isTodayVacation = isDateInVacation(today, vacations, habitId).inVacation;
 
   let streak = 0;
   let restDaysProtected = 0;
+  let vacationDaysProtected = 0;
   let shieldsUsed = 0;
 
   let currentDate = new Date(today);
@@ -118,6 +143,10 @@ export function calculateCadenceStreak(
   if (isTodayDone) {
     streak++;
     currentDate.setDate(currentDate.getDate() - 1);
+  } else if (isTodayVacation) {
+    // If today is a vacation day, habit is NOT required today and streak is preserved!
+    vacationDaysProtected++;
+    currentDate = yesterday;
   } else if (isTodayFrozen) {
     streak++;
     shieldsUsed++;
@@ -140,11 +169,16 @@ export function calculateCadenceStreak(
     const done = Boolean(logs[dateStr]);
     const frozen = Boolean(frozenLogs[dateStr]);
     const rest = isHabitRestDay(cadence, currentDate);
+    const inVacation = isDateInVacation(currentDate, vacations, habitId).inVacation;
 
     if (done) {
       if (currentDate.getTime() !== today.getTime()) {
         streak++;
       }
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else if (inVacation) {
+      // Vacation day: streak is PRESERVED! 0 shields consumed from bank!
+      vacationDaysProtected++;
       currentDate.setDate(currentDate.getDate() - 1);
     } else if (frozen) {
       if (currentDate.getTime() !== today.getTime()) {
@@ -165,9 +199,11 @@ export function calculateCadenceStreak(
   return {
     currentStreak: streak,
     restDaysProtected,
+    vacationDaysProtected,
     shieldsUsed,
     isTodayRest,
     isTodayFrozen,
+    isTodayVacation,
   };
 }
 
@@ -215,7 +251,9 @@ export function calculateBestStreak(
   logs: Record<string, boolean> = {},
   frozenLogs: Record<string, boolean> = {},
   cadence?: CadenceConfig,
-  createdAt?: string
+  createdAt?: string,
+  vacations?: VacationPeriod[],
+  habitId?: string
 ): number {
   const dates = new Set<string>([...Object.keys(logs || {}), ...Object.keys(frozenLogs || {})]);
   if (dates.size === 0) return 0;
@@ -240,8 +278,12 @@ export function calculateBestStreak(
   while (cursor <= today && guard < 3650) {
     guard++;
     const dateStr = formatDateToISO(cursor);
+    const inVacation = isDateInVacation(cursor, vacations, habitId).inVacation;
     const satisfied =
-      Boolean(logs[dateStr]) || Boolean(frozenLogs[dateStr]) || isHabitRestDay(cadence, new Date(cursor));
+      Boolean(logs[dateStr]) ||
+      Boolean(frozenLogs[dateStr]) ||
+      isHabitRestDay(cadence, new Date(cursor)) ||
+      inVacation;
     if (satisfied) {
       run++;
       if (run > best) best = run;
