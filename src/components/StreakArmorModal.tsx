@@ -401,9 +401,9 @@ export function StreakArmorModal({
                 }}
                 className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer text-[#15130f]/60 dark:text-[#fbf8f1]/60 hover:text-[#15130f] dark:hover:text-[#fbf8f1] hover:bg-[#15130f]/5 dark:hover:bg-[#fbf8f1]/5"
               >
-                <Plane className="w-4 h-4 shrink-0 text-emerald-500" />
+                <Plane className="w-4 h-4 shrink-0 text-[#ff5a1f]" />
                 <span>Vacation Mode</span>
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-[#ff5a1f]/15 text-[#ff5a1f] font-bold shrink-0">
                   New ✈️
                 </span>
               </button>
@@ -471,8 +471,8 @@ export function StreakArmorModal({
                       </div>
 
                       <div className="p-3 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/8 dark:border-[#fbf8f1]/8 space-y-1">
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                          <Plane className="w-3.5 h-3.5 text-emerald-500" />
+                        <div className="flex items-center gap-1.5 text-[#ff5a1f] font-bold text-xs">
+                          <Plane className="w-3.5 h-3.5 text-[#ff5a1f]" />
                           <span>4. Vacation Mode</span>
                         </div>
                         <p className="text-[11px] text-[#15130f]/65 dark:text-[#fbf8f1]/65 leading-relaxed">
@@ -707,9 +707,11 @@ export function StreakArmorModal({
                 </div>
 
                 {/* Vacation Mode Banner */}
-                <div className="rounded-2xl p-4 bg-linear-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="rounded-2xl p-4 bg-linear-to-r from-amber-500/10 via-[#ff5a1f]/5 to-transparent border border-[#ff5a1f]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <Plane className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <div className="w-8 h-8 rounded-lg bg-[#ff5a1f]/15 text-[#ff5a1f] flex items-center justify-center shrink-0">
+                      <Plane className="w-4 h-4" />
+                    </div>
                     <div className="space-y-0.5">
                       <p className="text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1]">
                         Taking an extended trip or holiday?
@@ -725,7 +727,7 @@ export function StreakArmorModal({
                       onClose();
                       onOpenVacation?.();
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#ff5a1f]/15 hover:bg-[#ff5a1f] hover:text-white text-[#ff5a1f] text-xs font-semibold transition-all cursor-pointer shrink-0"
                   >
                     <Plane className="w-3.5 h-3.5" />
                     <span>Open Vacation Mode</span>

@@ -1844,8 +1844,8 @@ export function HabitDashboard({
                 </span>
               )}
               {!isDone && isDateInVacation(todayStr, vacations, habit.id).inVacation && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                  <Plane className="w-2.5 h-2.5" />
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#ff5a1f]/10 dark:bg-[#ff5a1f]/15 text-[#ff5a1f] dark:text-[#ff7847] border border-[#ff5a1f]/25">
+                  <Plane className="w-2.5 h-2.5 text-[#ff5a1f]" />
                   <span>Vacation</span>
                 </span>
               )}
@@ -2207,14 +2207,14 @@ export function HabitDashboard({
             {/* Vacation Mode Nav Item */}
             <button
               onClick={() => setIsVacationModalOpen(true)}
-              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-[12px] xl:rounded-[14px] text-[14.5px] min-[1280px]:text-[15px] xl:text-[15.5px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/8 transition-all cursor-pointer group mt-0.5"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-[12px] xl:rounded-[14px] text-[14.5px] min-[1280px]:text-[15px] xl:text-[15.5px] font-semibold tracking-[-0.01em] text-[#15130f]/70 dark:text-[#fbf8f1]/70 hover:text-[#ff5a1f] hover:bg-[#ff5a1f]/8 transition-all cursor-pointer group mt-0.5"
             >
               <div className="flex items-center gap-2.5 xl:gap-3 min-w-0">
-                <Plane className="w-[19px] h-[19px] xl:w-5 xl:h-5 text-emerald-500 shrink-0" />
+                <Plane className="w-[19px] h-[19px] xl:w-5 xl:h-5 text-[#ff5a1f] shrink-0" />
                 <span className="truncate">Vacation Mode</span>
               </div>
               {activeVacationToday.inVacation && (
-                <span className="text-[10px] xl:text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <span className="text-[10px] xl:text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f] shrink-0">
                   Active
                 </span>
               )}
@@ -2463,14 +2463,14 @@ export function HabitDashboard({
                   setIsVacationModalOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-between w-full p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-sm font-semibold transition-colors mt-0.5"
+                className="flex items-center justify-between w-full p-2.5 rounded-xl bg-[#15130f]/5 dark:bg-[#fbf8f1]/5 hover:bg-[#ff5a1f]/10 hover:text-[#ff5a1f] text-[#15130f]/80 dark:text-[#fbf8f1]/80 text-sm font-semibold transition-colors mt-0.5"
               >
                 <div className="flex items-center gap-2">
-                  <Plane className="w-4 h-4" />
+                  <Plane className="w-4 h-4 text-[#ff5a1f]" />
                   <span>Vacation Mode & Streak Pause</span>
                 </div>
                 {activeVacationToday.inVacation ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ff5a1f]/15 text-[#ff5a1f]">
                     Active
                   </span>
                 ) : (
@@ -2558,12 +2558,12 @@ export function HabitDashboard({
                   onClick={() => setIsVacationModalOpen(true)}
                   className={`inline-flex items-center justify-center gap-1.5 h-9 sm:h-10 px-3 sm:px-3.5 rounded-full border font-semibold text-xs sm:text-[13px] shadow-sm transition-all shrink-0 cursor-pointer ${
                     activeVacationToday.inVacation
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-[#fbf8f1] dark:bg-[#1c1a16] border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-emerald-500/40'
+                      ? 'bg-[#ff5a1f]/15 border-[#ff5a1f]/40 text-[#ff5a1f]'
+                      : 'bg-[#fbf8f1] dark:bg-[#1c1a16] border-[#15130f]/15 dark:border-[#fbf8f1]/15 text-[#15130f] dark:text-[#fbf8f1] hover:border-[#ff5a1f]/40'
                   }`}
                   title="Vacation Mode & Streak Pause"
                 >
-                  <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 shrink-0" />
+                  <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ff5a1f] shrink-0" />
                   <span className="leading-none hidden min-[400px]:inline">
                     {activeVacationToday.inVacation ? 'On Vacation' : 'Vacation'}
                   </span>
@@ -2600,10 +2600,10 @@ export function HabitDashboard({
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full rounded-2xl p-4 sm:p-5 bg-linear-to-r from-emerald-500/15 via-teal-500/10 to-transparent border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                className="w-full rounded-2xl p-4 sm:p-5 bg-linear-to-r from-amber-500/15 via-[#ff5a1f]/10 to-transparent border border-[#ff5a1f]/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/25 flex items-center justify-center shrink-0">
                     <Plane className="w-5 h-5" />
                   </div>
                   <div className="space-y-0.5">
@@ -2611,7 +2611,7 @@ export function HabitDashboard({
                       <span className="font-clash font-semibold text-sm sm:text-base text-[#15130f] dark:text-[#fbf8f1]">
                         Vacation Mode Active: {activeVacationToday.vacation.title}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/25">
                         Streaks Protected 🛡️
                       </span>
                     </div>
@@ -2625,14 +2625,14 @@ export function HabitDashboard({
                   <button
                     type="button"
                     onClick={() => setIsVacationModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:border-emerald-500/40 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#fbf8f1] dark:bg-[#1c1a16] border border-[#15130f]/15 dark:border-[#fbf8f1]/15 hover:border-[#ff5a1f]/40 text-xs font-semibold text-[#15130f] dark:text-[#fbf8f1] transition-all cursor-pointer"
                   >
                     Manage
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteVacation(activeVacationToday.vacation!.id)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-semibold text-emerald-800 dark:text-emerald-200 transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#15130f] dark:bg-[#fbf8f1] text-[#fbf8f1] dark:text-[#15130f] hover:bg-[#ff5a1f] hover:text-white dark:hover:bg-[#ff5a1f] dark:hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
                   >
                     End Vacation Early
                   </button>
@@ -3235,8 +3235,8 @@ export function HabitDashboard({
                             cellButtonClasses += 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-sm hover:scale-110 cursor-pointer active:scale-95';
                           } else if (isVacation) {
                             cellButtonClasses += isEditable
-                              ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border border-dashed border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 cursor-pointer hover:scale-110 active:scale-95'
-                              : 'bg-emerald-500/5 border border-dashed border-emerald-500/25 text-emerald-600/50 cursor-not-allowed';
+                              ? 'bg-amber-500/10 dark:bg-amber-500/15 border border-dashed border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 cursor-pointer hover:scale-110 active:scale-95'
+                              : 'bg-amber-500/5 border border-dashed border-amber-500/25 text-amber-600/50 cursor-not-allowed';
                           } else if (isRest) {
                             cellButtonClasses += isEditable
                               ? 'bg-sky-500/5 dark:bg-sky-500/10 border border-dashed border-sky-500/35 text-sky-500/70 hover:bg-sky-500/20 hover:border-sky-500/60 cursor-pointer hover:scale-110 active:scale-95'
@@ -3287,7 +3287,7 @@ export function HabitDashboard({
                                   ) : isFrozen ? (
                                     <Shield className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
                                   ) : isVacation ? (
-                                    <Plane className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <Plane className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
                                   ) : isRest ? (
                                     <Coffee className="w-2.5 h-2.5 text-sky-500/70 shrink-0" />
                                   ) : null}
@@ -3704,7 +3704,7 @@ export function HabitDashboard({
                       Vacation Mode & Streak Pause
                     </h4>
                     {activeVacationToday.inVacation && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ff5a1f]/15 text-[#ff5a1f] border border-[#ff5a1f]/25">
                         Active Now ✈️
                       </span>
                     )}
@@ -3715,9 +3715,9 @@ export function HabitDashboard({
                 </div>
                 <button
                   onClick={() => setIsVacationModalOpen(true)}
-                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 text-[13px] font-semibold hover:bg-emerald-500 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+                  className="self-start sm:self-auto px-4 py-2 rounded-full bg-[#15130f]/10 dark:bg-[#fbf8f1]/10 text-[#15130f] dark:text-[#fbf8f1] hover:bg-[#ff5a1f] hover:text-white text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-2"
                 >
-                  <Plane className="w-3.5 h-3.5" />
+                  <Plane className="w-3.5 h-3.5 text-[#ff5a1f]" />
                   <span>Configure Vacation</span>
                 </button>
               </div>
