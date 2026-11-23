@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
+    agentUpgrade: 'security',
     // This application has no uploads. Keeping action bodies small reduces the
     // amount of memory an attacker can make the server allocate per request.
     serverActions: {
